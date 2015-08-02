@@ -100,23 +100,3 @@ INSERT INTO category_match (category, sub_category, color) VALUES
   ('mobility', 'vehicle', '#827717'),
   ('finance', 'internal transfer', '#FF8A65')
 ;
-
-INSERT INTO accounts ( account,
-                       initial_amount,
-                       rows_to_skip,
-                       delimiter,
-                       date_format,
-                       final_row,
-                       transaction_date,
-                       exchange_date,
-                       receiver,
-                       purpose,
-                       amount_in,
-                       amount_out,
-                       currency,
-                       currency_default
-) VALUES
-  ('db',     0.0,     5, ';', 'MM/dd/yyyy',          'Account balance', 0, 1, '{2, 3}', '{4}', 14, 13, 15, 'EUR'),
-  ('hvb',    6035.50, 1, ';', 'dd.MM.yyyy',          NULL,              1, 2, '{3, 4}', '{5}', 6,  6,  7,  'EUR'),
-  ('kalixa', 0.0,     1, ',', 'dd.MM.yyyy HH:mm:ss', NULL,              0, 0, '{2}',    '{1}', 3,  4,  -1, 'EUR')
-;

@@ -1,4 +1,4 @@
-﻿DROP TABLE transactions;
+DROP TABLE transactions;
 DROP TABLE category_match;
 DROP TABLE sub_categories;
 DROP TABLE categories;
