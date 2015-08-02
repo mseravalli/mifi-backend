@@ -12,7 +12,7 @@ $ git clone https://github.com/mseravalli/mi-fi.git
 Run the setup from the main folder
 ```
 $ cd mi-fi
-$ ./setup
+$ ./setup.sh
 ```
 
 Run the application
@@ -20,4 +20,4 @@ Run the application
 $ ./activator run
 ```
 
-Point your browser to "http://localhost:9000"
+Point your browser to [link]:http://localhost:9000
