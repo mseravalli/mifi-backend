@@ -2,7 +2,11 @@
 Web application for managing personal finance.
 
 ## Setup
-Prerequisites: java (1.7+), postgresql (9.4+).
+Prerequisites:
+ * java (1.7+)
+ * postgresql (9.4+)
+
+For possible problems encountered during the setup please refer to the [HELP.md](https://github.com/mseravalli/mi-fi/blob/master/HELP.md) file, or open an [issue](https://github.com/mseravalli/mi-fi/issues).
 
 Clone the repo.
 ```
