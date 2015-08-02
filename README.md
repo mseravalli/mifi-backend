@@ -1,6 +1,8 @@
 # mi-fi
 Web application for managing personal finance.
 
+[![Build Status](https://travis-ci.org/mseravalli/mi-fi.svg?branch=master)](https://travis-ci.org/mseravalli/mi-fi)
+
 ## Setup
 Prerequisites:
  * java (1.7+)
