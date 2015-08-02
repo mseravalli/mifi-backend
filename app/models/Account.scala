@@ -1,7 +1,5 @@
 package models
 
-import scala.collection.mutable.ArrayBuffer
-
 case class Account (
   account:            String,
   initialAmount:      BigDecimal,
