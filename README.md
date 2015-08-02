@@ -15,7 +15,7 @@ $ cd mi-fi
 $ ./setup.sh
 ```
 
-Run the application, the for the first run it might take a while.
+Run the application, the first run might take a while.
 ```
 $ ./activator run
 ```
