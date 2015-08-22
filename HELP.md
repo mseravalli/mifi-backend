@@ -16,3 +16,8 @@ into
 ```
 local   all             all                                     md5
 ```
+
+When done restart postgres
+```
+$ sudo service postgresql restart
+```
