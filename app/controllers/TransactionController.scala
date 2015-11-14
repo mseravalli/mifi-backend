@@ -101,9 +101,8 @@ class TransactionController extends Controller{
               rComment
             )
             c.sendPreparedStatement(TransactionController.insertTransactionQuery, insertValues)
+            Future(Ok(Json.obj()))
           }
-
-          Future(Ok(Json.obj()))
         }
       }
     }}
