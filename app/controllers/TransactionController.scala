@@ -102,7 +102,10 @@ class TransactionController extends Controller{
               rComment
             )
             c.sendPreparedStatement(TransactionController.insertTransactionQuery, insertValues).flatMap{ r =>
-              Future(Ok(Json.obj("msg" -> "The transaction was correctly split" )))
+              r.rows match {
+                case Some(rows) => Future(Ok(Json.obj("msg" -> "Split completed correctly", "transactions" ->  Json.arr(lId.toString, rows.head.apply(0).toString) )))
+                case None => Future(InternalServerError(Json.obj("msg" -> "No Id was returned")))
+              }
             }
           }
         }
