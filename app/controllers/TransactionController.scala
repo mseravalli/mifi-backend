@@ -70,8 +70,9 @@ class TransactionController extends Controller{
     val rCategory = (jsonRequest \ "rCategory").as[String]
     val rSubCategory = (jsonRequest \ "rSubCategory").as[String]
     val rComment = (jsonRequest \ "rComment").as[String]
-    await { Global.pool.inTransaction{
-      c => c.sendPreparedStatement(TransactionController.getTransactionQuery, Array(lId)).flatMap{ res =>
+
+    await { Global.pool.inTransaction{ c =>
+      c.sendPreparedStatement(TransactionController.getTransactionQuery, Array(lId)).flatMap{ res =>
         val account_number   = res.rows.head.map(r => r("account_number")).head.asInstanceOf[String]
         val transaction_date = res.rows.head.map(r => r("transaction_date")).head.asInstanceOf[LocalDate]
         val exchange_date    = res.rows.head.map(r => r("exchange_date")).head.asInstanceOf[LocalDate]
@@ -100,8 +101,9 @@ class TransactionController extends Controller{
               approved,
               rComment
             )
-            c.sendPreparedStatement(TransactionController.insertTransactionQuery, insertValues)
-            Future(Ok(Json.obj()))
+            c.sendPreparedStatement(TransactionController.insertTransactionQuery, insertValues).flatMap{ r =>
+              Future(Ok(Json.obj("msg" -> "The transaction was correctly split" )))
+            }
           }
         }
       }
