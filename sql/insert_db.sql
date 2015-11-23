@@ -13,5 +13,5 @@ INSERT INTO accounts ( account,
                        currency,
                        currency_default
 ) VALUES
-  ('db',     0.0,     5, ';', 'MM/dd/yyyy',          'Account balance', 0, 1, '{2, 3}', '{4}', 14, 13, 15, 'EUR')
+  ('db',     0.0,     5, ';', 'MM/dd/yyyy',          'Account balance', 0, 1, '{2, 3}', '{4}', 15, 14, 16, 'EUR')
 ;
