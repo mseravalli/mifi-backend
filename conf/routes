@@ -20,6 +20,7 @@ GET         /api/v0.1/accounts                       @controllers.AccountControl
 POST        /api/v0.1/accounts/timeseries            @controllers.AccountController.timeSeries
 GET         /api/v0.1/accounts/:account              @controllers.AccountController.readBalance(account)
 
+POST        /api/v0.1/transactions                   @controllers.TransactionController.getTransactions
 POST        /api/v0.1/transactions/split             @controllers.TransactionController.splitTransaction
 
 # Getting account data

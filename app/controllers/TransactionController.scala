@@ -1,11 +1,11 @@
 package controllers
 
-import helpers.Global
+import helpers.{Formatter, Global}
 
 import com.github.mauricio.async.db.util.ExecutorServiceUtils.CachedExecutionContext
 import com.github.tototoshi.csv._
 import javax.inject.Singleton
-import models.Account
+import models.{Transaction, Account}
 import org.joda.time.{LocalDate}
 import org.joda.time.format.DateTimeFormat
 import org.slf4j.{LoggerFactory, Logger}
@@ -18,6 +18,13 @@ import scala.util.Failure
 import scala.concurrent.Future
 
 object TransactionController {
+  val getTransactionsQuery = s"""
+    SELECT t_0.*
+    FROM transactions t_0
+    WHERE
+      (t_0.transaction_date BETWEEN ? AND ?)
+  """
+
   val getTransactionQuery = s"""
     SELECT *
     FROM transactions
@@ -49,18 +56,20 @@ object TransactionController {
 
 @Singleton
 class TransactionController extends Controller{
+  import models.JsonFormats
+
   /**
    * Splits a transaction in a left and a right part
    * Only the amount and the description for the r part are mandatory
    * The description for the left part is optional and the amount is computed
    * example:
-   *  {
-   *    "id": 4238,
-   *    "rAmount": -55,
-   *    "rCategory": "free time",
-   *    "rSubCategory": "going out",
-   *    "rComment": "comment"
-   *  }
+     {
+       "id": 4238,
+       "rAmount": -55,
+       "rCategory": "free time",
+       "rSubCategory": "going out",
+       "rComment": "comment"
+     }
    * @return
    */
   def splitTransaction(): Action[JsValue] =  Action.async(parse.json){ request => async {
@@ -111,6 +120,40 @@ class TransactionController extends Controller{
         }
       }
     }}
+  }}
+
+  /**
+   * Request example:
+      {
+        "startDate": "2015-01-01",
+        "endDate": "2015-01-31"
+      }
+   */
+  def getTransactions(): Action[JsValue] = Action.async(parse.json) { request => async {
+    val jsonRequest = request.body
+    val startDate = new LocalDate((jsonRequest \ "startDate").as[String])
+    val endDate =   new LocalDate((jsonRequest \ "endDate").as[String])
+//    val startDate = request.getQueryString("startDate").getOrElse("1900-01-01")
+//    val endDate = request.getQueryString("endDate").getOrElse("2100-12-31")
+
+    val insertValues = Array(startDate, endDate)
+    val queryResult = await { Global.pool.sendPreparedStatement(TransactionController.getTransactionsQuery, insertValues)}
+
+    val transactions = queryResult.rows.map { rows => rows.map{ r =>
+      new Transaction(
+        account_number =   r("account_number").asInstanceOf[String],
+        transaction_date = r("transaction_date").asInstanceOf[LocalDate],
+        exchange_date =    r("exchange_date").asInstanceOf[LocalDate],
+        receiver =         r("receiver").asInstanceOf[String],
+        purpose =          r("purpose").asInstanceOf[String],
+        amount =           r("amount").asInstanceOf[BigDecimal],
+        currency =         r("currency").asInstanceOf[String],
+        approved =         r("approved").asInstanceOf[Boolean]
+      )
+    }}
+
+    val tmp = transactions.map{x => x.map{ y => Json.toJson(y)(JsonFormats.transactionFmt) }}
+    Ok(Json.obj("transactions" ->  tmp))
   }}
 
 }
