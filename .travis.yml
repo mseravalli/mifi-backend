@@ -1,6 +1,8 @@
+before_script:
+  - npm install -g bower
+  - bower install
+
 language: scala
 scala:
   - 2.10.4
   - 2.11.2
-before_script:
-  - bower install
