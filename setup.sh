@@ -28,3 +28,7 @@ do
     echo "Bank not supported."
   fi
 done
+
+sudo npm install -g bower
+bower install
+
