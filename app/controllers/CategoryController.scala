@@ -2,6 +2,7 @@ package controllers
 
 import helpers.Global
 import helpers.Formatter
+import models.{JsonFormats, Category}
 
 import com.github.mauricio.async.db.util.ExecutorServiceUtils.CachedExecutionContext
 import javax.inject.Singleton
@@ -14,17 +15,9 @@ import scala.concurrent.Future
 
 object CategoryController {
   val getCategoriesQuery = """
-    SELECT category, color
-    FROM categories
-    ORDER BY category;
+    select c.category AS cat, c.color AS cat_col, cm.sub_category AS sub_cat, cm.color AS sub_cat_col
+    from categories c JOIN category_match cm on c.category = cm.category
   """
-  def getCategories(): Future[Map[String,String]] = { async {
-    val queryResult = await { Global.pool.sendPreparedStatement(getCategoriesQuery) }
-    val res = queryResult.rows.map { rows => rows.map{ r =>
-      (r("category").asInstanceOf[String] -> r("color").asInstanceOf[String])
-    }.toMap}
-    res.getOrElse(Map[String,String]())
-  }}
 
   // the flow can be eithen in or out
   def totalFlowCatQuery(dateFormat: String, flow: String, categories: Array[String]): String = {
@@ -91,11 +84,17 @@ class CategoryController extends Controller {
   private final val logger: Logger = LoggerFactory.getLogger(classOf[CategoryController])
 
   def readCategories(): Action[AnyContent] = Action.async { async {
-    val categories = await {getCategories}
-    var res: JsObject = Json.obj()
-    for (c <- categories) {
-      res = res + (c._1 -> JsString(c._2))
-    }
+    val queryResult = await { Global.pool.sendPreparedStatement(getCategoriesQuery) }
+    val categories = queryResult.rows.map { rows => rows.map{ r =>
+      Category (
+        name = r("cat").asInstanceOf[String],
+        color = r("cat_col").asInstanceOf[String],
+        subCategories = List(Category(r("sub_cat").toString, r("sub_cat_col").toString))
+      )
+    }}
+    val nestedCategories = categories.map{ c => c.groupBy{x => (x.name, x.color)}
+      .map{x => Category( x._1._1, x._1._2, x._2.map{y => y.subCategories}.flatten.toList)}}
+    val res = nestedCategories.map{x => x.map{ y => Json.toJson(y)(JsonFormats.categoryFmt) }}
     Ok( Json.obj("categories" -> res) )
   }}
 
