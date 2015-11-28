@@ -40,12 +40,12 @@ angular.module('mifi', ['googlechart', 'ngMaterial']).controller("MainCtrl", fun
   function initCategories() {
     $http.get(baseUrl + "categories").
         success(function(data, status, headers, config) {
-          $scope.categoryColors = JSON.parse(JSON.stringify(data.categories));
           $scope.categoryColors["total"] = "#2979FF";
-          $scope.categories = [];
+          $scope.categories = JSON.parse(JSON.stringify(data.categories));
           var tmp = {};
-          for (var c in data.categories) {
-            $scope.categories.push({name: c, color: data.categories[c], selected: true});
+          for (var i = 0; i < data.categories.length; ++i) {
+            $scope.categories[i]["selected"] = true;
+            $scope.categoryColors[$scope.categories[i].name] = $scope.categories[i].color;
           }
           updateCharts(params);
         }).
@@ -86,17 +86,20 @@ angular.module('mifi', ['googlechart', 'ngMaterial']).controller("MainCtrl", fun
   };
 
   function initSubCategories() {
-    $http.post(baseUrl + "subcategories", params, requestConfig).
-        success(function(data, status, headers, config) {
-          $scope.subCategoryColors = JSON.parse(JSON.stringify(data.subCategories));
-          $scope.subCategoryColors["total"] = "#2979FF";
-          $scope.subCategories = [];
-          for (var c in data.subCategories) {
-            $scope.subCategories.push({name: c, color: data.subCategories[c], selected: true});
-          }
-          updateCharts(params);
-        }).
-        error(function(data, status, headers, config) { });
+    var selectedIdx = -1;
+    for (var i = 0; i < $scope.categories.length; ++i) {
+      var c = $scope.categories[i];
+      if (c.selected) {
+        selectedIdx = i;
+      }
+    }
+    $scope.subCategories = JSON.parse(JSON.stringify($scope.categories[selectedIdx].subCategories));
+    $scope.subCategoryColors["total"] = "#2979FF";
+    for (var i = 0; i < $scope.subCategories.length; ++i) {
+      $scope.subCategories[i]["selected"] = true;
+      $scope.subCategoryColors[$scope.subCategories[i].name] = $scope.subCategories[i].color;
+    }
+    updateCharts(params);
   };
 
   $scope.selectNoneSubCategory = function selectNoneSubCategory(c) {

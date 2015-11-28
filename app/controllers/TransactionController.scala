@@ -129,7 +129,7 @@ class TransactionController extends Controller{
         "endDate": "2015-01-31"
       }
    */
-  def getTransactions(): Action[JsValue] = Action.async(parse.json) { request => async {
+  def readTransactions(): Action[JsValue] = Action.async(parse.json) { request => async {
     val jsonRequest = request.body
     val startDate = new LocalDate((jsonRequest \ "startDate").as[String])
     val endDate =   new LocalDate((jsonRequest \ "endDate").as[String])
