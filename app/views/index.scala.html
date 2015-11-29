@@ -105,8 +105,52 @@
         <div google-chart chart="outSubCatChart"></div>
       </div>
 
-    </div>
+      <md-data-table-container>
+        <table md-data-table class="md-primary"  md-progress="deferred">
+          <thead md-order="query.order" md-trigger="onorderchange">
+            <tr>
+              <th name="Account"></th>
+              <th name="Date" order-by="transactionDate"></th>
+              <th name="Receiver"></th>
+              <th name="Purpose"></th>
+              <th numeric name="Amount" unit="€"></th>
+              <th name="Category"></th>
+              <th name="Subcategory"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr md-auto-select ng-repeat="t in transactions | orderBy: query.order | limitTo: query.limit: (query.page - 1) * query.limit">
+              <td>{{t.accountNumber}}</td>
+              <td>{{t.transactionDate}}</td>
+              <td>{{t.receiver}}</td>
+              <td>{{t.purpose}}</td>
+              <td show-unit>{{t.amount}}</td>
+              <td>
+                <md-select ng-model="t.category" placeholder="other">
+                  <md-option ng-value="c.name" ng-repeat="c in categories">{{c.name}}</md-option>
+                </md-select>
+              </td>
+              <td>
+                <span ng-repeat="c in categories">
+                  <span ng-if="c.name === t.category">
+                    <md-select ng-model="t.subCategory" placeholder="other">
+                      <md-option ng-value="s.name" ng-repeat="s in c.subCategories">{{s.name}}</md-option>
+                    </md-select>
+                  </span>
+                </span>
+              </td>
+              <td>
+                <md-button class="md-primary">Split</md-button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </md-data-table-container>
 
+      <md-data-table-pagination md-limit="query.limit" md-page="query.page" md-total="{{transactions.length}}" md-trigger="onpagechange">
+      </md-data-table-pagination>
+
+    </div>
   </body>
   <script src='@routes.Assets.at("lib/angular/angular.min.js")' type="text/javascript"></script>
   <script src='@routes.Assets.at("lib/angular-animate/angular-animate.min.js")' type="text/javascript"></script>

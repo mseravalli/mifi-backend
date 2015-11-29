@@ -1,6 +1,6 @@
 'use strict';
 
-angular.module('mifi', ['googlechart', 'ngMaterial']).controller("MainCtrl", function ($scope, $http, $mdDialog) {
+angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controller("MainCtrl", function ($scope, $http, $mdDialog) {
   var baseUrl = "http://localhost:9000/api/v0.1/";
   var requestConfig = {
     "headers": {"Content-Type": "application/json"}
@@ -23,18 +23,31 @@ angular.module('mifi', ['googlechart', 'ngMaterial']).controller("MainCtrl", fun
   $scope.endDate   = new Date();
   $scope.accounts = [];
   $scope.importAccount = "";
+  $scope.transactions  = [];
   $scope.categories  = [];
   $scope.subCategories  = [];
   $scope.selectedSubCategories  = [];
   $scope.categoryColors =    {"total": "#2979FF"};
   $scope.subCategoryColors = {"total": "#2979FF"};
 
+  $scope.query = {
+    filter: '',
+    order: 'accountNumber',
+    limit: 10,
+    page: 1
+  };
+
   var params = {
     "sumRange": $scope.range,
     "startDate": formatDate($scope.startDate),
     "endDate": formatDate($scope.endDate),
     "categories": $scope.selectedCategories,
-    "subCategories": $scope.selectedSubCategories
+    "subCategories": $scope.selectedSubCategories,
+    "urlParams": "sumRange=" + $scope.range +
+      "&" + "startDate=" + formatDate($scope.startDate) +
+      "&" + "endDate=" + formatDate($scope.endDate) +
+      "&" + "categories=" + $scope.categories +
+      "&" + "subCategories=" + $scope.subCategories
   };
 
   function initCategories() {
@@ -47,7 +60,7 @@ angular.module('mifi', ['googlechart', 'ngMaterial']).controller("MainCtrl", fun
             $scope.categories[i]["selected"] = true;
             $scope.categoryColors[$scope.categories[i].name] = $scope.categories[i].color;
           }
-          updateCharts(params);
+          $scope.update();
         }).
         error(function(data, status, headers, config) { });
   };
@@ -57,7 +70,7 @@ angular.module('mifi', ['googlechart', 'ngMaterial']).controller("MainCtrl", fun
       $scope.categories[i].selected = false;
     }
     $scope.subCategories = [];
-    updateCharts(params);
+    $scope.update();
   };
 
   $scope.selectAllCategory = function selectAllCategory(c) {
@@ -65,7 +78,7 @@ angular.module('mifi', ['googlechart', 'ngMaterial']).controller("MainCtrl", fun
       $scope.categories[i].selected = true;
     }
     $scope.subCategories = [];
-    updateCharts(params);
+    $scope.update();
   };
 
   $scope.clickCategory = function clickCategory() {
@@ -76,7 +89,7 @@ angular.module('mifi', ['googlechart', 'ngMaterial']).controller("MainCtrl", fun
         selectedCats.push(c.name);
       }
     }
-    updateCharts(params);
+    $scope.update();
     if (selectedCats.length === 1) {
       initSubCategories();
     }
@@ -99,21 +112,21 @@ angular.module('mifi', ['googlechart', 'ngMaterial']).controller("MainCtrl", fun
       $scope.subCategories[i]["selected"] = true;
       $scope.subCategoryColors[$scope.subCategories[i].name] = $scope.subCategories[i].color;
     }
-    updateCharts(params);
+    $scope.update();
   };
 
   $scope.selectNoneSubCategory = function selectNoneSubCategory(c) {
     for (var i = 0; i < $scope.subCategories.length; ++i) {
       $scope.subCategories[i].selected = false;
     }
-    updateCharts(params);
+    $scope.update();
   };
 
   $scope.selectAllSubCategory = function selectAllSubCategory(c) {
     for (var i = 0; i < $scope.subCategories.length; ++i) {
       $scope.subCategories[i].selected = true;
     }
-    updateCharts(params);
+    $scope.update();
   };
 
   $scope.clickSubCategory = function clickCategory() {
@@ -124,7 +137,7 @@ angular.module('mifi', ['googlechart', 'ngMaterial']).controller("MainCtrl", fun
         selectedSubCats.push(c.name);
       }
     }
-    updateCharts(params);
+    $scope.update();
   };
 
   function initAccounts() {
@@ -160,7 +173,7 @@ angular.module('mifi', ['googlechart', 'ngMaterial']).controller("MainCtrl", fun
         .targetEvent(ev);
     $mdDialog.show(confirm).then(function(){
       approveImport(true);
-      updateCharts();
+      $scope.update();
     }, function(){
       approveImport(false);
     });
@@ -262,6 +275,11 @@ angular.module('mifi', ['googlechart', 'ngMaterial']).controller("MainCtrl", fun
     return colors;
   }
 
+  $scope.update = function update(){
+    updateCharts();
+    updateTransactions();
+  };
+
   //$scope.updateParams = function updateParams () {
   var updateParams = function() {
     params["startDate"] = formatDate($scope.startDate);
@@ -283,10 +301,20 @@ angular.module('mifi', ['googlechart', 'ngMaterial']).controller("MainCtrl", fun
         params["subCategories"].push(c.name);
       }
     }
+    params["urlParams"] = "sumRange=" + params.sumRange +
+      "&" + "startDate=" + params.startDate +
+      "&" + "endDate=" + params.endDate +
+      "&" + "categories=" + params.categories +
+      "&" + "subCategories=" + params.subCategories
   };
 
-  $scope.update = function update(){
-    updateCharts();
+  function updateTransactions() {
+    updateParams();
+    $http.get(baseUrl + "transactions?" + params.urlParams ).
+      success(function(data, status, headers, config) {
+        $scope.transactions = JSON.parse(JSON.stringify(data.transactions));
+      }).
+      error(function(data, status, headers, config) { });
   };
 
   function updateCharts() {
