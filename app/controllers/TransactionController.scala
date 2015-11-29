@@ -141,13 +141,16 @@ class TransactionController extends Controller{
 
     val transactions = queryResult.rows.map { rows => rows.map{ r =>
       new Transaction(
-        accountNumber =   r("account_number").asInstanceOf[String],
-        transactionDate = r("transaction_date").asInstanceOf[LocalDate],
-        exchangeDate =    r("exchange_date").asInstanceOf[LocalDate],
+        id =               r("id").asInstanceOf[Long],
+        accountNumber =    r("account_number").asInstanceOf[String],
+        transactionDate =  r("transaction_date").asInstanceOf[LocalDate],
+        exchangeDate =     r("exchange_date").asInstanceOf[LocalDate],
         receiver =         r("receiver").asInstanceOf[String],
         purpose =          r("purpose").asInstanceOf[String],
         amount =           r("amount").asInstanceOf[BigDecimal],
         currency =         r("currency").asInstanceOf[String],
+        category =         r("category").asInstanceOf[String],
+        subCategory =      r("sub_category").asInstanceOf[String],
         approved =         r("approved").asInstanceOf[Boolean]
       )
     }}

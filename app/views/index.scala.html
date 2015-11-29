@@ -114,6 +114,8 @@
               <th name="Receiver"></th>
               <th name="Purpose"></th>
               <th numeric name="Amount" unit="€"></th>
+              <th name="Category"></th>
+              <th name="Subcategory"></th>
             </tr>
           </thead>
           <tbody>
@@ -123,6 +125,20 @@
               <td>{{t.receiver}}</td>
               <td>{{t.purpose}}</td>
               <td show-unit>{{t.amount}}</td>
+              <td>
+                <md-select ng-model="t.category" placeholder="other">
+                  <md-option ng-value="c.name" ng-repeat="c in categories">{{c.name}}</md-option>
+                </md-select>
+              </td>
+              <td>
+                <span ng-repeat="c in categories">
+                  <span ng-if="c.name === t.category">
+                    <md-select ng-model="t.subCategory" placeholder="other">
+                      <md-option ng-value="s.name" ng-repeat="s in c.subCategories">{{s.name}}</md-option>
+                    </md-select>
+                  </span>
+                </span>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -132,7 +148,7 @@
 
 
     </div>
-
+tri
   </body>
   <script src='@routes.Assets.at("lib/angular/angular.min.js")' type="text/javascript"></script>
   <script src='@routes.Assets.at("lib/angular-animate/angular-animate.min.js")' type="text/javascript"></script>
