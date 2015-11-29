@@ -42,15 +42,12 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
     "startDate": formatDate($scope.startDate),
     "endDate": formatDate($scope.endDate),
     "categories": $scope.selectedCategories,
-    "subCategories": $scope.selectedSubCategories
-  };
-
-  function initTransactions() {
-    $http.get(baseUrl + "transactions").
-    success(function(data, status, headers, config) {
-      $scope.transactions = JSON.parse(JSON.stringify(data.transactions));
-    }).
-    error(function(data, status, headers, config) { });
+    "subCategories": $scope.selectedSubCategories,
+    "urlParams": "sumRange=" + $scope.range +
+      "&" + "startDate=" + formatDate($scope.startDate) +
+      "&" + "endDate=" + formatDate($scope.endDate) +
+      "&" + "categories=" + $scope.categories +
+      "&" + "subCategories=" + $scope.subCategories
   };
 
   function initCategories() {
@@ -63,7 +60,7 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
             $scope.categories[i]["selected"] = true;
             $scope.categoryColors[$scope.categories[i].name] = $scope.categories[i].color;
           }
-          updateCharts(params);
+          $scope.update();
         }).
         error(function(data, status, headers, config) { });
   };
@@ -73,7 +70,7 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
       $scope.categories[i].selected = false;
     }
     $scope.subCategories = [];
-    updateCharts(params);
+    $scope.update();
   };
 
   $scope.selectAllCategory = function selectAllCategory(c) {
@@ -81,7 +78,7 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
       $scope.categories[i].selected = true;
     }
     $scope.subCategories = [];
-    updateCharts(params);
+    $scope.update();
   };
 
   $scope.clickCategory = function clickCategory() {
@@ -92,7 +89,7 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
         selectedCats.push(c.name);
       }
     }
-    updateCharts(params);
+    $scope.update();
     if (selectedCats.length === 1) {
       initSubCategories();
     }
@@ -115,21 +112,21 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
       $scope.subCategories[i]["selected"] = true;
       $scope.subCategoryColors[$scope.subCategories[i].name] = $scope.subCategories[i].color;
     }
-    updateCharts(params);
+    $scope.update();
   };
 
   $scope.selectNoneSubCategory = function selectNoneSubCategory(c) {
     for (var i = 0; i < $scope.subCategories.length; ++i) {
       $scope.subCategories[i].selected = false;
     }
-    updateCharts(params);
+    $scope.update();
   };
 
   $scope.selectAllSubCategory = function selectAllSubCategory(c) {
     for (var i = 0; i < $scope.subCategories.length; ++i) {
       $scope.subCategories[i].selected = true;
     }
-    updateCharts(params);
+    $scope.update();
   };
 
   $scope.clickSubCategory = function clickCategory() {
@@ -140,7 +137,7 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
         selectedSubCats.push(c.name);
       }
     }
-    updateCharts(params);
+    $scope.update();
   };
 
   function initAccounts() {
@@ -157,7 +154,6 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
   function initialize() {
     initAccounts();
     initCategories();
-    initTransactions();
   };
   var init = initialize();
 
@@ -177,7 +173,7 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
         .targetEvent(ev);
     $mdDialog.show(confirm).then(function(){
       approveImport(true);
-      updateCharts();
+      $scope.update();
     }, function(){
       approveImport(false);
     });
@@ -281,6 +277,7 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
 
   $scope.update = function update(){
     updateCharts();
+    updateTransactions();
   };
 
   //$scope.updateParams = function updateParams () {
@@ -304,6 +301,20 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
         params["subCategories"].push(c.name);
       }
     }
+    params["urlParams"] = "sumRange=" + params.sumRange +
+      "&" + "startDate=" + params.startDate +
+      "&" + "endDate=" + params.endDate +
+      "&" + "categories=" + params.categories +
+      "&" + "subCategories=" + params.subCategories
+  };
+
+  function updateTransactions() {
+    updateParams();
+    $http.get(baseUrl + "transactions?" + params.urlParams ).
+      success(function(data, status, headers, config) {
+        $scope.transactions = JSON.parse(JSON.stringify(data.transactions));
+      }).
+      error(function(data, status, headers, config) { });
   };
 
   function updateCharts() {
