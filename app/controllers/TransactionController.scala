@@ -129,21 +129,21 @@ class TransactionController extends Controller{
         "endDate": "2015-01-31"
       }
    */
-  def readTransactions(): Action[JsValue] = Action.async(parse.json) { request => async {
-    val jsonRequest = request.body
-    val startDate = new LocalDate((jsonRequest \ "startDate").as[String])
-    val endDate =   new LocalDate((jsonRequest \ "endDate").as[String])
-//    val startDate = request.getQueryString("startDate").getOrElse("1900-01-01")
-//    val endDate = request.getQueryString("endDate").getOrElse("2100-12-31")
+  def readTransactions(): Action[AnyContent] = Action.async { request => async {
+//    val jsonRequest = request.body
+//    val startDate = new LocalDate((jsonRequest \ "startDate").as[String])
+//    val endDate =   new LocalDate((jsonRequest \ "endDate").as[String])
+    val startDate = request.getQueryString("startDate").getOrElse("1900-01-01")
+    val endDate = request.getQueryString("endDate").getOrElse("2100-12-31")
 
     val insertValues = Array(startDate, endDate)
     val queryResult = await { Global.pool.sendPreparedStatement(TransactionController.getTransactionsQuery, insertValues)}
 
     val transactions = queryResult.rows.map { rows => rows.map{ r =>
       new Transaction(
-        account_number =   r("account_number").asInstanceOf[String],
-        transaction_date = r("transaction_date").asInstanceOf[LocalDate],
-        exchange_date =    r("exchange_date").asInstanceOf[LocalDate],
+        accountNumber =   r("account_number").asInstanceOf[String],
+        transactionDate = r("transaction_date").asInstanceOf[LocalDate],
+        exchangeDate =    r("exchange_date").asInstanceOf[LocalDate],
         receiver =         r("receiver").asInstanceOf[String],
         purpose =          r("purpose").asInstanceOf[String],
         amount =           r("amount").asInstanceOf[BigDecimal],

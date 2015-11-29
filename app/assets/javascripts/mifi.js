@@ -1,6 +1,6 @@
 'use strict';
 
-angular.module('mifi', ['googlechart', 'ngMaterial']).controller("MainCtrl", function ($scope, $http, $mdDialog) {
+angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controller("MainCtrl", function ($scope, $http, $mdDialog) {
   var baseUrl = "http://localhost:9000/api/v0.1/";
   var requestConfig = {
     "headers": {"Content-Type": "application/json"}
@@ -23,11 +23,19 @@ angular.module('mifi', ['googlechart', 'ngMaterial']).controller("MainCtrl", fun
   $scope.endDate   = new Date();
   $scope.accounts = [];
   $scope.importAccount = "";
+  $scope.transactions  = [];
   $scope.categories  = [];
   $scope.subCategories  = [];
   $scope.selectedSubCategories  = [];
   $scope.categoryColors =    {"total": "#2979FF"};
   $scope.subCategoryColors = {"total": "#2979FF"};
+
+  $scope.query = {
+    filter: '',
+    order: 'accountNumber',
+    limit: 5,
+    page: 1
+  };
 
   var params = {
     "sumRange": $scope.range,
@@ -35,6 +43,14 @@ angular.module('mifi', ['googlechart', 'ngMaterial']).controller("MainCtrl", fun
     "endDate": formatDate($scope.endDate),
     "categories": $scope.selectedCategories,
     "subCategories": $scope.selectedSubCategories
+  };
+
+  function initTransactions() {
+    $http.get(baseUrl + "transactions").
+    success(function(data, status, headers, config) {
+      $scope.transactions = JSON.parse(JSON.stringify(data.transactions));
+    }).
+    error(function(data, status, headers, config) { });
   };
 
   function initCategories() {
@@ -141,6 +157,7 @@ angular.module('mifi', ['googlechart', 'ngMaterial']).controller("MainCtrl", fun
   function initialize() {
     initAccounts();
     initCategories();
+    initTransactions();
   };
   var init = initialize();
 
@@ -262,6 +279,10 @@ angular.module('mifi', ['googlechart', 'ngMaterial']).controller("MainCtrl", fun
     return colors;
   }
 
+  $scope.update = function update(){
+    updateCharts();
+  };
+
   //$scope.updateParams = function updateParams () {
   var updateParams = function() {
     params["startDate"] = formatDate($scope.startDate);
@@ -283,10 +304,6 @@ angular.module('mifi', ['googlechart', 'ngMaterial']).controller("MainCtrl", fun
         params["subCategories"].push(c.name);
       }
     }
-  };
-
-  $scope.update = function update(){
-    updateCharts();
   };
 
   function updateCharts() {

@@ -105,6 +105,32 @@
         <div google-chart chart="outSubCatChart"></div>
       </div>
 
+      <md-data-table-container>
+        <table md-data-table class="md-primary"  md-progress="deferred">
+          <thead md-order="query.order" md-trigger="onorderchange">
+            <tr>
+              <th name="Account"></th>
+              <th name="Date" order-by="transactionDate"></th>
+              <th name="Receiver"></th>
+              <th name="Purpose"></th>
+              <th numeric name="Amount" unit="€"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr md-auto-select ng-repeat="t in transactions | orderBy: query.order | limitTo: query.limit: (query.page - 1) * query.limit">
+              <td>{{t.accountNumber}}</td>
+              <td>{{t.transactionDate}}</td>
+              <td>{{t.receiver}}</td>
+              <td>{{t.purpose}}</td>
+              <td show-unit>{{t.amount}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </md-data-table-container>
+      <md-data-table-pagination md-limit="query.limit" md-page="query.page" md-total="{{transactions.length}}" md-trigger="onpagechange">
+      </md-data-table-pagination>
+
+
     </div>
 
   </body>
