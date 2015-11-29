@@ -33,7 +33,7 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
   $scope.query = {
     filter: '',
     order: 'accountNumber',
-    limit: 5,
+    limit: 10,
     page: 1
   };
 
