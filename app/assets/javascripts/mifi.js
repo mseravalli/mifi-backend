@@ -275,9 +275,20 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
     return colors;
   }
 
+  $scope.updateTransaction = function(tid, category, subCategory) {
+    console.log(tid);
+    console.log(category);
+    console.log(subCategory);
+    var params = {"category": category, "subCategory": subCategory};
+    $http.put(baseUrl + "transaction/" + tid, params, requestConfig)
+      .success(function(data, status, headers, config) { })
+      .error(function(data, status, headers, config) { });
+
+  };
+
   $scope.update = function update(){
     updateCharts();
-    updateTransactions();
+    updateTransactionTable();
   };
 
   //$scope.updateParams = function updateParams () {
@@ -308,7 +319,7 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
       "&" + "subCategories=" + params.subCategories
   };
 
-  function updateTransactions() {
+  function updateTransactionTable() {
     updateParams();
     $http.get(baseUrl + "transactions?" + params.urlParams ).
       success(function(data, status, headers, config) {
