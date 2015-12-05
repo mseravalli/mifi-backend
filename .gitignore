@@ -19,3 +19,8 @@ project/target
 .scala_dependencies
 .worksheet
 .idea
+
+# mi-fi specific
+public/lib/
+sql/bkp/
+

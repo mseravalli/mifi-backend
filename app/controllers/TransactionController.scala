@@ -18,7 +18,7 @@ import scala.util.Failure
 import scala.concurrent.Future
 
 object TransactionController {
-  def getTransactionsQuery(categories: Array[String], subCategories: Array[String]) = {
+  def readTransactionsQuery(categories: Array[String], subCategories: Array[String]) = {
     val cat = "FALSE" + categories.map{x => " OR t_0.category = ? "}.reduce(_ + _)
     val subCat = "FALSE" + subCategories.map{x => " OR t_0.sub_category LIKE ? "}.reduce(_ + _)
     s"""
@@ -33,9 +33,14 @@ object TransactionController {
     """
   }
 
-  val getTransactionQuery = s"""
+  val readTransactionQuery = s"""
     SELECT *
     FROM transactions
+    WHERE id = ?
+  """
+  val updateTransactionQuery = s"""
+    UPDATE transactions
+    SET category = ? , sub_category = ?
     WHERE id = ?
   """
 
@@ -80,7 +85,7 @@ class TransactionController extends Controller{
      }
    * @return
    */
-  def splitTransaction(): Action[JsValue] =  Action.async(parse.json){ request => async {
+  def splitTransaction(id: String): Action[JsValue] =  Action.async(parse.json){ request => async {
     val jsonRequest = request.body
     val lId = (jsonRequest \ "id").as[BigDecimal]
     val rAmount:BigDecimal = (jsonRequest \ "rAmount").as[BigDecimal]
@@ -89,7 +94,7 @@ class TransactionController extends Controller{
     val rComment = (jsonRequest \ "rComment").as[String]
 
     await { Global.pool.inTransaction{ c =>
-      c.sendPreparedStatement(TransactionController.getTransactionQuery, Array(lId)).flatMap{ res =>
+      c.sendPreparedStatement(TransactionController.readTransactionQuery, Array(lId)).flatMap{ res =>
         val account_number   = res.rows.head.map(r => r("account_number")).head.asInstanceOf[String]
         val transaction_date = res.rows.head.map(r => r("transaction_date")).head.asInstanceOf[LocalDate]
         val exchange_date    = res.rows.head.map(r => r("exchange_date")).head.asInstanceOf[LocalDate]
@@ -138,9 +143,6 @@ class TransactionController extends Controller{
       }
    */
   def readTransactions(): Action[AnyContent] = Action.async { request => async {
-//    val jsonRequest = request.body
-//    val startDate = new LocalDate((jsonRequest \ "startDate").as[String])
-//    val endDate =   new LocalDate((jsonRequest \ "endDate").as[String])
     val startDate = new LocalDate(request.getQueryString("startDate").getOrElse("1900-01-01"))
     val endDate = new LocalDate(request.getQueryString("endDate").getOrElse("2100-12-31"))
     val categories: Array[String] = request.getQueryString("categories")
@@ -152,7 +154,7 @@ class TransactionController extends Controller{
       .map{x => x match {case "" => "%"; case x => x}}
 
     val insertValues = Array(startDate, endDate) ++ categories ++ subCategories
-    val query = TransactionController.getTransactionsQuery(categories, subCategories)
+    val query = TransactionController.readTransactionsQuery(categories, subCategories)
     val queryResult = await { Global.pool.sendPreparedStatement(query, insertValues)}
 
     val transactions = queryResult.rows.map { rows => rows.map{ r =>
@@ -175,4 +177,15 @@ class TransactionController extends Controller{
     Ok(Json.obj("transactions" ->  res))
   }}
 
+  def updateTransaction(id: String): Action[JsValue] = Action.async(parse.json){ request => async {
+    val jsonRequest = request.body
+    val category = (jsonRequest \ "category").as[String]
+    val subCategory =   (jsonRequest \ "subCategory").as[String]
+
+    val queryValues = Array(category, subCategory, id)
+    val query = TransactionController.updateTransactionQuery
+    val queryResult = await { Global.pool.sendPreparedStatement(query, queryValues)}
+
+    Ok(Json.obj("msg" -> queryResult.statusMessage))
+  }}
 }

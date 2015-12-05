@@ -133,7 +133,7 @@
               <td>
                 <span ng-repeat="c in categories">
                   <span ng-if="c.name === t.category">
-                    <md-select ng-model="t.subCategory" placeholder="other">
+                    <md-select ng-model="t.subCategory" placeholder="other" ng-change="updateTransaction(t.id, t.category, t.subCategory)">
                       <md-option ng-value="s.name" ng-repeat="s in c.subCategories">{{s.name}}</md-option>
                     </md-select>
                   </span>

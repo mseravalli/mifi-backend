@@ -21,7 +21,8 @@ POST        /api/v0.1/accounts/timeseries            @controllers.AccountControl
 GET         /api/v0.1/accounts/:account              @controllers.AccountController.readBalance(account)
 
 GET         /api/v0.1/transactions                   @controllers.TransactionController.readTransactions
-POST        /api/v0.1/transactions/split             @controllers.TransactionController.splitTransaction
+PUT         /api/v0.1/transaction/:id                @controllers.TransactionController.updateTransaction(id: String)
+POST        /api/v0.1/transaction/:id/split          @controllers.TransactionController.splitTransaction(id)
 
 # Getting account data
 GET         /api/v0.1/categories                     @controllers.CategoryController.readCategories
