@@ -11,8 +11,8 @@ before_script:
   - bower install
 
 script:
-  -./activator compile
-  -./activator test
+  - ./activator compile
+  - ./activator test
 
 
 before_deploy:
