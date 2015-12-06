@@ -11,13 +11,13 @@ before_script:
   - bower install
 
 script:
-  - ./activator compile
-  - ./activator test
+  - sbt compile
+  - sbt test
 
 
 before_deploy:
-  - ./activator dist
-  - export VERSION=`./activator version | awk 'END {print $2}' | sed 's/\[0m//g' | sed 's/^.//' | sed 's/.$//'`
+  - sbt dist
+  - export VERSION=`sbt version | awk 'END {print $2}' | sed 's/\[0m//g' | sed 's/^.//' | sed 's/.$//'`
   - cat Dockerfile | awk 'NR==4 {print "ENV VERSION '"$VERSION"'"} 1' > tmp.tmp && mv tmp.tmp Dockerfile
   - docker build -t mi-fi:$VERSION .
 
