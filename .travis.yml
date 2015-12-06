@@ -15,7 +15,7 @@ script:
   - sbt test
 
 
-before_deploy:
+after_script:
   - sbt dist
   - export VERSION=`sbt version | awk 'END {print $2}' | sed 's/\[0m//g' | sed 's/^.//' | sed 's/.$//'`
   - cat Dockerfile | awk 'NR==4 {print "ENV VERSION '"$VERSION"'"} 1' > tmp.tmp && mv tmp.tmp Dockerfile
