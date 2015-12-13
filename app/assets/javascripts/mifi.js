@@ -245,7 +245,6 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
   };
   pieInCatChart.formatters = {};
 
-
   var pieOutCatChart = {};
   pieOutCatChart.type = "PieChart";
   pieOutCatChart.options = {
@@ -260,13 +259,19 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
   };
   pieInSubCatChart.formatters = {};
 
-
   var pieOutSubCatChart = {};
   pieOutSubCatChart.type = "PieChart";
   pieOutSubCatChart.options = {
     chartArea: {'width': '100%', 'height': '100%'},
   };
   pieOutSubCatChart.formatters = {};
+
+  var pieAccountChart = {};
+  pieAccountChart.type = "PieChart";
+  pieAccountChart.options = {
+    chartArea: {'width': '100%', 'height': '100%'},
+  };
+  pieAccountChart.formatters = {};
 
   function assignColors(categories, colorTable) {
     var colors = [];
@@ -393,6 +398,16 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
         }
         pieOutSubCatChart.options.colors = assignColors(categories, $scope.subCategoryColors);
         $scope.outSubCatChart = pieOutSubCatChart;
+      });
+
+    $http.get(baseUrl + "accounts?" + params.urlParams )
+      .success(function(data, status, headers, config) {
+        var acc = [["account", "balance"]];
+        for (var i = 0; i < data.accounts.length; ++i){
+          acc.push([data.accounts[i].account, data.accounts[i].balance]);
+        }
+        pieAccountChart.data = acc;
+        $scope.accountChart = pieAccountChart;
       });
 
     $http.post(baseUrl + "accounts/timeseries", params, requestConfig)
