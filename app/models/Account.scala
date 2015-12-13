@@ -14,5 +14,6 @@ case class Account (
   inPos:              Int = -1,
   outPos:             Int = -1,
   currencyPos:        Int = -1,
-  currencyDefault:    String = "EUR"
+  currencyDefault:    String = "EUR",
+  balance:            BigDecimal = 0
 )
