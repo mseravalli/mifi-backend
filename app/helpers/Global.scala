@@ -49,4 +49,9 @@ object Global extends GlobalSettings {
   override def onStop(app: Application) {
     pool.close
   }
+
+  val baseUrl = System.getenv("MIFI_BASE_URL") match {
+    case url : String => url
+    case _  => "http://localhost:9000/api/v0.1/"
+  }
 }
