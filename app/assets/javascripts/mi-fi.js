@@ -1,11 +1,6 @@
 'use strict';
 
 angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controller("MainCtrl", function ($scope, $http, $mdDialog) {
-  var baseUrl = "http://localhost:9000/api/v0.1/";
-  var requestConfig = {
-    "headers": {"Content-Type": "application/json"}
-  };
-
   function formatDate(date) {
     var d = new Date(date),
         month = '' + (d.getMonth() + 1),
