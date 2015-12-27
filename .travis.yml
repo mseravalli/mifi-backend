@@ -25,4 +25,4 @@ after_script:
   - cat Dockerfile | awk 'NR==4 {print "ENV VERSION '"$VERSION"'"} 1' > tmp.tmp && mv tmp.tmp Dockerfile
   - docker build -t mseravalli/mi-fi:$VERSION .
   - docker login -e="$DOCKER_EMAIL" -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
-  - docker push mseravalli/mi-fi:$VERSION .
+  - docker push mseravalli/mi-fi

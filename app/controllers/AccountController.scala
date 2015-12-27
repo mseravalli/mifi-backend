@@ -17,24 +17,28 @@ import scala.concurrent.Future
 
 object AccountController {
   val getAccountsQuery: String =  """
-      SELECT account,
-        initial_amount,
-        rows_to_skip,
-        delimiter,
-        date_format,
-        final_row,
-        transaction_date,
-        exchange_date,
-        receiver,
-        purpose,
-        amount_in,
-        amount_out,
-        currency,
-        currency_default
-      FROM accounts
-      WHERE account LIKE ?
-      ORDER BY account
-    """
+    SELECT
+      a.account,
+      a.initial_amount,
+      a.rows_to_skip,
+      a.delimiter,
+      a.date_format,
+      a.final_row,
+      a.transaction_date,
+      a.exchange_date,
+      a.receiver,
+      a.purpose,
+      a.amount_in,
+      a.amount_out,
+      a.currency,
+      a.currency_default,
+      SUM(t.amount) + a.initial_amount AS balance
+    FROM accounts a JOIN transactions t ON a.account = t.account_number
+    WHERE account LIKE ?
+        AND
+        t.transaction_date < ?
+    GROUP BY a.account
+  """
 
   def convertToList(row: Any): List[Int] = {
     row.asInstanceOf[ArrayBuffer[Int]] match {
@@ -47,8 +51,17 @@ object AccountController {
     getAccount("%")
   }
 
-  def getAccount(accountId: String): Future[Map[String, Account]] = { async {
-    val queryResult = await { Global.pool.sendPreparedStatement(getAccountsQuery, Array(accountId)) }
+  def getAccounts(endDate: LocalDate): Future[Map[String, Account]] = {
+    getAccount(endDate, "%")
+  }
+
+  def getAccount(accountId: String): Future[Map[String, Account]] = {
+    getAccount(new LocalDate("2100-12-31"), accountId)
+  }
+
+  def getAccount(endDate: LocalDate, accountId: String): Future[Map[String, Account]] = { async {
+    val queryValues = Array(accountId, endDate)
+    val queryResult = await { Global.pool.sendPreparedStatement(getAccountsQuery, queryValues) }
     val res = queryResult.rows.map { rows => rows.map{ r =>
       r("account").asInstanceOf[String] -> Account(
         r("account").asInstanceOf[String],
@@ -64,7 +77,8 @@ object AccountController {
         r("amount_in").asInstanceOf[Int],
         r("amount_out").asInstanceOf[Int],
         r("currency").asInstanceOf[Int],
-        r("currency_default").asInstanceOf[String]
+        r("currency_default").asInstanceOf[String],
+        r("balance").asInstanceOf[BigDecimal]
       )
     }.toMap}
     res.getOrElse(Map[String,Account]())
@@ -164,8 +178,9 @@ class AccountController extends Controller {
 
   private final val logger: Logger = LoggerFactory.getLogger(classOf[AccountController])
 
-  def readAccounts(): Action[AnyContent] = Action.async { async {
-    val accounts = await {getAccounts}
+  def readAccounts(): Action[AnyContent] =  Action.async { request => async {
+    val endDate = new LocalDate(request.getQueryString("endDate").getOrElse("2100-12-31"))
+    val accounts = await {getAccounts(endDate)}
     val tmp = accounts.map{x => Json.toJson(x._2)(JsonFormats.accountFmt)}
     var res: JsObject = Json.obj()
     for (a <- accounts) {
