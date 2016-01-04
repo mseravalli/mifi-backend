@@ -1,3 +1,4 @@
+DROP INDEX transaction_date_idx;
 DROP TABLE transactions;
 DROP TABLE category_match;
 DROP TABLE sub_categories;
@@ -60,3 +61,5 @@ CREATE TABLE transactions
   approved BOOLEAN NOT NULL,
   FOREIGN KEY (category,sub_category) REFERENCES category_match(category,sub_category)
 ); 
+
+CREATE INDEX transaction_date_idx ON transactions USING btree (transaction_date DESC);
