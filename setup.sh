@@ -1,4 +1,8 @@
 #!/bin/bash
+
+sudo npm install -g bower
+bower install
+
 CURRENT_DIR=`pwd`
 echo 'This script removes all the existing data.'
 echo 'Do you want to proceed? y/n'
@@ -28,7 +32,4 @@ do
     echo "Bank not supported."
   fi
 done
-
-sudo npm install -g bower
-bower install
 
