@@ -29,18 +29,22 @@ case class Transaction(id: Int,
     approved       
   }
 }
-object HelloWorld {
-  import util.Random
+
+object Generator {
   import java.time.{LocalDate, Month}
+  import java.io._
+  import util.Random
+
   def dToBD(d: Double): BigDecimal = {
     val scale = 2
     BigDecimal(d).setScale(scale, BigDecimal.RoundingMode.FLOOR)
   }
+
   def main(args: Array[String]) {
     val rnd = new Random()
-    var d = LocalDate.of(2014, Month.JANUARY, 1)
+    var d = LocalDate.of(2012, Month.JANUARY, 1)
     var i = 0;
-    val transactions = (1 to 2 * 365).map {x => 
+    val transactions = (1 to 5 * 365).map {x => 
       d = d.plusDays(1)
       var t: List[Transaction] = Nil
       // week
@@ -73,8 +77,13 @@ object HelloWorld {
       if (x % 365 == 355) t = Transaction(i,d.toString, d.toString, dToBD(-200*rnd.nextDouble) , "free time",                 "presents"        )::t; i += 1
       t
     }.flatMap(x => x)
-    transactions.map(x => println(x))
     println (transactions.map(_.amount).reduce(_ + _))
+    val transactionsStr = transactions.map(x => x.toString).reduce( _ + "\n" + _ )
+    val f:File = new File("insert.sql")
+    val p = new PrintWriter(f)
+    p.println("COPY transactions (id, account_number, transaction_date, exchange_date, receiver, purpose, amount, currency, category, sub_category, comment, approved) FROM stdin;")
+    p.println(transactionsStr)
+    p.close
   }
 }
-HelloWorld.main(args)
+Generator.main(args)
