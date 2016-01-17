@@ -23,4 +23,5 @@ project/target
 # mi-fi specific
 public/lib/
 sql/bkp/
+node_modules
 
