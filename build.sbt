@@ -2,7 +2,7 @@ name := "mi-fi"
 
 version := "0.4.1"
 
-scalaVersion := "2.11.4"
+scalaVersion := "2.11.6"
 
 lazy val root = (project in file(".")).enablePlugins(PlayScala)
 
@@ -18,5 +18,8 @@ libraryDependencies ++= Seq(
   "org.mockito" % "mockito-core" % "1.10.17" % "test",
   "joda-time" % "joda-time" % "2.6",
   "com.github.tototoshi" %% "scala-csv" % "1.2.0",
-  "org.scala-lang.modules" %% "scala-async" % "0.9.2"
+  "org.scala-lang.modules" %% "scala-async" % "0.9.2",
+  "com.typesafe.slick" %% "slick" % "3.1.1",
+  "com.typesafe.slick" %% "slick-codegen" % "3.1.1",
+  "org.postgresql" % "postgresql" % "9.4.1207"
 )
