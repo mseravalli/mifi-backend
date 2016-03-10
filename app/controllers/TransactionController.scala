@@ -1,6 +1,10 @@
 package controllers
 
+import java.sql.Date
+
 import helpers.{Formatter, Global}
+
+import models._
 
 import com.github.mauricio.async.db.util.ExecutorServiceUtils.CachedExecutionContext
 import com.github.tototoshi.csv._
@@ -16,21 +20,17 @@ import play.api.libs.json._
 import scala.async.Async.{async, await}
 import scala.util.Failure
 import scala.concurrent.Future
+import slick.driver.PostgresDriver.api._
 
 object TransactionController {
-  def readTransactionsQuery(categories: Array[String], subCategories: Array[String]) = {
-    val cat = "FALSE" + categories.map{x => " OR t_0.category = ? "}.reduce(_ + _)
-    val subCat = "FALSE" + subCategories.map{x => " OR t_0.sub_category LIKE ? "}.reduce(_ + _)
-    s"""
-    SELECT t_0.*
-    FROM transactions t_0
-    WHERE
-      (t_0.transaction_date BETWEEN ? AND ?)
-      AND
-      ($cat)
-      AND
-      ($subCat)
-    """
+
+  def readTransactionsQuery(startDate: Date, endDate: Date, categories: Array[String], subCategories: Array[String]) = {
+    Tables.Transactions
+      .filter(t => t.transactionDate > startDate && t.transactionDate < endDate
+        && categories.foldLeft(t.category =!= t.category)((res,c)=> res || (t.category like c) )
+        && subCategories.foldLeft(t.subCategory =!= t.subCategory)((res,s)=> res || (t.subCategory like s) )
+      )
+      .result
   }
 
   val readTransactionQuery = s"""
@@ -38,6 +38,8 @@ object TransactionController {
     FROM transactions
     WHERE id = ?
   """
+  def readTransactionQuery2(id: Long) = Tables.Transactions.filter(t => t.id === id).result
+
   val updateTransactionQuery = s"""
     UPDATE transactions
     SET category = ? , sub_category = ?
@@ -135,16 +137,9 @@ class TransactionController extends Controller{
     }}
   }}
 
-  /**
-   * Request example:
-      {
-        "startDate": "2015-01-01",
-        "endDate": "2015-01-31"
-      }
-   */
   def readTransactions(): Action[AnyContent] = Action.async { request => async {
-    val startDate = new LocalDate(request.getQueryString("startDate").getOrElse("1900-01-01"))
-    val endDate = new LocalDate(request.getQueryString("endDate").getOrElse("2100-12-31"))
+    val startDate = Date.valueOf(request.getQueryString("startDate").getOrElse("1900-01-01"))
+    val endDate = Date.valueOf(request.getQueryString("endDate") .getOrElse("2100-12-31"))
     val categories: Array[String] = request.getQueryString("categories")
       .map(x => x.split(","))
       .getOrElse(new Array[String](0))
@@ -153,28 +148,11 @@ class TransactionController extends Controller{
       .getOrElse(Array[String]("%"))
       .map{x => x match {case "" => "%"; case x => x}}
 
-    val insertValues = Array(startDate, endDate) ++ categories ++ subCategories
-    val query = TransactionController.readTransactionsQuery(categories, subCategories)
-    val queryResult = await { Global.pool.sendPreparedStatement(query, insertValues)}
+    val res: Seq[Tables.TransactionsRow] = await {
+      Global.db.run(TransactionController.readTransactionsQuery(startDate, endDate, categories, subCategories))
+    }
 
-    val transactions = queryResult.rows.map { rows => rows.map{ r =>
-      new Transaction(
-        id =               r("id").asInstanceOf[Long],
-        accountNumber =    r("account_number").asInstanceOf[String],
-        transactionDate =  r("transaction_date").asInstanceOf[LocalDate],
-        exchangeDate =     r("exchange_date").asInstanceOf[LocalDate],
-        receiver =         r("receiver").asInstanceOf[String],
-        purpose =          r("purpose").asInstanceOf[String],
-        amount =           r("amount").asInstanceOf[BigDecimal],
-        currency =         r("currency").asInstanceOf[String],
-        category =         r("category").asInstanceOf[String],
-        subCategory =      r("sub_category").asInstanceOf[String],
-        approved =         r("approved").asInstanceOf[Boolean]
-      )
-    }}
-
-    val res = transactions.map{x => x.map{ y => Json.toJson(y)(JsonFormats.transactionFmt) }}
-    Ok(Json.obj("transactions" ->  res))
+    Ok(Json.obj("transactions" -> res.map(x => Json.toJson(x)(JsonFormats.transactionFmt))) )
   }}
 
   def updateTransaction(id: String): Action[JsValue] = Action.async(parse.json){ request => async {
