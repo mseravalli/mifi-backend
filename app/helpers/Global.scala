@@ -6,6 +6,8 @@ import com.google.inject.{Guice, AbstractModule}
 import play.api.{Application, GlobalSettings}
 import services.{SimpleUUIDGenerator, UUIDGenerator}
 
+import slick.driver.PostgresDriver.api._
+
 import com.github.mauricio.async.db.Configuration
 import com.github.mauricio.async.db.postgresql.pool.PostgreSQLConnectionFactory
 import com.github.mauricio.async.db.pool.{PoolConfiguration, ConnectionPool}
@@ -53,5 +55,12 @@ object Global extends GlobalSettings {
   val baseUrl = System.getenv("MIFI_BASE_URL") match {
     case url : String => url
     case _  => "http://localhost:9000/api/v0.1/"
+  }
+
+  val db = System.getenv("DATABASE_URL") match {
+    case url: String => Database.forURL(url)
+    case _ => Database.forURL("jdbc:postgresql://localhost:5432/mifi?user=mifi&password=M1fIn@nc3",
+                driver = "org.postgresql.Driver"
+              )
   }
 }
