@@ -10,7 +10,7 @@ CREATE TABLE accounts
   account VARCHAR(32),
   initial_amount  NUMERIC(8,4),
   rows_to_skip INTEGER,
-  delimiter VARCHAR(1),
+  delimiter VARCHAR(8),
   date_format VARCHAR(32),
   final_row VARCHAR(32),
   transaction_date INTEGER,
