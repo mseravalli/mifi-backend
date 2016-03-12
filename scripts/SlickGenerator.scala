@@ -18,8 +18,8 @@ object SlickGenerator {
     val slickDriver = "slick.driver.PostgresDriver"
     val jdbcDriver = "org.postgresql.Driver"
     val url = "jdbc:postgresql://localhost:5432/mifi?user=mifi&password=M1fIn@nc3"
-    val outputFolder = "output"
-    val pkg = "defaultPackage"
+    val outputFolder = "../app"
+    val pkg = "models"
     val usr = ""
     val psw = ""
     slick.codegen.SourceCodeGenerator.main(
