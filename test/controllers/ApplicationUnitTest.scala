@@ -15,19 +15,19 @@ import java.util.UUID
  * integration test might offer a more useful test if there is not given that you are then testing that the
  * route is configured properly.
  */
-class ApplicationUnitTest extends Specification with Mockito {
-  
-  "Application" should {
-    
-    "invoke the UUID generator" in {
-      val uuidGenerator = mock[UUIDGenerator]
-      val application = new controllers.Application(uuidGenerator)
-
-      uuidGenerator.generate returns UUID.randomUUID()
-
-      application.randomUUID(FakeRequest())
-
-      there was one(uuidGenerator).generate
-    }
-  }
-}
+//class ApplicationUnitTest extends Specification with Mockito {
+//
+//  "Application" should {
+//
+//    "invoke the UUID generator" in {
+//      val uuidGenerator = mock[UUIDGenerator]
+//      val application = new controllers.Application(uuidGenerator)
+//
+//      uuidGenerator.generate returns UUID.randomUUID()
+//
+//      application.randomUUID(FakeRequest())
+//
+//      there was one(uuidGenerator).generate
+//    }
+//  }
+//}
