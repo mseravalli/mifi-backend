@@ -4,14 +4,14 @@ INSERT INTO accounts ( account,
                        delimiter,
                        date_format,
                        final_row,
-                       transaction_date,
-                       exchange_date,
-                       receiver,
-                       purpose,
-                       amount_in,
-                       amount_out,
-                       currency,
+                       transaction_date_pos,
+                       exchange_date_pos,
+                       receiver_pos,
+                       purpose_pos,
+                       amount_in_pos,
+                       amount_out_pos,
+                       currency_pos,
                        currency_default
 ) VALUES
-  ('hvb',    0.00, 1, ';', 'dd.MM.yyyy',          NULL,              1, 2, '{3, 4}', '{5}', 6,  6,  7,  'EUR')
+  ('hvb',    0.0, 1, ';', 'dd.MM.yyyy',          NULL,              1, 2, '{3, 4}', '{5}', 6,  6,  7,  'EUR')
 ;
