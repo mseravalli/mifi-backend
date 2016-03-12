@@ -2,9 +2,11 @@ package controllers
 
 import helpers.Global
 import helpers.Formatter
+import models._
 
 import com.github.mauricio.async.db.util.ExecutorServiceUtils.CachedExecutionContext
 import com.github.mauricio.async.db.ResultSet
+import java.sql.Date
 import javax.inject.Singleton
 import models.Account
 import org.joda.time.{LocalDate}
@@ -14,6 +16,7 @@ import play.api.libs.json._
 import scala.async.Async.{async, await}
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
+import slick.driver.PostgresDriver.api._
 
 object AccountController {
   val getAccountsQuery: String =  """
@@ -38,7 +41,20 @@ object AccountController {
         AND
         t.transaction_date < ?
     GROUP BY a.account
+    ORDER BY a.account
   """
+  def readAccountsQuery(accountName: String, endDate: Date) = {
+    (for {
+      (a, t) <- Tables.Accounts join (Tables.Transactions.filter(_.transactionDate < endDate)) on (_.account === _.accountNumber)
+    } yield (a, t.amount))
+      .groupBy(_._1)
+      .map { case (account, group) => (
+        account,
+        group.map(_._2).sum + account.initialAmount
+      )}
+      .sortBy(_._1.account)
+      .result
+  }
 
   def convertToList(row: Any): List[Int] = {
     row.asInstanceOf[ArrayBuffer[Int]] match {
@@ -178,17 +194,28 @@ class AccountController extends Controller {
 
   private final val logger: Logger = LoggerFactory.getLogger(classOf[AccountController])
 
+//  def readAccounts2(): Action[AnyContent] =  Action.async { request => async {
+//    val endDate = new LocalDate(request.getQueryString("endDate").getOrElse("2100-12-31"))
+//    val accounts = await {getAccounts(endDate)}
+//    val tmp = accounts.map{x => Json.toJson(x._2)(JsonFormats.accountFmtOld)}
+//    var res: JsObject = Json.obj()
+//    for (a <- accounts) {
+//      res = res + (a._1 -> Json.toJson(accounts.values.head)(JsonFormats.accountFmtOld))
+//    }
+//    Ok( Json.obj("accounts" -> tmp) )
+//  }}
+
   def readAccounts(): Action[AnyContent] =  Action.async { request => async {
-    val endDate = new LocalDate(request.getQueryString("endDate").getOrElse("2100-12-31"))
-    val accounts = await {getAccounts(endDate)}
-    val tmp = accounts.map{x => Json.toJson(x._2)(JsonFormats.accountFmt)}
-    var res: JsObject = Json.obj()
-    for (a <- accounts) {
-//      res = res + (a._1 -> JsNumber(a._2.initialAmount))
-      res = res + (a._1 -> Json.toJson(accounts.values.head)(JsonFormats.accountFmt))
+    val endDate = Date.valueOf(request.getQueryString("endDate") .getOrElse("2100-12-31"))
+
+    val res = await {
+      Global.db.run(AccountController.readAccountsQuery("%", endDate))
     }
-    // Ok( Json.obj("accounts" -> res) )
-    Ok( Json.obj("accounts" -> tmp) )
+
+    val jsonRes = res.map { x =>
+      Json.toJson(x._1)(JsonFormats.accountFmt).as[JsObject] ++ Json.obj("balance" -> Json.toJson(x._2))
+    }
+    Ok(Json.obj("accounts" -> jsonRes) )
   }}
 
   def readBalance(account: String) = Action.async { async {
