@@ -20,10 +20,10 @@ object Formatter {
    */
   def normalizeDateFormat(format: String): String = {
     format.toUpperCase match {
-      case "YYYY-MM-DD" => "YYYY-MM-dd"
-      case "YYYY-MM" => "YYYY-MM"
-      case "YYYY" => "YYYY"
-      case _ => "YYYY-MM"
+      case "YYYY-MM-DD" => "yyyy-MM-dd"
+      case "YYYY-MM" => "yyyy-MM"
+      case "YYYY" => "yyyy"
+      case _ => "yyyy-MM"
     }
   }
 
