@@ -1,4 +1,5 @@
 DROP INDEX transaction_date_idx;
+DROP TABLE transactions_categorization;
 DROP TABLE transactions;
 DROP TABLE category_match;
 DROP TABLE sub_categories;
@@ -43,6 +44,14 @@ CREATE TABLE category_match
   sub_category VARCHAR(32) REFERENCES sub_categories(sub_category) ON UPDATE CASCADE,
   color VARCHAR(8),
   PRIMARY KEY (category, sub_category)
+);
+
+CREATE TABLE transactions_categorization
+(
+  description VARCHAR(128),
+  category VARCHAR(32) REFERENCES categories(category) ON UPDATE CASCADE NOT NULL,
+  sub_category VARCHAR(32) REFERENCES sub_categories(sub_category) ON UPDATE CASCADE NOT NULL,
+  PRIMARY KEY (description)
 );
 
 CREATE TABLE transactions

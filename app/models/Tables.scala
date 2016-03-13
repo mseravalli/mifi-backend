@@ -14,7 +14,7 @@ trait Tables {
   import slick.jdbc.{GetResult => GR}
 
   /** DDL for all tables. Call .create to execute. */
-  lazy val schema = Accounts.schema ++ Categories.schema ++ CategoryMatch.schema ++ SubCategories.schema ++ Transactions.schema
+  lazy val schema = Array(Accounts.schema, Categories.schema, CategoryMatch.schema, SubCategories.schema, Transactions.schema, TransactionsCategorization.schema).reduceLeft(_ ++ _)
   @deprecated("Use .schema instead of .ddl", "3.0")
   def ddl = schema
 
@@ -218,4 +218,35 @@ trait Tables {
   }
   /** Collection-like TableQuery object for table Transactions */
   lazy val Transactions = new TableQuery(tag => new Transactions(tag))
+
+  /** Entity class storing rows of table TransactionsCategorization
+   *  @param description Database column description SqlType(varchar), PrimaryKey, Length(128,true)
+   *  @param category Database column category SqlType(varchar), Length(32,true)
+   *  @param subCategory Database column sub_category SqlType(varchar), Length(32,true) */
+  case class TransactionsCategorizationRow(description: String, category: String, subCategory: String)
+  /** GetResult implicit for fetching TransactionsCategorizationRow objects using plain SQL queries */
+  implicit def GetResultTransactionsCategorizationRow(implicit e0: GR[String]): GR[TransactionsCategorizationRow] = GR{
+    prs => import prs._
+    TransactionsCategorizationRow.tupled((<<[String], <<[String], <<[String]))
+  }
+  /** Table description of table transactions_categorization. Objects of this class serve as prototypes for rows in queries. */
+  class TransactionsCategorization(_tableTag: Tag) extends Table[TransactionsCategorizationRow](_tableTag, "transactions_categorization") {
+    def * = (description, category, subCategory) <> (TransactionsCategorizationRow.tupled, TransactionsCategorizationRow.unapply)
+    /** Maps whole row to an option. Useful for outer joins. */
+    def ? = (Rep.Some(description), Rep.Some(category), Rep.Some(subCategory)).shaped.<>({r=>import r._; _1.map(_=> TransactionsCategorizationRow.tupled((_1.get, _2.get, _3.get)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
+
+    /** Database column description SqlType(varchar), PrimaryKey, Length(128,true) */
+    val description: Rep[String] = column[String]("description", O.PrimaryKey, O.Length(128,varying=true))
+    /** Database column category SqlType(varchar), Length(32,true) */
+    val category: Rep[String] = column[String]("category", O.Length(32,varying=true))
+    /** Database column sub_category SqlType(varchar), Length(32,true) */
+    val subCategory: Rep[String] = column[String]("sub_category", O.Length(32,varying=true))
+
+    /** Foreign key referencing Categories (database name transactions_categorization_category_fkey) */
+    lazy val categoriesFk = foreignKey("transactions_categorization_category_fkey", category, Categories)(r => r.category, onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
+    /** Foreign key referencing SubCategories (database name transactions_categorization_sub_category_fkey) */
+    lazy val subCategoriesFk = foreignKey("transactions_categorization_sub_category_fkey", subCategory, SubCategories)(r => r.subCategory, onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
+  }
+  /** Collection-like TableQuery object for table TransactionsCategorization */
+  lazy val TransactionsCategorization = new TableQuery(tag => new TransactionsCategorization(tag))
 }

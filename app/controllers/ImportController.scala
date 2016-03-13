@@ -76,20 +76,6 @@ object GenericImporter {
             loadValues(r, values :+ row)
           }
         }
-//        x(0) match {
-//          case a.finalRow => values
-//          case _ => {
-//            val row = List(a.account,
-//              LocalDate.parse(x(a.transactionDatePos), format),
-//              LocalDate.parse(x(a.exchangeDatePos), format),
-//              mergeStrings(x, a.receiverPos.split(",").map( _.toInt )),
-//              mergeStrings(x, a.purposePos.split(",").map( _.toInt )),
-//              getAmount(x, a),
-//              x.lift(a.currencyPos).getOrElse(a.currencyDefault)
-//            )
-//            loadValues(r, values :+ row)
-//          }
-//        }
       }
     }
 
@@ -156,32 +142,10 @@ class ImportController extends Controller {
       case false => ("delete", invalidateQuery)
     }
 
-    val res = await {
-      Global.db.run(query)
-    }
+    val res = await { Global.db.run(query) }
 
     Ok(Json.obj("result" -> JsString(s"$action ${res.toString}")))
   } }
-
-  val categories = Map(
-    "rewe sagt danke" -> ("living", "food"),
-    "dean&david" -> ("living", "food"),
-    "sausalitos" -> ("free time", "going out"),
-    "mvg automat" -> ("mobility", "public transport"),
-    "miete" -> ("house", "rent"),
-    "kabel deutschland" -> ("house", "internet"),
-    "primastrom" -> ("house", "electricity"),
-    "kalixa pay limited" -> ("finance", "internal transfer"),
-    "dauerauftrag salary" -> ("finance", "internal transfer"),
-    "seravalli, marco salary" -> ("finance", "internal transfer"),
-    "internal transfer" -> ("finance", "internal transfer"),
-    "load with bank transfer" -> ("finance", "internal transfer"),
-    "loading fee" -> ("finance", "costs and fees"),
-    "lohn/gehalt" -> ("work and training", "salary"),
-    "bexp spesen" -> ("work and training", "travel"),
-    "e-plus service" -> ("house", "phone"),
-    "rundfunk ard" -> ("finance", "taxes")
-  )
 
   /**
    * Adds to every transaction the first match from the given category otherwise "other", "to categorize"
@@ -207,6 +171,10 @@ class ImportController extends Controller {
             val accounts = await {
               Global.db.run(AccountController.readAccountsQuery(accountName))
             }
+            val categories: Map[String, Tuple2[String, String]] = await {
+              Global.db.run(Tables.TransactionsCategorization.result)
+            }.map(x => x.description -> (x.category, x.subCategory)).toMap
+
             accounts.length match {
               case 1 => {
                 val a = accounts.head
