@@ -100,8 +100,8 @@ object GenericImporter {
     val row = List(a.account,
       LocalDate.parse(x(a.transactionDatePos), format),
       LocalDate.parse(x(a.exchangeDatePos), format),
-      mergeStrings(x, a.receiverPos.split(",").map(_.toInt)),
-      mergeStrings(x, a.purposePos.split(",").map(_.toInt)),
+      mergeStrings(x, a.receiverPos.replace("{", "").replace("}", "").split(",").map(_.toInt)),
+      mergeStrings(x, a.purposePos.replace("{", "").replace("}", "").split(",").map(_.toInt)),
       getAmount(x, a),
       x.lift(a.currencyPos).getOrElse(a.currencyDefault)
     )
@@ -135,26 +135,32 @@ class ImportController extends Controller {
     """
   }
 
-  val approveQuery: String = s"""
-    UPDATE transactions
-    SET approved = TRUE
-    WHERE approved = FALSE
-  """
+  val approveQuery = {
+    Tables.Transactions
+      .filter(_.approved === false)
+      .map(_.approved)
+      .update(true)
+  }
 
-  val disapproveQuery: String = s"""
-    DELETE FROM transactions
-    WHERE approved = FALSE
-  """
+  val invalidateQuery = {
+    Tables.Transactions
+      .filter(_.approved === false)
+      .delete
+  }
 
   def approveImport(): Action[JsValue] = Action.async(parse.json) { request => async{
     val jsonRequest = request.body
     val isApproved = (jsonRequest \ "isApproved").as[Boolean]
-    val query = isApproved match {
-      case true => approveQuery
-      case false => disapproveQuery
+    val (action, query)= isApproved match {
+      case true => ("insert", approveQuery)
+      case false => ("delete", invalidateQuery)
     }
-    val queryResult = await { Global.pool.sendPreparedStatement(query) }
-    Ok(Json.obj("result" -> JsString(queryResult.statusMessage)))
+
+    val res = await {
+      Global.db.run(query)
+    }
+
+    Ok(Json.obj("result" -> JsString(s"$action ${res.toString}")))
   } }
 
   val categories = Map(
@@ -198,12 +204,12 @@ class ImportController extends Controller {
       request.body.dataParts.get("importAccount").map { accounts => async {
         accounts match {
           case accountName :: tail => {
-//            val accountMap = await(AccountController.getAccount(account))
             val accounts = await {
               Global.db.run(AccountController.readAccountsQuery(accountName))
             }
-            accounts match {
-              case a::Nil => {
+            accounts.length match {
+              case 1 => {
+                val a = accounts.head
                 val transactions = GenericImporter.importCSV(csv, a._1)
                 val insertValues = categorizeTransactions(transactions, categories)
                 val queryResult = await {
@@ -219,7 +225,7 @@ class ImportController extends Controller {
                       "balance" -> Json.toJson(balance)))
                 Ok(result)
               }
-              case Nil => BadRequest("Account not present in the database")
+              case _ => BadRequest("Account not present in the database")
             }
           }
           case Nil => BadRequest("Missing account")

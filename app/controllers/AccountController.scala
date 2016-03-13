@@ -18,7 +18,9 @@ import slick.driver.PostgresDriver.api._
 object AccountController {
   def readAccountsQuery(accountName: String, endDate: Date = Date.valueOf("2100-12-31")) = {
     (for {
-      (a, t) <- Tables.Accounts joinLeft (Tables.Transactions.filter(_.transactionDate < endDate)) on (_.account === _.accountNumber)
+      (a, t) <- Tables.Accounts.filter(_.account like accountName)
+        .joinLeft(Tables.Transactions.filter(_.transactionDate < endDate))
+        .on(_.account === _.accountNumber)
     } yield (a, t.map(_.amount)))
       .groupBy(_._1)
       .map { case (account, group) => (
