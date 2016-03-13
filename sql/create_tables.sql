@@ -8,19 +8,19 @@ DROP TABLE accounts;
 CREATE TABLE accounts
 (
   account VARCHAR(32),
-  initial_amount  NUMERIC(8,4),
-  rows_to_skip INTEGER,
-  delimiter VARCHAR(8),
-  date_format VARCHAR(32),
+  initial_amount  NUMERIC(8,4) NOT NULL,
+  rows_to_skip INTEGER NOT NULL,
+  delimiter VARCHAR(8) NOT NULL,
+  date_format VARCHAR(32) NOT NULL,
   final_row VARCHAR(32),
-  transaction_date_pos INTEGER,
-  exchange_date_pos INTEGER,
-  receiver_pos INTEGER[],
-  purpose_pos INTEGER[],
-  amount_in_pos INTEGER,
-  amount_out_pos INTEGER,
-  currency_pos INTEGER,
-  currency_default VARCHAR(3),
+  transaction_date_pos INTEGER NOT NULL,
+  exchange_date_pos INTEGER NOT NULL,
+  receiver_pos INTEGER[] NOT NULL,
+  purpose_pos INTEGER[] NOT NULL,
+  amount_in_pos INTEGER NOT NULL,
+  amount_out_pos INTEGER NOT NULL,
+  currency_pos INTEGER NOT NULL,
+  currency_default VARCHAR(3) NOT NULL,
   PRIMARY KEY (account)
 );
 

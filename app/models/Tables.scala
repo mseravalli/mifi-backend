@@ -20,59 +20,59 @@ trait Tables {
 
   /** Entity class storing rows of table Accounts
    *  @param account Database column account SqlType(varchar), PrimaryKey, Length(32,true)
-   *  @param initialAmount Database column initial_amount SqlType(numeric), Default(None)
-   *  @param rowsToSkip Database column rows_to_skip SqlType(int4), Default(None)
-   *  @param delimiter Database column delimiter SqlType(varchar), Length(8,true), Default(None)
-   *  @param dateFormat Database column date_format SqlType(varchar), Length(32,true), Default(None)
+   *  @param initialAmount Database column initial_amount SqlType(numeric)
+   *  @param rowsToSkip Database column rows_to_skip SqlType(int4)
+   *  @param delimiter Database column delimiter SqlType(varchar), Length(8,true)
+   *  @param dateFormat Database column date_format SqlType(varchar), Length(32,true)
    *  @param finalRow Database column final_row SqlType(varchar), Length(32,true), Default(None)
-   *  @param transactionDatePos Database column transaction_date_pos SqlType(int4), Default(None)
-   *  @param exchangeDatePos Database column exchange_date_pos SqlType(int4), Default(None)
-   *  @param receiverPos Database column receiver_pos SqlType(_int4), Length(10,false), Default(None)
-   *  @param purposePos Database column purpose_pos SqlType(_int4), Length(10,false), Default(None)
-   *  @param amountInPos Database column amount_in_pos SqlType(int4), Default(None)
-   *  @param amountOutPos Database column amount_out_pos SqlType(int4), Default(None)
-   *  @param currencyPos Database column currency_pos SqlType(int4), Default(None)
-   *  @param currencyDefault Database column currency_default SqlType(varchar), Length(3,true), Default(None) */
-  case class AccountsRow(account: String, initialAmount: Option[scala.math.BigDecimal] = None, rowsToSkip: Option[Int] = None, delimiter: Option[String] = None, dateFormat: Option[String] = None, finalRow: Option[String] = None, transactionDatePos: Option[Int] = None, exchangeDatePos: Option[Int] = None, receiverPos: Option[String] = None, purposePos: Option[String] = None, amountInPos: Option[Int] = None, amountOutPos: Option[Int] = None, currencyPos: Option[Int] = None, currencyDefault: Option[String] = None)
+   *  @param transactionDatePos Database column transaction_date_pos SqlType(int4)
+   *  @param exchangeDatePos Database column exchange_date_pos SqlType(int4)
+   *  @param receiverPos Database column receiver_pos SqlType(_int4), Length(10,false)
+   *  @param purposePos Database column purpose_pos SqlType(_int4), Length(10,false)
+   *  @param amountInPos Database column amount_in_pos SqlType(int4)
+   *  @param amountOutPos Database column amount_out_pos SqlType(int4)
+   *  @param currencyPos Database column currency_pos SqlType(int4)
+   *  @param currencyDefault Database column currency_default SqlType(varchar), Length(3,true) */
+  case class AccountsRow(account: String, initialAmount: scala.math.BigDecimal, rowsToSkip: Int, delimiter: String, dateFormat: String, finalRow: Option[String] = None, transactionDatePos: Int, exchangeDatePos: Int, receiverPos: String, purposePos: String, amountInPos: Int, amountOutPos: Int, currencyPos: Int, currencyDefault: String)
   /** GetResult implicit for fetching AccountsRow objects using plain SQL queries */
-  implicit def GetResultAccountsRow(implicit e0: GR[String], e1: GR[Option[scala.math.BigDecimal]], e2: GR[Option[Int]], e3: GR[Option[String]]): GR[AccountsRow] = GR{
+  implicit def GetResultAccountsRow(implicit e0: GR[String], e1: GR[scala.math.BigDecimal], e2: GR[Int], e3: GR[Option[String]]): GR[AccountsRow] = GR{
     prs => import prs._
-    AccountsRow.tupled((<<[String], <<?[scala.math.BigDecimal], <<?[Int], <<?[String], <<?[String], <<?[String], <<?[Int], <<?[Int], <<?[String], <<?[String], <<?[Int], <<?[Int], <<?[Int], <<?[String]))
+    AccountsRow.tupled((<<[String], <<[scala.math.BigDecimal], <<[Int], <<[String], <<[String], <<?[String], <<[Int], <<[Int], <<[String], <<[String], <<[Int], <<[Int], <<[Int], <<[String]))
   }
   /** Table description of table accounts. Objects of this class serve as prototypes for rows in queries. */
   class Accounts(_tableTag: Tag) extends Table[AccountsRow](_tableTag, "accounts") {
     def * = (account, initialAmount, rowsToSkip, delimiter, dateFormat, finalRow, transactionDatePos, exchangeDatePos, receiverPos, purposePos, amountInPos, amountOutPos, currencyPos, currencyDefault) <> (AccountsRow.tupled, AccountsRow.unapply)
     /** Maps whole row to an option. Useful for outer joins. */
-    def ? = (Rep.Some(account), initialAmount, rowsToSkip, delimiter, dateFormat, finalRow, transactionDatePos, exchangeDatePos, receiverPos, purposePos, amountInPos, amountOutPos, currencyPos, currencyDefault).shaped.<>({r=>import r._; _1.map(_=> AccountsRow.tupled((_1.get, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
+    def ? = (Rep.Some(account), Rep.Some(initialAmount), Rep.Some(rowsToSkip), Rep.Some(delimiter), Rep.Some(dateFormat), finalRow, Rep.Some(transactionDatePos), Rep.Some(exchangeDatePos), Rep.Some(receiverPos), Rep.Some(purposePos), Rep.Some(amountInPos), Rep.Some(amountOutPos), Rep.Some(currencyPos), Rep.Some(currencyDefault)).shaped.<>({r=>import r._; _1.map(_=> AccountsRow.tupled((_1.get, _2.get, _3.get, _4.get, _5.get, _6, _7.get, _8.get, _9.get, _10.get, _11.get, _12.get, _13.get, _14.get)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
 
     /** Database column account SqlType(varchar), PrimaryKey, Length(32,true) */
     val account: Rep[String] = column[String]("account", O.PrimaryKey, O.Length(32,varying=true))
-    /** Database column initial_amount SqlType(numeric), Default(None) */
-    val initialAmount: Rep[Option[scala.math.BigDecimal]] = column[Option[scala.math.BigDecimal]]("initial_amount", O.Default(None))
-    /** Database column rows_to_skip SqlType(int4), Default(None) */
-    val rowsToSkip: Rep[Option[Int]] = column[Option[Int]]("rows_to_skip", O.Default(None))
-    /** Database column delimiter SqlType(varchar), Length(8,true), Default(None) */
-    val delimiter: Rep[Option[String]] = column[Option[String]]("delimiter", O.Length(8,varying=true), O.Default(None))
-    /** Database column date_format SqlType(varchar), Length(32,true), Default(None) */
-    val dateFormat: Rep[Option[String]] = column[Option[String]]("date_format", O.Length(32,varying=true), O.Default(None))
+    /** Database column initial_amount SqlType(numeric) */
+    val initialAmount: Rep[scala.math.BigDecimal] = column[scala.math.BigDecimal]("initial_amount")
+    /** Database column rows_to_skip SqlType(int4) */
+    val rowsToSkip: Rep[Int] = column[Int]("rows_to_skip")
+    /** Database column delimiter SqlType(varchar), Length(8,true) */
+    val delimiter: Rep[String] = column[String]("delimiter", O.Length(8,varying=true))
+    /** Database column date_format SqlType(varchar), Length(32,true) */
+    val dateFormat: Rep[String] = column[String]("date_format", O.Length(32,varying=true))
     /** Database column final_row SqlType(varchar), Length(32,true), Default(None) */
     val finalRow: Rep[Option[String]] = column[Option[String]]("final_row", O.Length(32,varying=true), O.Default(None))
-    /** Database column transaction_date_pos SqlType(int4), Default(None) */
-    val transactionDatePos: Rep[Option[Int]] = column[Option[Int]]("transaction_date_pos", O.Default(None))
-    /** Database column exchange_date_pos SqlType(int4), Default(None) */
-    val exchangeDatePos: Rep[Option[Int]] = column[Option[Int]]("exchange_date_pos", O.Default(None))
-    /** Database column receiver_pos SqlType(_int4), Length(10,false), Default(None) */
-    val receiverPos: Rep[Option[String]] = column[Option[String]]("receiver_pos", O.Length(10,varying=false), O.Default(None))
-    /** Database column purpose_pos SqlType(_int4), Length(10,false), Default(None) */
-    val purposePos: Rep[Option[String]] = column[Option[String]]("purpose_pos", O.Length(10,varying=false), O.Default(None))
-    /** Database column amount_in_pos SqlType(int4), Default(None) */
-    val amountInPos: Rep[Option[Int]] = column[Option[Int]]("amount_in_pos", O.Default(None))
-    /** Database column amount_out_pos SqlType(int4), Default(None) */
-    val amountOutPos: Rep[Option[Int]] = column[Option[Int]]("amount_out_pos", O.Default(None))
-    /** Database column currency_pos SqlType(int4), Default(None) */
-    val currencyPos: Rep[Option[Int]] = column[Option[Int]]("currency_pos", O.Default(None))
-    /** Database column currency_default SqlType(varchar), Length(3,true), Default(None) */
-    val currencyDefault: Rep[Option[String]] = column[Option[String]]("currency_default", O.Length(3,varying=true), O.Default(None))
+    /** Database column transaction_date_pos SqlType(int4) */
+    val transactionDatePos: Rep[Int] = column[Int]("transaction_date_pos")
+    /** Database column exchange_date_pos SqlType(int4) */
+    val exchangeDatePos: Rep[Int] = column[Int]("exchange_date_pos")
+    /** Database column receiver_pos SqlType(_int4), Length(10,false) */
+    val receiverPos: Rep[String] = column[String]("receiver_pos", O.Length(10,varying=false))
+    /** Database column purpose_pos SqlType(_int4), Length(10,false) */
+    val purposePos: Rep[String] = column[String]("purpose_pos", O.Length(10,varying=false))
+    /** Database column amount_in_pos SqlType(int4) */
+    val amountInPos: Rep[Int] = column[Int]("amount_in_pos")
+    /** Database column amount_out_pos SqlType(int4) */
+    val amountOutPos: Rep[Int] = column[Int]("amount_out_pos")
+    /** Database column currency_pos SqlType(int4) */
+    val currencyPos: Rep[Int] = column[Int]("currency_pos")
+    /** Database column currency_default SqlType(varchar), Length(3,true) */
+    val currencyDefault: Rep[String] = column[String]("currency_default", O.Length(3,varying=true))
   }
   /** Collection-like TableQuery object for table Accounts */
   lazy val Accounts = new TableQuery(tag => new Accounts(tag))
