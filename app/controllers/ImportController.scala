@@ -1,19 +1,20 @@
 package controllers
 
 import helpers.Global
+import models._
 
 import com.github.mauricio.async.db.util.ExecutorServiceUtils.CachedExecutionContext
 import com.github.tototoshi.csv._
 import javax.inject.Singleton
-import models.Account
 import org.joda.time.{LocalDate}
-import org.joda.time.format.DateTimeFormat
+import org.joda.time.format.{DateTimeFormatter, DateTimeFormat}
 import org.slf4j.{LoggerFactory, Logger}
 import play.api.mvc._
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.libs.Files.TemporaryFile
 import play.api.libs.json._
 import scala.async.Async.{async, await}
+import slick.driver.PostgresDriver.api._
 
 object GenericImporter {
   def formatAmount(s: String): String = {
@@ -31,9 +32,9 @@ object GenericImporter {
     }
   }
 
-  def getAmount(x: List[String], a: Account): BigDecimal = {
-    val in = BigDecimal.apply(x.lift(a.inPos).map{amount => formatAmount(amount)}.getOrElse("0.00"))
-    val out = BigDecimal.apply(formatAmount(x.lift(a.outPos).getOrElse("0.00")).replace("-", ""))
+  def getAmount(x: List[String], a: Tables.AccountsRow): BigDecimal = {
+    val in = BigDecimal.apply(x.lift(a.amountInPos).map{amount => formatAmount(amount)}.getOrElse("0.00"))
+    val out = BigDecimal.apply(formatAmount(x.lift(a.amountOutPos).getOrElse("0.00")).replace("-", ""))
     if (in.abs == out.abs) {
       in
     }
@@ -46,8 +47,9 @@ object GenericImporter {
     positions.map{i => x.lift(i).getOrElse("")}.reduce((a, b) => a +", "+b)
   }
 
-  def importCSV(csv: FilePart[TemporaryFile], a: Account): List[List[Any]] = {
+  def importCSV(csv: FilePart[TemporaryFile], a: Tables.AccountsRow): List[List[Any]] = {
     implicit object MyFormat extends DefaultCSVFormat {
+//      override val delimiter = a.delimiter.toCharArray.head
       override val delimiter = a.delimiter.toCharArray.head
     }
     val reader = CSVReader.open(csv.ref.file, "ISO-8859-1")
@@ -59,24 +61,51 @@ object GenericImporter {
     def loadValues(r: CSVReader, values: List[List[Any]]): List[List[Any]] = r.readNext match {
       case None => values
       case Some(x) => {
-        x(0) match {
-          case a.finalRow => values
-          case _ => {
-            val row = List(a.account,
-              LocalDate.parse(x(a.transactionDatePos), format),
-              LocalDate.parse(x(a.exchangeDatePos), format),
-              mergeStrings(x, a.receiverPos),
-              mergeStrings(x, a.purposePos),
-              getAmount(x, a),
-              x.lift(a.currencyPos).getOrElse(a.currencyDefault)
-            )
+        a.finalRow match {
+          case Some(s) => {
+            if (x(0).equals(s)) {
+              values
+            }
+            else {
+              val row =readCSVRow(a, format, x)
+              loadValues(r, values :+ row)
+            }
+          }
+          case None => {
+            val row =readCSVRow(a, format, x)
             loadValues(r, values :+ row)
           }
         }
+//        x(0) match {
+//          case a.finalRow => values
+//          case _ => {
+//            val row = List(a.account,
+//              LocalDate.parse(x(a.transactionDatePos), format),
+//              LocalDate.parse(x(a.exchangeDatePos), format),
+//              mergeStrings(x, a.receiverPos.split(",").map( _.toInt )),
+//              mergeStrings(x, a.purposePos.split(",").map( _.toInt )),
+//              getAmount(x, a),
+//              x.lift(a.currencyPos).getOrElse(a.currencyDefault)
+//            )
+//            loadValues(r, values :+ row)
+//          }
+//        }
       }
     }
 
     loadValues(reader, List())
+  }
+
+  def readCSVRow(a: Tables.AccountsRow, format: DateTimeFormatter, x: List[String]): List[Any] = {
+    val row = List(a.account,
+      LocalDate.parse(x(a.transactionDatePos), format),
+      LocalDate.parse(x(a.exchangeDatePos), format),
+      mergeStrings(x, a.receiverPos.split(",").map(_.toInt)),
+      mergeStrings(x, a.purposePos.split(",").map(_.toInt)),
+      getAmount(x, a),
+      x.lift(a.currencyPos).getOrElse(a.currencyDefault)
+    )
+    row
   }
 }
 
@@ -168,26 +197,29 @@ class ImportController extends Controller {
     request.body.file("csv").map { csv =>
       request.body.dataParts.get("importAccount").map { accounts => async {
         accounts match {
-          case account :: tail => {
-            val accountMap = await(AccountController.getAccount(account))
-            accountMap.get(account) match {
-              case Some(a) => {
-                val transactions = GenericImporter.importCSV(csv, a)
+          case accountName :: tail => {
+//            val accountMap = await(AccountController.getAccount(account))
+            val accounts = await {
+              Global.db.run(AccountController.readAccountsQuery(accountName))
+            }
+            accounts match {
+              case a::Nil => {
+                val transactions = GenericImporter.importCSV(csv, a._1)
                 val insertValues = categorizeTransactions(transactions, categories)
                 val queryResult = await {
                   Global.pool.sendPreparedStatement(importQuery(transactions), insertValues.flatten)
                 }
                 val status = queryResult.statusMessage
                 val balance = await {
-                  AccountController.getBalance(account)
-                }
+                  Global.db.run(AccountController.readAccountsQuery(a._1.account))
+                }.head._2
                 val result = Json.obj("status" -> status,
                   "account" ->
-                    Json.obj("account" -> account,
-                      "balance" -> JsNumber(balance)))
+                    Json.obj("account" -> a._1.account,
+                      "balance" -> Json.toJson(balance)))
                 Ok(result)
               }
-              case None => BadRequest("Account not present in the database")
+              case Nil => BadRequest("Account not present in the database")
             }
           }
           case Nil => BadRequest("Missing account")
