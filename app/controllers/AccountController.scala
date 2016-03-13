@@ -1,16 +1,16 @@
 package controllers
 
-import java.time.format.DateTimeFormatter
 
 import helpers.Global
 import helpers.Formatter
 import models._
 
-import com.github.mauricio.async.db.util.ExecutorServiceUtils.CachedExecutionContext
 import java.sql.Date
+import java.time.format.DateTimeFormatter
 import javax.inject.Singleton
 import org.slf4j.{LoggerFactory, Logger}
 import play.api.mvc._
+import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.json._
 import scala.async.Async.{async, await}
 import slick.driver.PostgresDriver.api._
@@ -29,20 +29,6 @@ object AccountController {
       )}
       .sortBy(_._1.account)
       .result
-  }
-
-  def timeSeriesQuery(dateFormat: String): String = {
-    val format = Formatter.normalizeDateFormat(dateFormat)
-    s"""
-      SELECT
-        t_0.account_number AS t_0_account,
-        to_char(t_0.transaction_date,'$format') AS t_0_date,
-        t_0.amount AS t_0_amount
-      FROM transactions t_0
-      WHERE
-        transaction_date BETWEEN ? AND ?
-      ORDER BY transaction_date
-    """
   }
 
   def timeSeriesQuery(startDate: Date, endDate: Date) = {
