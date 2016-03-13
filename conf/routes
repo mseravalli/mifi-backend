@@ -17,7 +17,7 @@ GET         /randomUUID                              @controllers.Application.ra
 POST        /api/v0.1/import                         @controllers.ImportController.importTransactions
 POST        /api/v0.1/approve_import                 @controllers.ImportController.approveImport
 GET         /api/v0.1/accounts                       @controllers.AccountController.readAccounts
-POST        /api/v0.1/accounts/timeseries            @controllers.AccountController.timeSeries
+GET         /api/v0.1/accounts/timeseries            @controllers.AccountController.timeSeries
 GET         /api/v0.1/accounts/:account              @controllers.AccountController.readBalance(account)
 
 GET         /api/v0.1/transactions                   @controllers.TransactionController.readTransactions

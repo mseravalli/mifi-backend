@@ -40,6 +40,15 @@ object Formatter {
     }
   }
 
+  def incrementDate(ld: java.time.LocalDate, format: String) = {
+    format.toUpperCase match {
+      case "YYYY-MM-DD" => ld.plusDays(1)
+      case "YYYY-MM" => ld.plusMonths(1)
+      case "YYYY" => ld.plusYears(1)
+      case _ => ld.plusMonths(1)
+    }
+  }
+
   /**
    * Returns the correct time difference
    */

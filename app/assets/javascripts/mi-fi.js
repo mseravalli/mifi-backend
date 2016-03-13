@@ -410,7 +410,8 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
         $scope.accountChart = pieAccountChart;
       });
 
-    $http.post(baseUrl + "accounts/timeseries", params, requestConfig)
+    $http.get(baseUrl + "accounts/timeseries?" + params.urlParams)
+    //$http.post(baseUrl + "accounts/timeseries", params, requestConfig)
       .success(function(data, status, headers, config) {
         timeSeriesChart.data = data.data;
         $scope.seriesChart = timeSeriesChart;

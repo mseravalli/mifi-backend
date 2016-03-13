@@ -1,5 +1,7 @@
 package controllers
 
+import java.time.format.DateTimeFormatter
+
 import helpers.Global
 import helpers.Formatter
 import models._
@@ -9,7 +11,7 @@ import com.github.mauricio.async.db.ResultSet
 import java.sql.Date
 import javax.inject.Singleton
 import models.Account
-import org.joda.time.{LocalDate}
+import org.joda.time.{DateTime, LocalDate}
 import org.slf4j.{LoggerFactory, Logger}
 import play.api.mvc._
 import play.api.libs.json._
@@ -27,13 +29,13 @@ object AccountController {
       a.delimiter,
       a.date_format,
       a.final_row,
-      a.transaction_date,
-      a.exchange_date,
-      a.receiver,
-      a.purpose,
-      a.amount_in,
-      a.amount_out,
-      a.currency,
+      a.transaction_date_pos,
+      a.exchange_date_pos,
+      a.receiver_pos,
+      a.purpose_pos,
+      a.amount_in_pos,
+      a.amount_out_pos,
+      a.currency_pos,
       a.currency_default,
       SUM(t.amount) + a.initial_amount AS balance
     FROM accounts a JOIN transactions t ON a.account = t.account_number
@@ -45,12 +47,12 @@ object AccountController {
   """
   def readAccountsQuery(accountName: String, endDate: Date) = {
     (for {
-      (a, t) <- Tables.Accounts join (Tables.Transactions.filter(_.transactionDate < endDate)) on (_.account === _.accountNumber)
-    } yield (a, t.amount))
+      (a, t) <- Tables.Accounts joinLeft (Tables.Transactions.filter(_.transactionDate < endDate)) on (_.account === _.accountNumber)
+    } yield (a, t.map(_.amount)))
       .groupBy(_._1)
       .map { case (account, group) => (
         account,
-        group.map(_._2).sum + account.initialAmount
+        group.map(_._2.flatten).sum + account.initialAmount
       )}
       .sortBy(_._1.account)
       .result
@@ -86,13 +88,13 @@ object AccountController {
         r("delimiter").asInstanceOf[String],
         r("date_format").asInstanceOf[String],
         r("final_row").asInstanceOf[String],
-        r("transaction_date").asInstanceOf[Int],
-        r("exchange_date").asInstanceOf[Int],
-        convertToList(r("receiver")),
-        convertToList(r("purpose")),
-        r("amount_in").asInstanceOf[Int],
-        r("amount_out").asInstanceOf[Int],
-        r("currency").asInstanceOf[Int],
+        r("transaction_date_pos").asInstanceOf[Int],
+        r("exchange_date_pos").asInstanceOf[Int],
+        convertToList(r("receiver_pos")),
+        convertToList(r("purpose_pos")),
+        r("amount_in_pos").asInstanceOf[Int],
+        r("amount_out_pos").asInstanceOf[Int],
+        r("currency_pos").asInstanceOf[Int],
         r("currency_default").asInstanceOf[String],
         r("balance").asInstanceOf[BigDecimal]
       )
@@ -185,6 +187,53 @@ object AccountController {
     }
     Json.obj("data" -> seriesOut)
   }
+
+  def timeSeriesQuery(startDate: Date, endDate: Date) = {
+    Tables.Transactions
+      .filter(x => x.transactionDate >= startDate && x.transactionDate < endDate)
+      .sortBy(_.transactionDate)
+      .result
+  }
+
+  def timeIterator(startDate: Date, endDate: Date, dateFormat: String) = {
+    val start: java.time.LocalDate = startDate.toLocalDate
+    val end: java.time.LocalDate = endDate.toLocalDate
+    Iterator.iterate(start)(Formatter.incrementDate(_, dateFormat) ) takeWhile (_ isBefore end)
+  }
+
+  def createTimeSeries(startDate: Date, endDate: Date, dateFormat: String) = async {
+    val accounts = await {
+      Global.db.run(AccountController.readAccountsQuery("%", startDate))
+    }
+
+    val accountBalances = accounts.map{ x => (x._1.account, x._2.getOrElse(BigDecimal(0))) }
+    val totalBalance: BigDecimal = accountBalances.map(_._2).sum
+    val balances = accountBalances // :+ ("total", totalBalance)
+
+    val transactions = await {
+      Global.db.run(AccountController.timeSeriesQuery(startDate, endDate))
+    }
+
+    val groupedTransactions = transactions
+      .groupBy( x => (x.transactionDate.map(_.toLocalDate.format(DateTimeFormatter.ofPattern(dateFormat))), x.accountNumber ))
+      .map(x => (x._1 -> x._2.map(_.amount.getOrElse(BigDecimal(0))).sum ))
+      .withDefaultValue(BigDecimal(0))
+
+    var previousBalance = balances.map(_._2)
+    val timeSeries = timeIterator(startDate, endDate, dateFormat).map { i =>
+      val currentDate = i.format(DateTimeFormatter.ofPattern(dateFormat))
+      val currentBalance = balances
+        .map(x => groupedTransactions((Some(currentDate), Some(x._1))))
+        .zip(previousBalance)
+        .map { case (a, b) => a + b }
+      previousBalance = currentBalance
+      currentDate +: currentBalance :+ currentBalance.sum
+    }.toList
+
+    val header = "date" +: balances.map(_._1) :+ "total"
+
+    header +: timeSeries
+  }
 }
 
 @Singleton
@@ -193,17 +242,6 @@ class AccountController extends Controller {
   import models.JsonFormats
 
   private final val logger: Logger = LoggerFactory.getLogger(classOf[AccountController])
-
-//  def readAccounts2(): Action[AnyContent] =  Action.async { request => async {
-//    val endDate = new LocalDate(request.getQueryString("endDate").getOrElse("2100-12-31"))
-//    val accounts = await {getAccounts(endDate)}
-//    val tmp = accounts.map{x => Json.toJson(x._2)(JsonFormats.accountFmtOld)}
-//    var res: JsObject = Json.obj()
-//    for (a <- accounts) {
-//      res = res + (a._1 -> Json.toJson(accounts.values.head)(JsonFormats.accountFmtOld))
-//    }
-//    Ok( Json.obj("accounts" -> tmp) )
-//  }}
 
   def readAccounts(): Action[AnyContent] =  Action.async { request => async {
     val endDate = Date.valueOf(request.getQueryString("endDate") .getOrElse("2100-12-31"))
@@ -215,6 +253,7 @@ class AccountController extends Controller {
     val jsonRes = res.map { x =>
       Json.toJson(x._1)(JsonFormats.accountFmt).as[JsObject] ++ Json.obj("balance" -> Json.toJson(x._2))
     }
+
     Ok(Json.obj("accounts" -> jsonRes) )
   }}
 
@@ -222,16 +261,18 @@ class AccountController extends Controller {
     Ok(Json.obj( "balance" -> JsNumber(await{getBalance(account)})))
   }}
 
-  def timeSeries(): Action[JsValue] = Action.async(parse.json){ request => async {
-    val jsonRequest = request.body
-    val dateFormat = Formatter.normalizeDateFormat((jsonRequest \ "sumRange").as[String])
-    val startDate = new LocalDate((jsonRequest \ "startDate").as[String])
-    val endDate =   new LocalDate((jsonRequest \ "endDate").as[String])
-    val insertValues: Array[Any] = Array(startDate, endDate)
-    val query = timeSeriesQuery(dateFormat)
-    val queryResult = await { Global.pool.sendPreparedStatement(query, insertValues) }
-    val series = await{ createTimeSeries(queryResult.rows.get, startDate, endDate, dateFormat) }
-    Ok(series)
+  def timeSeries(): Action[AnyContent] =  Action.async { request => async {
+    val dateFormat = Formatter.normalizeDateFormat(request.getQueryString("sumRange").getOrElse(""))
+    val startDate = Date.valueOf(request.getQueryString("startDate") .getOrElse("1900-01-01"))
+    val endDate = Date.valueOf(request.getQueryString("endDate") .getOrElse("2100-12-31"))
+
+    val res = await{createTimeSeries(startDate, endDate, dateFormat)}
+    val jsonRes = res.map{ x => x.map {
+      case b:BigDecimal => JsNumber(b)
+      case s:String => JsString(s)
+    }}
+
+    Ok(Json.obj("data" -> jsonRes))
   }}
 }
 
