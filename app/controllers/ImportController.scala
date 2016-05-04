@@ -7,6 +7,7 @@ import models._
 
 import com.github.mauricio.async.db.util.ExecutorServiceUtils.CachedExecutionContext
 import com.github.tototoshi.csv._
+import java.sql.Date
 import javax.inject.Singleton
 import org.joda.time.{LocalDate}
 import org.joda.time.format.{DateTimeFormatter, DateTimeFormat}
@@ -15,6 +16,7 @@ import play.api.mvc._
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.libs.Files.TemporaryFile
 import play.api.libs.json._
+import slick.ast.ColumnOption.AutoInc
 import scala.async.Async.{async, await}
 import slick.driver.PostgresDriver.api._
 
@@ -95,7 +97,7 @@ object GenericImporter {
     return result
   }
 
-  def importCSV(csv: FilePart[TemporaryFile], a: Tables.AccountsRow): List[List[Any]] = {
+  def importCSV(csv: FilePart[TemporaryFile], a: Tables.AccountsRow): List[Tables.TransactionsRow] = {
     implicit object MyFormat extends DefaultCSVFormat {
       override val delimiter = a.delimiter.toCharArray.head
     }
@@ -114,7 +116,7 @@ object GenericImporter {
     val format = DateTimeFormat.forPattern(a.dateFormat);
 
     @scala.annotation.tailrec
-    def loadValues(r: CSVReader, values: List[List[Any]]): List[List[Any]] = r.readNext match {
+    def loadValues(r: CSVReader, values: List[Tables.TransactionsRow]): List[Tables.TransactionsRow] = r.readNext match {
       case None => values
       case Some(x) => {
         a.finalRow match {
@@ -123,12 +125,12 @@ object GenericImporter {
               values
             }
             else {
-              val row =readCSVRow(a, format, x)
+              val row = readCSVRow(a, format, x)
               loadValues(r, values :+ row)
             }
           }
           case None => {
-            val row =readCSVRow(a, format, x)
+            val row = readCSVRow(a, format, x)
             loadValues(r, values :+ row)
           }
         }
@@ -138,16 +140,23 @@ object GenericImporter {
     loadValues(reader, List())
   }
 
-  def readCSVRow(a: Tables.AccountsRow, format: DateTimeFormatter, x: List[String]): List[Any] = {
-    val row = List(a.account,
-      LocalDate.parse(x(a.transactionDatePos), format),
-      LocalDate.parse(x(a.exchangeDatePos), format),
-      mergeStrings(x, a.receiverPos.replace("{", "").replace("}", "").split(",").map(_.toInt)),
-      mergeStrings(x, a.purposePos.replace("{", "").replace("}", "").split(",").map(_.toInt)),
-      getAmount(x, a),
-      x.lift(a.currencyPos).getOrElse(a.currencyDefault)
+  def readCSVRow(a: Tables.AccountsRow, format: DateTimeFormatter, x: List[String]): Tables.TransactionsRow = {
+    val transactionDate = new java.text.SimpleDateFormat(a.dateFormat).parse(x(a.transactionDatePos))
+    val exchangeDate = new java.text.SimpleDateFormat(a.dateFormat).parse(x(a.exchangeDatePos))
+    Tables.TransactionsRow (
+      id = 0,
+      accountNumber = Some(a.account),
+      transactionDate = Some(new Date(transactionDate.getTime)),
+      exchangeDate = Some(new Date(exchangeDate.getTime)),
+      receiver = Some(mergeStrings(x, a.receiverPos.replace("{", "").replace("}", "").split(",").map(_.toInt))),
+      purpose = Some(mergeStrings(x, a.purposePos.replace("{", "").replace("}", "").split(",").map(_.toInt))),
+      amount = Some(getAmount(x, a)),
+      currency = Some(x.lift(a.currencyPos).getOrElse(a.currencyDefault)),
+      category = Some("other"),
+      subCategory = Some("to categorize"),
+      comment = None,
+      approved = false
     )
-    row
   }
 }
 
@@ -155,26 +164,12 @@ object GenericImporter {
 class ImportController extends Controller {
   private final val logger: Logger = LoggerFactory.getLogger(classOf[ImportController])
 
-  def importQuery (transactions: List[List[Any]]): String = {
-    val v = " (?, ?, ?, ?, ?, ?, ?, ?, ?, FALSE) "
-    var values = v
-    for (i <- 1 until transactions.size) {
-      values = v + ", " + values 
-    }
-    s"""
-      INSERT INTO transactions ("account_number",
-        "transaction_date",
-        "exchange_date",
-        "receiver",
-        "purpose",
-        "amount",
-        "currency",
-        "category",
-        "sub_category",
-        "approved")
-      VALUES $values
-      RETURNING id
-    """
+  def importQuery(transactions: List[Tables.TransactionsRow]) = {
+    val t = Tables.Transactions
+    val insertQuery = t returning t.map(_.id) into ((item, id) => item.copy(id = id))
+
+    val action = insertQuery ++= transactions
+    action
   }
 
   val approveQuery = {
@@ -208,14 +203,30 @@ class ImportController extends Controller {
    * @param in
    * @return
    */
-  def categorizeTransactions(in: List[List[Any]], categories: Map[String, Tuple2[String, String]]): List[List[Any]] = {
-    in.map(t=> {
-      val c = categories.find(c => { 
-        t(3).toString.toLowerCase.contains(c._1.toLowerCase) ||
-        t(4).toString.toLowerCase.contains(c._1.toLowerCase) ||
-        t(5).toString.toLowerCase.contains(c._1.toLowerCase)
-      }).map(c => List() :+ c._2._1 :+ c._2._2 )
-      t ::: c.getOrElse(List() :+ "other" :+ "to categorize")
+  def categorizeTransactions(in: List[Tables.TransactionsRow], categories: Map[String, Tuple2[String, String]]): List[Tables.TransactionsRow] = {
+    in.map( t => {
+      val c = categories.find(c => {
+        t.receiver.getOrElse("").toLowerCase.contains(c._1.toLowerCase) ||
+        t.purpose.getOrElse("").toString.toLowerCase.contains(c._1.toLowerCase)
+      }).map(c => (c._2._1, c._2._2) )
+      c match {
+        case Some(x) => t
+          Tables.TransactionsRow (
+            id = t.id,
+            accountNumber = t.accountNumber,
+            transactionDate = t.transactionDate,
+            exchangeDate = t.exchangeDate,
+            receiver = t.receiver,
+            purpose = t.purpose,
+            amount = t.amount,
+            currency = t.currency,
+            category = Some(x._1),
+            subCategory = Some(x._2),
+            comment = t.comment,
+            approved = t.approved
+          )
+        case None => t
+      }
     } )
   }
 
@@ -236,10 +247,12 @@ class ImportController extends Controller {
                 val a = accounts.head
                 val transactions = GenericImporter.importCSV(csv, a._1)
                 val insertValues = categorizeTransactions(transactions, categories)
+
                 val queryResult = await {
-                  Global.pool.sendPreparedStatement(importQuery(transactions), insertValues.flatten)
+                  Global.db.run(importQuery(transactions))
                 }
-                val status = queryResult.statusMessage
+
+                val status = queryResult.toString
                 val balance = await {
                   Global.db.run(AccountController.readAccountsQuery(a._1.account))
                 }.head._2
