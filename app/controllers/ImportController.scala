@@ -5,18 +5,16 @@ import java.io.StringReader
 import helpers.Global
 import models._
 
-import com.github.mauricio.async.db.util.ExecutorServiceUtils.CachedExecutionContext
 import com.github.tototoshi.csv._
 import java.sql.Date
 import javax.inject.Singleton
-import org.joda.time.{LocalDate}
 import org.joda.time.format.{DateTimeFormatter, DateTimeFormat}
 import org.slf4j.{LoggerFactory, Logger}
 import play.api.mvc._
 import play.api.mvc.MultipartFormData.FilePart
+import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.Files.TemporaryFile
 import play.api.libs.json._
-import slick.ast.ColumnOption.AutoInc
 import scala.async.Async.{async, await}
 import slick.driver.PostgresDriver.api._
 
