@@ -1,5 +1,7 @@
 package controllers
 
+import java.io.StringReader
+
 import helpers.Global
 import models._
 
@@ -47,12 +49,66 @@ object GenericImporter {
     positions.map{i => x.lift(i).getOrElse("")}.reduce((a, b) => a +", "+b)
   }
 
+  def preprocessNumber26(lines: String): String = {    val dow = List("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+
+    val numPattern = """-?\d+,\d\d""".r
+    var result:String = ""
+    var i = 0;
+    var j = 0
+    val l = lines.replace(" €", "").split("\n");
+    var date = ""
+    while (i < l.length - 1) {
+      val isDate = dow.map(x => l(i).toLowerCase.contains(x)).reduce(_ || _)
+      if (isDate) {
+        val dateParts = l(i).replace(".", "").toUpperCase().split(' ')
+        date = dateParts(1) + " " + dateParts(2).substring(0, 3) + " " + dateParts(3)
+        i += 2
+      }
+      else {
+        result += date + ";"
+        var isNum = false
+        var isDate = false
+        j = 0
+        do {
+          result += l(i)
+          i += 1
+          j += 1
+          isNum = numPattern.findFirstIn(l(i)) match {
+            case Some(n) => true
+            case None => false
+          }
+          isDate = dow.map(x => l(i).toLowerCase.contains(x)).reduce(_ || _)
+          if (i < l.length - 1 && !isDate && !isNum || j < 4) {
+            result += ";"
+          }
+        } while(i < l.length - 1 && !isDate && !isNum )
+
+        if(i != l.length - 1) {
+          result += "\n"
+        }
+      }
+    }
+    result += l(l.length - 1)
+    if (j < 4) {
+      result += ";"
+    }
+    return result
+  }
+
   def importCSV(csv: FilePart[TemporaryFile], a: Tables.AccountsRow): List[List[Any]] = {
     implicit object MyFormat extends DefaultCSVFormat {
-//      override val delimiter = a.delimiter.toCharArray.head
       override val delimiter = a.delimiter.toCharArray.head
     }
-    val reader = CSVReader.open(csv.ref.file, "ISO-8859-1")
+    val encoding = a.encoding.getOrElse("UTF-8")
+    val source = scala.io.Source.fromFile(csv.ref.file, enc=encoding)
+    val sourceString = try source.mkString finally source.close
+    val csvString = a.account.toLowerCase() match {
+      case "number26" => preprocessNumber26(sourceString)
+      case _ => sourceString
+    }
+
+    val reader = CSVReader.open(new StringReader(csvString))
+
     // skip the first rows
     for (i <- 0 until a.rowsToSkip) { reader.readNext }
     val format = DateTimeFormat.forPattern(a.dateFormat);
