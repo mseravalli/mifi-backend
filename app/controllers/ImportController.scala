@@ -97,7 +97,7 @@ object GenericImporter {
     return result
   }
 
-  def importCSV(csv: FilePart[TemporaryFile], a: Tables.AccountsRow): List[Tables.TransactionsRow] = {
+  def importCSV(csv: FilePart[TemporaryFile], a: Tables.AccountsRow, categories: Map[String, Tuple2[String, String]]): List[Tables.TransactionsRow] = {
     implicit object MyFormat extends DefaultCSVFormat {
       override val delimiter = a.delimiter.toCharArray.head
     }
@@ -125,12 +125,12 @@ object GenericImporter {
               values
             }
             else {
-              val row = readCSVRow(a, format, x)
+              val row = readCSVRow(a, format, x, categories)
               loadValues(r, values :+ row)
             }
           }
           case None => {
-            val row = readCSVRow(a, format, x)
+            val row = readCSVRow(a, format, x, categories)
             loadValues(r, values :+ row)
           }
         }
@@ -140,7 +140,24 @@ object GenericImporter {
     loadValues(reader, List())
   }
 
-  def readCSVRow(a: Tables.AccountsRow, format: DateTimeFormatter, x: List[String]): Tables.TransactionsRow = {
+  /**
+    * Returns for the provided fields the categories associated otherwise "other" "to categorize"
+    * @param categories
+    * @param fields
+    * @return
+    */
+  def categorize(categories: Map[String, Tuple2[String, String]], fields: List[String]): Tuple2[String, String] = {
+    val c = categories.find(c => {
+      fields.map(f => f.toLowerCase.contains(c._1.toLowerCase)).reduce(_ || _)
+    }).map(c => c._2)
+    c.getOrElse(("other", "to categorize"))
+  }
+
+  def readCSVRow(a: Tables.AccountsRow, format: DateTimeFormatter, x: List[String], categories: Map[String, Tuple2[String, String]]): Tables.TransactionsRow = {
+    val receiver = mergeStrings(x, a.receiverPos.replace("{", "").replace("}", "").split(",").map(_.toInt))
+    val purpose = mergeStrings(x, a.purposePos.replace("{", "").replace("}", "").split(",").map(_.toInt))
+    val fields = List(receiver, purpose)
+    val c = categorize(categories, fields)
     val transactionDate = new java.text.SimpleDateFormat(a.dateFormat).parse(x(a.transactionDatePos))
     val exchangeDate = new java.text.SimpleDateFormat(a.dateFormat).parse(x(a.exchangeDatePos))
     Tables.TransactionsRow (
@@ -148,12 +165,12 @@ object GenericImporter {
       accountNumber = Some(a.account),
       transactionDate = Some(new Date(transactionDate.getTime)),
       exchangeDate = Some(new Date(exchangeDate.getTime)),
-      receiver = Some(mergeStrings(x, a.receiverPos.replace("{", "").replace("}", "").split(",").map(_.toInt))),
-      purpose = Some(mergeStrings(x, a.purposePos.replace("{", "").replace("}", "").split(",").map(_.toInt))),
+      receiver = Some(receiver),
+      purpose = Some(purpose),
       amount = Some(getAmount(x, a)),
       currency = Some(x.lift(a.currencyPos).getOrElse(a.currencyDefault)),
-      category = Some("other"),
-      subCategory = Some("to categorize"),
+      category = Some(c._1),
+      subCategory = Some(c._2),
       comment = None,
       approved = false
     )
@@ -198,38 +215,6 @@ class ImportController extends Controller {
     Ok(Json.obj("result" -> JsString(s"$action ${res.toString}")))
   } }
 
-  /**
-   * Adds to every transaction the first match from the given category otherwise "other", "to categorize"
-   * @param in
-   * @return
-   */
-  def categorizeTransactions(in: List[Tables.TransactionsRow], categories: Map[String, Tuple2[String, String]]): List[Tables.TransactionsRow] = {
-    in.map( t => {
-      val c = categories.find(c => {
-        t.receiver.getOrElse("").toLowerCase.contains(c._1.toLowerCase) ||
-        t.purpose.getOrElse("").toString.toLowerCase.contains(c._1.toLowerCase)
-      }).map(c => (c._2._1, c._2._2) )
-      c match {
-        case Some(x) => t
-          Tables.TransactionsRow (
-            id = t.id,
-            accountNumber = t.accountNumber,
-            transactionDate = t.transactionDate,
-            exchangeDate = t.exchangeDate,
-            receiver = t.receiver,
-            purpose = t.purpose,
-            amount = t.amount,
-            currency = t.currency,
-            category = Some(x._1),
-            subCategory = Some(x._2),
-            comment = t.comment,
-            approved = t.approved
-          )
-        case None => t
-      }
-    } )
-  }
-
   def importTransactions = Action.async(parse.multipartFormData) { request =>
     request.body.file("csv").map { csv =>
       request.body.dataParts.get("importAccount").map { accounts => async {
@@ -245,8 +230,8 @@ class ImportController extends Controller {
             accounts.length match {
               case 1 => {
                 val a = accounts.head
-                val transactions = GenericImporter.importCSV(csv, a._1)
-                val insertValues = categorizeTransactions(transactions, categories)
+                val transactions = GenericImporter.importCSV(csv, a._1, categories)
+//                val insertValues = categorizeTransactions(transactions, categories)
 
                 val queryResult = await {
                   Global.db.run(importQuery(transactions))
