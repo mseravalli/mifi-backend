@@ -48,5 +48,28 @@ class ApplicationIT extends Specification with JsonMatchers {
         contentAsString(response) must /("finalRow" -> "Account balance")
       }
     }
+
+    "timeseries" in {
+      running(FakeApplication()) {
+        val request = FakeRequest(GET, baseUrl + "/accounts/timeseries?startDate=2014-01-01&endDate=2016-03-31&sumRange=YYYY-MM")
+        val response = route(request).get
+        status(response) must equalTo(OK)
+        contentType(response) must beSome.which(_ == "application/json")
+
+        response.map(x => println("hello " + x.toString))
+
+        contentAsString(response) must /("data") /# 0 /# 0 /("date")
+        contentAsString(response) must /("data") /# 0 /# 1 /("db")
+        contentAsString(response) must /("data") /# 0 /# 2 /("hvb")
+        contentAsString(response) must /("data") /# 0 /# 3 /("kalixa")
+        contentAsString(response) must /("data") /# 0 /# 4 /("total")
+
+        contentAsString(response) must /("data") /# 25 /# 0 /("2016-01")
+        contentAsString(response) must /("data") /# 25 /# 1 /(7022.4400)
+        contentAsString(response) must /("data") /# 25 /# 2 /(18900.7900)
+        contentAsString(response) must /("data") /# 25 /# 3 /(200.2100)
+        contentAsString(response) must /("data") /# 25 /# 4 /(26123.4400)
+      }
+    }
   }
 }
