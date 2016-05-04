@@ -32,18 +32,19 @@ trait Tables {
    *  @param amountInPos Database column amount_in_pos SqlType(int4)
    *  @param amountOutPos Database column amount_out_pos SqlType(int4)
    *  @param currencyPos Database column currency_pos SqlType(int4)
-   *  @param currencyDefault Database column currency_default SqlType(varchar), Length(3,true) */
-  case class AccountsRow(account: String, initialAmount: scala.math.BigDecimal, rowsToSkip: Int, delimiter: String, dateFormat: String, finalRow: Option[String] = None, transactionDatePos: Int, exchangeDatePos: Int, receiverPos: String, purposePos: String, amountInPos: Int, amountOutPos: Int, currencyPos: Int, currencyDefault: String)
+   *  @param currencyDefault Database column currency_default SqlType(varchar), Length(3,true)
+   *  @param encoding Database column encoding SqlType(varchar), Length(16,true), Default(None) */
+  case class AccountsRow(account: String, initialAmount: scala.math.BigDecimal, rowsToSkip: Int, delimiter: String, dateFormat: String, finalRow: Option[String] = None, transactionDatePos: Int, exchangeDatePos: Int, receiverPos: String, purposePos: String, amountInPos: Int, amountOutPos: Int, currencyPos: Int, currencyDefault: String, encoding: Option[String] = None)
   /** GetResult implicit for fetching AccountsRow objects using plain SQL queries */
   implicit def GetResultAccountsRow(implicit e0: GR[String], e1: GR[scala.math.BigDecimal], e2: GR[Int], e3: GR[Option[String]]): GR[AccountsRow] = GR{
     prs => import prs._
-    AccountsRow.tupled((<<[String], <<[scala.math.BigDecimal], <<[Int], <<[String], <<[String], <<?[String], <<[Int], <<[Int], <<[String], <<[String], <<[Int], <<[Int], <<[Int], <<[String]))
+    AccountsRow.tupled((<<[String], <<[scala.math.BigDecimal], <<[Int], <<[String], <<[String], <<?[String], <<[Int], <<[Int], <<[String], <<[String], <<[Int], <<[Int], <<[Int], <<[String], <<?[String]))
   }
   /** Table description of table accounts. Objects of this class serve as prototypes for rows in queries. */
   class Accounts(_tableTag: Tag) extends Table[AccountsRow](_tableTag, "accounts") {
-    def * = (account, initialAmount, rowsToSkip, delimiter, dateFormat, finalRow, transactionDatePos, exchangeDatePos, receiverPos, purposePos, amountInPos, amountOutPos, currencyPos, currencyDefault) <> (AccountsRow.tupled, AccountsRow.unapply)
+    def * = (account, initialAmount, rowsToSkip, delimiter, dateFormat, finalRow, transactionDatePos, exchangeDatePos, receiverPos, purposePos, amountInPos, amountOutPos, currencyPos, currencyDefault, encoding) <> (AccountsRow.tupled, AccountsRow.unapply)
     /** Maps whole row to an option. Useful for outer joins. */
-    def ? = (Rep.Some(account), Rep.Some(initialAmount), Rep.Some(rowsToSkip), Rep.Some(delimiter), Rep.Some(dateFormat), finalRow, Rep.Some(transactionDatePos), Rep.Some(exchangeDatePos), Rep.Some(receiverPos), Rep.Some(purposePos), Rep.Some(amountInPos), Rep.Some(amountOutPos), Rep.Some(currencyPos), Rep.Some(currencyDefault)).shaped.<>({r=>import r._; _1.map(_=> AccountsRow.tupled((_1.get, _2.get, _3.get, _4.get, _5.get, _6, _7.get, _8.get, _9.get, _10.get, _11.get, _12.get, _13.get, _14.get)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
+    def ? = (Rep.Some(account), Rep.Some(initialAmount), Rep.Some(rowsToSkip), Rep.Some(delimiter), Rep.Some(dateFormat), finalRow, Rep.Some(transactionDatePos), Rep.Some(exchangeDatePos), Rep.Some(receiverPos), Rep.Some(purposePos), Rep.Some(amountInPos), Rep.Some(amountOutPos), Rep.Some(currencyPos), Rep.Some(currencyDefault), encoding).shaped.<>({r=>import r._; _1.map(_=> AccountsRow.tupled((_1.get, _2.get, _3.get, _4.get, _5.get, _6, _7.get, _8.get, _9.get, _10.get, _11.get, _12.get, _13.get, _14.get, _15)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
 
     /** Database column account SqlType(varchar), PrimaryKey, Length(32,true) */
     val account: Rep[String] = column[String]("account", O.PrimaryKey, O.Length(32,varying=true))
@@ -73,6 +74,8 @@ trait Tables {
     val currencyPos: Rep[Int] = column[Int]("currency_pos")
     /** Database column currency_default SqlType(varchar), Length(3,true) */
     val currencyDefault: Rep[String] = column[String]("currency_default", O.Length(3,varying=true))
+    /** Database column encoding SqlType(varchar), Length(16,true), Default(None) */
+    val encoding: Rep[Option[String]] = column[Option[String]]("encoding", O.Length(16,varying=true), O.Default(None))
   }
   /** Collection-like TableQuery object for table Accounts */
   lazy val Accounts = new TableQuery(tag => new Accounts(tag))
