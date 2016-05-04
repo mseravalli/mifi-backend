@@ -11,7 +11,8 @@ INSERT INTO accounts ( account,
                        amount_in_pos,
                        amount_out_pos,
                        currency_pos,
-                       currency_default
+                       currency_default,
+                       encoding
 ) VALUES
-  ('kalixa', 0.0,     1, ',', 'dd.MM.yyyy HH:mm:ss', NULL,              0, 0, '{2}',    '{1}', 3,  4,  -1, 'EUR')
+  ('kalixa', 0.0,     1, ',', 'dd.MM.yyyy HH:mm:ss', NULL,              0, 0, '{2}',    '{1}', 3,  4,  -1, 'EUR', 'ISO-8859-1')
 ;
