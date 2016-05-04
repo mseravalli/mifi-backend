@@ -22,6 +22,7 @@ CREATE TABLE accounts
   amount_out_pos INTEGER NOT NULL,
   currency_pos INTEGER NOT NULL,
   currency_default VARCHAR(3) NOT NULL,
+  encoding VARCHAR(16),
   PRIMARY KEY (account)
 );
 
