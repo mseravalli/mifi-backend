@@ -231,7 +231,6 @@ class ImportController extends Controller {
               case 1 => {
                 val a = accounts.head
                 val transactions = GenericImporter.importCSV(csv, a._1, categories)
-//                val insertValues = categorizeTransactions(transactions, categories)
 
                 val queryResult = await {
                   Global.db.run(importQuery(transactions))
