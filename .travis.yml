@@ -18,11 +18,11 @@ script:
   - sbt compile
   - sbt test
 
-
 after_script:
   - sbt dist
-  - export VERSION=`sbt version | awk 'END {print $2}' | sed 's/\[0m//g' | sed 's/^.//' | sed 's/.$//'`
-  - cat Dockerfile | awk 'NR==4 {print "ENV VERSION '"$VERSION"'"} 1' > tmp.tmp && mv tmp.tmp Dockerfile
+  - export VERSION=`grep 'version :=' build.sbt | awk '{print $3}' | sed 's/\"//g'`
+  - unzip ./target/universal/mi-fi-$VERSION.zip -d ./target/universal/
+  - mv target/universal/mi-fi-$VERSION target/universal/mi-fi
   - docker build -t mseravalli/mi-fi:$VERSION .
   - docker login -e="$DOCKER_EMAIL" -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
   - docker push mseravalli/mi-fi
