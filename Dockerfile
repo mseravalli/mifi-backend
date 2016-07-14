@@ -1,8 +1,11 @@
-FROM java:jre
-MAINTAINER Marco Seravalli <marco.seravalli@gmail.com>
+FROM java:jre-alpine
 
-ENV ARTIFACT mi-fi
-COPY target/universal/$ARTIFACT-$VERSION.zip /opt/
-RUN unzip -o /opt/$ARTIFACT-$VERSION.zip -d /opt/
-RUN ln -s /opt/$ARTIFACT-$VERSION /opt/$ARTIFACT
-RUN echo 'Complete'
+RUN apk add --no-cache bash
+
+COPY ./target/universal/mi-fi /opt/mi-fi
+
+EXPOSE 9000
+
+ENTRYPOINT /opt/mi-fi/bin/mi-fi
+
+MAINTAINER Marco Seravalli <marco.seravalli@gmail.com>
