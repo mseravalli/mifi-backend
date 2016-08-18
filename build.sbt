@@ -23,3 +23,8 @@ libraryDependencies ++= Seq(
   "com.typesafe.slick" %% "slick-codegen" % "3.1.1",
   "org.postgresql" % "postgresql" % "9.4.1207"
 )
+
+libraryDependencies ++= Seq(
+  ws
+)
+
