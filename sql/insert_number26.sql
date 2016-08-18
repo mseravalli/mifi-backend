@@ -13,5 +13,5 @@ INSERT INTO accounts ( account,
                        currency_pos,
                        currency_default
 ) VALUES
-  ('number26', 0.0, 0, ';', 'dd MMM yyyy', NULL, 0, 0, '{2}', '{3,4}', 1, 1, -1, 'EUR')
+  ('number26', 0.0, 1, ',', 'yyyy-MM-dd', NULL, 0, 0, '{1}', '{3,4}', 6, 6, -1, 'EUR')
 ;
