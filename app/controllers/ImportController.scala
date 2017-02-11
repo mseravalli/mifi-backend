@@ -7,6 +7,7 @@ import models._
 
 import com.github.tototoshi.csv._
 import java.sql.Date
+import java.sql.Timestamp
 import javax.inject.Singleton
 import org.joda.time.format.{DateTimeFormatter, DateTimeFormat}
 import org.slf4j.{LoggerFactory, Logger}
@@ -15,7 +16,11 @@ import play.api.mvc.MultipartFormData.FilePart
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.Files.TemporaryFile
 import play.api.libs.json._
+import play.api.libs.ws._
+import play.api.libs.ws.ning.NingAsyncHttpClientConfigBuilder
+import play.api.Play.current
 import scala.async.Async.{async, await}
+import scala.concurrent.Future
 import slick.driver.PostgresDriver.api._
 
 object GenericImporter {
@@ -24,6 +29,7 @@ object GenericImporter {
       s.reverse.charAt(2) match {
         case ',' => s.replace(".", "").replace(",", ".")
         case '.' => s.replace(",", "")
+        case t => formatAmount(s"${s}0")
       }
     }
     else if(s.equals("")) {
@@ -49,61 +55,42 @@ object GenericImporter {
     positions.map{i => x.lift(i).getOrElse("")}.reduce((a, b) => a +", "+b)
   }
 
-  def preprocessNumber26(lines: String): String = {    val dow = List("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
-
-    val numPattern = """-?\d+,\d\d""".r
-    var result:String = ""
-    var i = 0;
-    var j = 0
-    val l = lines.replace(" €", "").split("\n");
-    var date = ""
-    while (i < l.length - 1) {
-      val isDate = dow.map(x => l(i).toLowerCase.contains(x)).reduce(_ || _)
-      if (isDate) {
-        val dateParts = l(i).replace(".", "").toUpperCase().split(' ')
-        date = dateParts(1) + " " + dateParts(2).substring(0, 3) + " " + dateParts(3)
-        i += 2
-      }
-      else {
-        result += date + ";"
-        var isNum = false
-        var isDate = false
-        j = 0
-        do {
-          result += l(i)
-          i += 1
-          j += 1
-          isNum = numPattern.findFirstIn(l(i)) match {
-            case Some(n) => true
-            case None => false
-          }
-          isDate = dow.map(x => l(i).toLowerCase.contains(x)).reduce(_ || _)
-          if (i < l.length - 1 && !isDate && !isNum || j < 4) {
-            result += ";"
-          }
-        } while(i < l.length - 1 && !isDate && !isNum )
-
-        if(i != l.length - 1) {
-          result += "\n"
-        }
-      }
+  def retrieveCSV(startDate: String, endDate: String): Future[String] = async {
+    val oauthTokenUrl = "https://api.tech26.de/oauth/token"
+    val oauthTokenData: Map[String, Seq[String]] = Map(
+      "username" -> Seq("marco.seravalli@gmail.com"),
+      "password" -> Seq("^35*burn*SPACE*with*AGAIN*88^"),
+      "grant_type" -> Seq("password")
+    )
+    val oauthTokenResp = await{
+      WS.url(oauthTokenUrl)
+        .withHeaders("Authorization" -> "Basic bXktdHJ1c3RlZC13ZHBDbGllbnQ6c2VjcmV0")
+        .post(oauthTokenData)
     }
-    result += l(l.length - 1)
-    if (j < 4) {
-      result += ";"
+    val bearerToken = (oauthTokenResp.json \ "access_token").toString.replaceAll("\"", "")
+    val startDateTimestamp = Timestamp.valueOf(startDate).getTime
+    val endDateTimestamp   = Timestamp.valueOf(endDate).getTime
+                                                            
+    val reportUrl = s"https://api.tech26.de/api/smrt/reports/$startDateTimestamp/$endDateTimestamp/statements"
+    val reportResp = await{
+      WS.url(reportUrl)
+        .withHeaders("Authorization" -> s"bearer $bearerToken")
+        .get
     }
-    return result
+    reportResp.body
   }
 
-  def importCSV(csv: FilePart[TemporaryFile], a: Tables.AccountsRow, categories: Map[String, Tuple2[String, String]]): List[Tables.TransactionsRow] = {
+  def importCSV(csv: FilePart[TemporaryFile], a: Tables.AccountsRow, categories: Map[String, Tuple2[String, String]]): Future[List[Tables.TransactionsRow]] = async {
     implicit object MyFormat extends DefaultCSVFormat {
       override val delimiter = a.delimiter.toCharArray.head
     }
+    val startDate = "2016-12-01 00:00:00"
+    val endDate   = "2016-12-31 23:59:59"
     val encoding = a.encoding.getOrElse("UTF-8")
     val source = scala.io.Source.fromFile(csv.ref.file, enc=encoding)
     val sourceString = try source.mkString finally source.close
     val csvString = a.account.toLowerCase() match {
-      case "number26" => preprocessNumber26(sourceString)
+      case "number26" => await{ retrieveCSV(startDate, endDate) }
       case _ => sourceString
     }
 
@@ -228,7 +215,7 @@ class ImportController extends Controller {
             accounts.length match {
               case 1 => {
                 val a = accounts.head
-                val transactions = GenericImporter.importCSV(csv, a._1, categories)
+                val transactions = await { GenericImporter.importCSV(csv, a._1, categories) }
 
                 val queryResult = await {
                   Global.db.run(importQuery(transactions))

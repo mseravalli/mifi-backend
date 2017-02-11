@@ -20,16 +20,20 @@ echo "Insert the names of the banks that will be stored."
 echo "Insert one bank name at a time and then press enter."
 echo "Type 'q' when done."
 echo "Currently available: hvb, db, kalixa"
-ACCOUNT=""
-while [ "$ACCOUNT" != "q" ]
-do
-  read ACCOUNT
-  if [ "$ACCOUNT" = "hvb" ] || [ "$ACCOUNT" = "db" ] || [ "$ACCOUNT" = "kalixa" ]; then
-    psql -U mifi -f $CURRENT_DIR/sql/insert_${ACCOUNT}.sql
-  elif [ "$ACCOUNT" = "q" ]; then
-    echo "Setup complete."
-  else
-    echo "Bank not supported."
-  fi
-done
+psql -U mifi -f $CURRENT_DIR/sql/insert_db.sql
+psql -U mifi -f $CURRENT_DIR/sql/insert_hvb.sql
+psql -U mifi -f $CURRENT_DIR/sql/insert_kalixa.sql
+psql -U mifi -f $CURRENT_DIR/sql/insert_number26.sql
+#ACCOUNT=""
+#while [ "$ACCOUNT" != "q" ]
+#do
+#  read ACCOUNT
+#  if [ "$ACCOUNT" = "hvb" ] || [ "$ACCOUNT" = "db" ] || [ "$ACCOUNT" = "kalixa" ]; then
+#    psql -U mifi -f $CURRENT_DIR/sql/insert_${ACCOUNT}.sql
+#  elif [ "$ACCOUNT" = "q" ]; then
+#    echo "Setup complete."
+#  else
+#    echo "Bank not supported."
+#  fi
+#done
 
