@@ -27,8 +27,8 @@ POST        /api/v0.1/transaction/:id/split          @controllers.TransactionCon
 # Getting account data
 GET         /api/v0.1/categories                     @controllers.CategoryController.readCategories
 GET         /api/v0.1/categories/aggregate           @controllers.CategoryController.aggregateCategory
-POST        /api/v0.1/categories/in                  @controllers.CategoryController.totalFlowCatIn
-POST        /api/v0.1/categories/out                 @controllers.CategoryController.totalFlowCatOut
+GET         /api/v0.1/categories/in                  @controllers.CategoryController.totalFlowCatIn
+GET         /api/v0.1/categories/out                 @controllers.CategoryController.totalFlowCatOut
 POST        /api/v0.1/subcategories                  @controllers.SubCategoryController.readSubCategories
 POST        /api/v0.1/subcategories/aggregate        @controllers.SubCategoryController.aggregateSubCategory
 POST        /api/v0.1/subcategories/in               @controllers.SubCategoryController.totalFlowSubCatIn

@@ -112,7 +112,6 @@ class CategoryController extends Controller {
     val startDate = new LocalDate(request.getQueryString("startDate").getOrElse("1900-01-01"))
     val endDate =   new LocalDate(request.getQueryString("endDate").getOrElse("2100-12-31"))
     val categories = "total" +: request.getQueryString("categories").getOrElse("").split(",").map(_.trim).sorted
-    // val categories = "total" +: (jsonRequest \ "categories").as[Array[String]].sorted
     val insertValues = Array(startDate, endDate) ++ categories ++ Array(startDate, endDate) ++ categories
     val query = aggregatedCategoryQuery(dateFormat, categories)
     val queryResult = await { Global.pool.sendPreparedStatement(query, insertValues) }
@@ -121,12 +120,11 @@ class CategoryController extends Controller {
     Ok( series )
   }}
 
-  def totalFlowCat(flow: String): Action[JsValue] = Action.async(parse.json){ request => async {
-    val jsonRequest = request.body
-    val dateFormat = Formatter.normalizeDateFormat((jsonRequest \ "sumRange").as[String])
-    val startDate = new LocalDate((jsonRequest \ "startDate").as[String])
-    val endDate =   new LocalDate((jsonRequest \ "endDate").as[String])
-    val categories = (jsonRequest \ "categories").as[Array[String]]
+  def totalFlowCat(flow: String): Action[AnyContent] = Action.async { request => async {
+    val dateFormat = Formatter.normalizeDateFormat(request.getQueryString("sumRange").getOrElse(""))
+    val startDate = new LocalDate(request.getQueryString("startDate").getOrElse("1900-01-01"))
+    val endDate =   new LocalDate(request.getQueryString("endDate").getOrElse("2100-12-31"))
+    val categories = "total" +: request.getQueryString("categories").getOrElse("").split(",").map(_.trim).sorted
     val insertValues = Array(startDate, endDate) ++  categories
     val query = totalFlowCatQuery(dateFormat, flow, categories)
     val queryResult = await { Global.pool.sendPreparedStatement(query, insertValues) }
@@ -139,7 +137,7 @@ class CategoryController extends Controller {
     Ok( Json.obj("data" -> (cols +: rows)) )
   }}
 
-  def totalFlowCatIn(): Action[JsValue] =  totalFlowCat("in")
-  def totalFlowCatOut(): Action[JsValue] = totalFlowCat("out")
+  def totalFlowCatIn():  Action[AnyContent] = totalFlowCat("in")
+  def totalFlowCatOut(): Action[AnyContent] = totalFlowCat("out")
 }
 

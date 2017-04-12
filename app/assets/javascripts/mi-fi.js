@@ -366,7 +366,7 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
       pieInCatChart.options.colors = assignColors(categories, $scope.categoryColors);
       $scope.inCatChart = pieInCatChart;
     };
-    $http.post(baseUrl + "categories/in", params, requestConfig)
+    $http.get(baseUrl + "categories/in?" + params.urlParams)
       .then(success);
 
     var success = function(response) {
@@ -379,7 +379,7 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
       pieOutCatChart.options.colors = assignColors(categories, $scope.categoryColors);
       $scope.outCatChart = pieOutCatChart;
     };
-    $http.post(baseUrl + "categories/out", params, requestConfig)
+    $http.get(baseUrl + "categories/out?" + params.urlParams)
       .then(success);
 
     var success = function(response) {
