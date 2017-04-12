@@ -1,23 +1,27 @@
 package controllers
 
+import java.sql.Date
+
 import helpers.Global
 import helpers.Formatter
-import models.{JsonFormats, Category}
-
+import models.{Category, JsonFormats, Tables}
 import com.github.mauricio.async.db.util.ExecutorServiceUtils.CachedExecutionContext
 import javax.inject.Singleton
-import org.joda.time.{LocalDate}
-import org.slf4j.{LoggerFactory, Logger}
+
+import org.joda.time.LocalDate
+import org.slf4j.{Logger, LoggerFactory}
+import play.api.libs.concurrent.Execution.Implicits._
 import play.api.mvc._
 import play.api.libs.json._
+
 import scala.async.Async.{async, await}
 import scala.concurrent.Future
+import slick.driver.PostgresDriver.api._
 
 object CategoryController {
-  val getCategoriesQuery = """
-    select c.category AS cat, c.color AS cat_col, cm.sub_category AS sub_cat, cm.color AS sub_cat_col
-    from categories c JOIN category_match cm on c.category = cm.category
-  """
+  def getCategoriesQuery = {
+    Tables.Categories.join(Tables.CategoryMatch).on(_.category === _.category).result
+  }
 
   // the flow can be eithen in or out
   def totalFlowCatQuery(dateFormat: String, flow: String, categories: Array[String]): String = {
@@ -84,17 +88,18 @@ class CategoryController extends Controller {
   private final val logger: Logger = LoggerFactory.getLogger(classOf[CategoryController])
 
   def readCategories(): Action[AnyContent] = Action.async { async {
-    val queryResult = await { Global.pool.sendPreparedStatement(getCategoriesQuery) }
-    val categories = queryResult.rows.map { rows => rows.map{ r =>
+    val categories = await {
+      Global.db.run(CategoryController.getCategoriesQuery)
+    }.map{x =>
       Category (
-        name = r("cat").asInstanceOf[String],
-        color = r("cat_col").asInstanceOf[String],
-        subCategories = List(Category(r("sub_cat").toString, r("sub_cat_col").toString))
+        name = x._1.category,
+        color = x._1.color.getOrElse("#000000"),
+        subCategories = List(Category(x._2.subCategory, x._2.color.getOrElse("#000000")))
       )
-    }}
-    val nestedCategories = categories.map{ c => c.groupBy{x => (x.name, x.color)}
-      .map{x => Category( x._1._1, x._1._2, x._2.map{y => y.subCategories}.flatten.toList)}}
-    val res = nestedCategories.map{x => x.map{ y => Json.toJson(y)(JsonFormats.categoryFmt) }}
+    }
+    val nestedCategories = categories.groupBy{x => (x.name, x.color)}
+      .map{x => Category( x._1._1, x._1._2, x._2.map{y => y.subCategories}.flatten.toList)}
+    val res = nestedCategories.map{y => Json.toJson(y)(JsonFormats.categoryFmt) }
     Ok( Json.obj("categories" -> res) )
   }}
 
