@@ -1,12 +1,9 @@
 package controllers
 
-import org.specs2.mutable._
-import org.specs2.json._
 import org.specs2.matcher.JsonMatchers
-import org.specs2.runner._
-
-import play.api.test._
+import org.specs2.mutable._
 import play.api.test.Helpers._
+import play.api.test._
 
 /**
  * You can mock out a whole application including requests, plugins etc.
@@ -26,7 +23,7 @@ class ApplicationIT extends Specification with JsonMatchers {
 
         contentAsString(response) must /("accounts") /# 0 /("account" -> "db")
         contentAsString(response) must /("accounts") /# 0 /("balance" -> 7023.44)
-        contentAsString(response) must /("accounts") /# 0 /("currencyPos" -> 16)
+        contentAsString(response) must /("accounts") /# 0 /("currencyPos" -> 17)
         contentAsString(response) must /("accounts") /# 0 /("finalRow" -> "Account balance")
 
         contentAsString(response) must /("accounts") /# 1 /("account" -> "hvb")
@@ -44,7 +41,7 @@ class ApplicationIT extends Specification with JsonMatchers {
 
         contentAsString(response) must /("account" -> "db")
         contentAsString(response) must /("balance" -> 7023.44)
-        contentAsString(response) must /("currencyPos" -> 16)
+        contentAsString(response) must /("currencyPos" -> 17)
         contentAsString(response) must /("finalRow" -> "Account balance")
       }
     }
@@ -62,13 +59,15 @@ class ApplicationIT extends Specification with JsonMatchers {
         contentAsString(response) must /("data") /# 0 /# 1 /("db")
         contentAsString(response) must /("data") /# 0 /# 2 /("hvb")
         contentAsString(response) must /("data") /# 0 /# 3 /("kalixa")
-        contentAsString(response) must /("data") /# 0 /# 4 /("total")
+        contentAsString(response) must /("data") /# 0 /# 4 /("number26")
+        contentAsString(response) must /("data") /# 0 /# 5 /("total")
 
         contentAsString(response) must /("data") /# 25 /# 0 /("2016-01")
         contentAsString(response) must /("data") /# 25 /# 1 /(7022.4400)
         contentAsString(response) must /("data") /# 25 /# 2 /(18900.7900)
         contentAsString(response) must /("data") /# 25 /# 3 /(200.2100)
-        contentAsString(response) must /("data") /# 25 /# 4 /(26123.4400)
+        contentAsString(response) must /("data") /# 25 /# 4 /(0.0)
+        contentAsString(response) must /("data") /# 25 /# 5 /(26123.4400)
       }
     }
   }
