@@ -100,19 +100,14 @@ class CategoryController extends Controller {
 
   /**
    * Request example:
-   *  {
-   *    "sumRange": "YYYY-MM-DD",
-   *    "startDate": "2015-01-01",
-   *    "endDate": "2015-01-31",
-   *    "categories": ["living", "free time"] 
-   *  }
+   *  /categories?sumRange=yyyy-mm&startDate=2014-01-01&endDate=2016-03-31&categories=house,other,finance,mobility,living,health
    */
-  def aggregateCategory(): Action[JsValue] = Action.async(parse.json){ request => async {
-    val jsonRequest = request.body
-    val dateFormat = Formatter.normalizeDateFormat((jsonRequest \ "sumRange").as[String])
-    val startDate = new LocalDate((jsonRequest \ "startDate").as[String])
-    val endDate =   new LocalDate((jsonRequest \ "endDate").as[String])
-    val categories = "total" +: (jsonRequest \ "categories").as[Array[String]].sorted
+  def aggregateCategory(): Action[AnyContent] = Action.async { request => async {
+    val dateFormat = Formatter.normalizeDateFormat(request.getQueryString("sumRange").getOrElse(""))
+    val startDate = new LocalDate(request.getQueryString("startDate").getOrElse("1900-01-01"))
+    val endDate =   new LocalDate(request.getQueryString("endDate").getOrElse("2100-12-31"))
+    val categories = "total" +: request.getQueryString("categories").getOrElse("").split(",").map(_.trim).sorted
+    // val categories = "total" +: (jsonRequest \ "categories").as[Array[String]].sorted
     val insertValues = Array(startDate, endDate) ++ categories ++ Array(startDate, endDate) ++ categories
     val query = aggregatedCategoryQuery(dateFormat, categories)
     val queryResult = await { Global.pool.sendPreparedStatement(query, insertValues) }

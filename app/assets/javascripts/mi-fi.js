@@ -345,7 +345,7 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
       categoriesChart.options.colors = assignColors(response.data.data[0], $scope.categoryColors);
       $scope.catChart = categoriesChart;
     };
-    $http.post(baseUrl + "categories/aggregate", params, requestConfig)
+    $http.get(baseUrl + "categories/aggregate?" + params.urlParams)
       .then(success);
 
     var success = function(response) {
