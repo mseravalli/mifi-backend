@@ -147,5 +147,52 @@ class ApplicationIT extends Specification with JsonMatchers {
         contentAsString(response) must /("data") /#2 /#4 /(-227.04)
       }
     }
+
+    "totalFlowCatIn" in {
+      running(FakeApplication()) {
+        val request = FakeRequest(GET, baseUrl + "/categories/in?sumRange=yyyy-mm&startDate=2014-01-01&endDate=2016-03-31&categories=house,other,finance,mobility,living,health,free%20time,work%20and%20training&subCategories=")
+        val response = route(request).get
+        status(response) must equalTo(OK)
+        contentType(response) must beSome.which(_ == "application/json")
+
+        response.map(x => println(x.toString))
+
+        // test the headers
+        contentAsString(response) must /("data") /#0 /#0 /("category")
+        contentAsString(response) must /("data") /#0 /#1 /("amount")
+
+        // test the data
+        contentAsString(response) must /("data") /#1 /#0 /("finance")
+        contentAsString(response) must /("data") /#1 /#1 /(18772.30)
+
+        contentAsString(response) must /("data") /#2 /#0 /("work and training")
+        contentAsString(response) must /("data") /#2 /#1 /(59420.98)
+      }
+    }
+
+    "totalFlowCatOut" in {
+      running(FakeApplication()) {
+        val request = FakeRequest(GET, baseUrl + "/categories/out?sumRange=yyyy-mm&startDate=2014-01-01&endDate=2016-03-31&categories=house,other,finance,mobility,living,health,free%20time,work%20and%20training&subCategories=")
+        val response = route(request).get
+        status(response) must equalTo(OK)
+        contentType(response) must beSome.which(_ == "application/json")
+
+        response.map(x => println(x.toString))
+
+        // test the headers
+        contentAsString(response) must /("data") /#0 /#0 /("category")
+        contentAsString(response) must /("data") /#0 /#1 /("amount")
+
+        // test the data
+        contentAsString(response) must /("data") /#1 /#0 /("free time")
+        contentAsString(response) must /("data") /#1 /#1 /(16807.58)
+
+        contentAsString(response) must /("data") /#3 /#0 /("house")
+        contentAsString(response) must /("data") /#3 /#1 /(17214.05)
+
+        contentAsString(response) must /("data") /#6 /#0 /("other")
+        contentAsString(response) must /("data") /#6 /#1 /(12370.23)
+      }
+    }
   }
 }

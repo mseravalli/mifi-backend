@@ -20,28 +20,23 @@ import slick.driver.PostgresDriver.api._
 
 object CategoryController {
   def getCategoriesQuery = {
-    Tables.Categories.join(Tables.CategoryMatch).on(_.category === _.category).result
+    Tables.Categories
+      .join(Tables.CategoryMatch)
+      .on(_.category === _.category)
+      .result
   }
 
-  // the flow can be eithen in or out
-  def totalFlowCatQuery(dateFormat: String, flow: String, categories: Array[String]): String = {
-    val format = Formatter.normalizeDateFormat(dateFormat)
-    val op = flow match { case "in" => ">" case "out" => "<" }
-    var cat = "FALSE"
-    for (c <- categories) { cat += " OR t_0.category = ?" }
-    s"""
-    SELECT
-      t_0.category AS t_0_category,
-      ABS(SUM(t_0.amount)) AS t_0_amount
-    FROM transactions t_0
-    WHERE
-      (t_0.transaction_date BETWEEN ? AND ?)
-      AND
-      ($cat)
-    GROUP BY t_0_category
-    HAVING SUM((t_0.amount)) $op 0
-    ORDER BY t_0_amount DESC
-    """
+  // the flow can be either in or out
+  def totalFlowCatQuery(startDate: Date, endDate: Date, dateFormat: String, flow: String, categories: Array[String]) = {
+    Tables.Transactions
+      .filter(t => t.transactionDate > startDate && t.transactionDate < endDate
+        && categories.foldLeft(t.category =!= t.category)((res,c)=> res || (t.category like c) )
+      )
+      .groupBy(_.category)
+      .map(x => (x._1, x._2.map(_.amount).sum))
+      .filter(x => flow match { case "in" => x._2 > BigDecimal(0) case "out" => x._2 < BigDecimal(0) } )
+      .sortBy(_._1.asc)
+      .result
   }
 
   def aggregatedCategoryQuery(dateFormat: String, categories: Array[String]): String = {
@@ -116,27 +111,32 @@ class CategoryController extends Controller {
     val query = aggregatedCategoryQuery(dateFormat, categories)
     val queryResult = await { Global.pool.sendPreparedStatement(query, insertValues) }
     val series = Formatter.formatSeries(queryResult.rows.get, startDate, endDate, categories, dateFormat)
-    
+
     Ok( series )
   }}
 
   def totalFlowCat(flow: String): Action[AnyContent] = Action.async { request => async {
     val dateFormat = Formatter.normalizeDateFormat(request.getQueryString("sumRange").getOrElse(""))
-    val startDate = new LocalDate(request.getQueryString("startDate").getOrElse("1900-01-01"))
-    val endDate =   new LocalDate(request.getQueryString("endDate").getOrElse("2100-12-31"))
+    val startDate = Date.valueOf(request.getQueryString("startDate").getOrElse("1900-01-01"))
+    val endDate =   Date.valueOf(request.getQueryString("endDate").getOrElse("2100-12-31"))
     val categories = "total" +: request.getQueryString("categories").getOrElse("").split(",").map(_.trim).sorted
-    val insertValues = Array(startDate, endDate) ++  categories
-    val query = totalFlowCatQuery(dateFormat, flow, categories)
-    val queryResult = await { Global.pool.sendPreparedStatement(query, insertValues) }
+
+    val totalFlow = await {
+      Global.db.run(CategoryController.totalFlowCatQuery(startDate, endDate, dateFormat, flow, categories))
+    }
 
     val cols = Json.arr("category", "amount")
-    val rows = JsArray(queryResult.rows.get.map{x =>
-      Json.arr(x("t_0_category").asInstanceOf[String], x("t_0_amount").asInstanceOf[BigDecimal])
+    val rows = JsArray( totalFlow.map{x =>
+      Json.arr(JsString(x._1.getOrElse("")), JsNumber(x._2.map(_.abs).getOrElse(BigDecimal(0.0))))
     })
 
     Ok( Json.obj("data" -> (cols +: rows)) )
   }}
 
+  /*
+   * Request example
+   * http://localhost:9000/api/v0.1/categories/in?sumRange=yyyy-mm&startDate=2014-01-01&endDate=2016-03-31&categories=house,other,finance,mobility,living,health,free%20time,work%20and%20training&subCategories=
+   */
   def totalFlowCatIn():  Action[AnyContent] = totalFlowCat("in")
   def totalFlowCatOut(): Action[AnyContent] = totalFlowCat("out")
 }
