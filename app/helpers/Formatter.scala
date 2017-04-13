@@ -1,16 +1,14 @@
 package helpers
 
-import com.github.mauricio.async.db.postgresql.PostgreSQLConnection
-import com.github.mauricio.async.db.postgresql.util.URLParser
-import com.github.mauricio.async.db.util.ExecutorServiceUtils.CachedExecutionContext
-import com.github.mauricio.async.db.{RowData, QueryResult, Connection}
+import java.sql.Date
+import java.text.SimpleDateFormat
+import java.time.Duration
+import java.time.temporal.ChronoUnit
+
 import com.github.mauricio.async.db.ResultSet
-import javax.inject.Singleton
-import org.joda.time.{LocalDate, Days, Months, Years}
-import org.slf4j.{LoggerFactory, Logger}
-import play.api._
-import play.api.mvc._
+import org.joda.time.{Days, LocalDate, Months, Years}
 import play.api.libs.json._
+
 import scala.async.Async.{async, await}
 import scala.concurrent.Future
 
@@ -40,13 +38,21 @@ object Formatter {
     }
   }
 
-  def incrementDate(ld: java.time.LocalDate, format: String) = {
+  def incrementDate(ld: java.time.LocalDate, format: String, amount: Int): java.time.LocalDate = {
     format.toUpperCase match {
-      case "YYYY-MM-DD" => ld.plusDays(1)
-      case "YYYY-MM" => ld.plusMonths(1)
-      case "YYYY" => ld.plusYears(1)
-      case _ => ld.plusMonths(1)
+      case "YYYY-MM-DD" => ld.plusDays(amount)
+      case "YYYY-MM" => ld.plusMonths(amount)
+      case "YYYY" => ld.plusYears(amount)
+      case _ => ld.plusMonths(amount)
     }
+  }
+
+  def incrementDate(ld: java.time.LocalDate, format: String): java.time.LocalDate = {
+    incrementDate(ld, format, 1)
+  }
+
+  def incrementDate(ld: Date, format: String, amount: Int): Date = {
+    Date.valueOf(incrementDate(ld.toLocalDate, format, amount))
   }
 
   /**
@@ -94,6 +100,32 @@ object Formatter {
       categories.foreach(c => jsRow = jsRow :+ JsNumber(outRow(c)) )
       seriesOut = seriesOut :+ jsRow
     }
+
+    Json.obj("data" -> seriesOut)
+  }
+
+  def formatSeriesNew(seriesIn: Map[String, Map[String, BigDecimal]],
+                      startDate: Date,
+                      endDate: Date,
+                      categories: Array[String],
+                      dateFormat: String): JsObject = {
+
+    val cats = "total" +: (categories.filter(_ != "total").sorted)
+
+    val catsJson = JsArray(JsString("date") +: cats.map(JsString(_)))
+
+    val dataJson = seriesIn
+      .toList
+      .sortWith(_._1 < _._1)
+      .map{ x =>
+        JsString(x._1) +: JsArray(
+          cats.map { c => JsNumber(x._2.getOrElse(c, BigDecimal(0.0)))
+          }
+        )
+      }
+
+    // var seriesOut: JsArray = Json.arr(catsJson,dataJson)
+    var seriesOut: JsArray = catsJson +: JsArray(dataJson)
 
     Json.obj("data" -> seriesOut)
   }

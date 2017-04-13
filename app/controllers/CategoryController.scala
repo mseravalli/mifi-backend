@@ -1,14 +1,13 @@
 package controllers
 
 import java.sql.Date
+import java.text.SimpleDateFormat
 
 import helpers.Global
 import helpers.Formatter
 import models.{Category, JsonFormats, Tables}
-import com.github.mauricio.async.db.util.ExecutorServiceUtils.CachedExecutionContext
 import javax.inject.Singleton
 
-import org.joda.time.LocalDate
 import org.slf4j.{Logger, LoggerFactory}
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.mvc._
@@ -39,40 +38,14 @@ object CategoryController {
       .result
   }
 
-  def aggregatedCategoryQuery(dateFormat: String, categories: Array[String]): String = {
-    val format = Formatter.normalizeDateFormat(dateFormat)
-    var cat = "FALSE"
-    for (c <- categories) { cat += " OR t_0.category = ?" }
-    s"""
-    WITH cat AS (
-        SELECT
-          to_char(t_0.transaction_date,'$format') AS t_0_date,
-          t_0.category AS t_0_category, SUM((t_0.amount)) AS t_0_amount
-        FROM transactions t_0
-        WHERE
-          (t_0.transaction_date BETWEEN ? AND ?)
-          AND
-          ($cat)
-        GROUP BY t_0_date, t_0.category
-        ORDER BY t_0_date, t_0.category
-      ),
-      total AS (
-        SELECT
-          to_char(t_0.transaction_date,'$format') AS t_0_date,
-          text('total') AS t_0_category, SUM((t_0.amount)) AS t_0_amount
-        FROM transactions t_0
-        WHERE
-          (t_0.transaction_date BETWEEN ? AND ?)
-          AND
-          ($cat)
-        GROUP BY t_0_date
-        ORDER BY t_0_date
+  def getCategoryTransactions(startDate: Date, endDate: Date, dateFormat: String, categories: Array[String]) = {
+
+    Tables.Transactions
+      .filter(t => t.transactionDate > startDate && t.transactionDate < endDate
+        && categories.foldLeft(t.category =!= t.category)((res,c)=> res || (t.category like c) )
       )
-    SELECT * FROM cat
-    UNION
-    SELECT * FROM total
-    ORDER BY t_0_date, t_0_category
-    """
+      .map{x => (x.transactionDate, x.category, x.amount)}
+      .result
   }
 }
 
@@ -104,13 +77,29 @@ class CategoryController extends Controller {
    */
   def aggregateCategory(): Action[AnyContent] = Action.async { request => async {
     val dateFormat = Formatter.normalizeDateFormat(request.getQueryString("sumRange").getOrElse(""))
-    val startDate = new LocalDate(request.getQueryString("startDate").getOrElse("1900-01-01"))
-    val endDate =   new LocalDate(request.getQueryString("endDate").getOrElse("2100-12-31"))
+    val startDate = Date.valueOf(request.getQueryString("startDate").getOrElse("1900-01-01"))
+    val endDate =   Date.valueOf(request.getQueryString("endDate").getOrElse("2100-12-31"))
     val categories = "total" +: request.getQueryString("categories").getOrElse("").split(",").map(_.trim).sorted
-    val insertValues = Array(startDate, endDate) ++ categories ++ Array(startDate, endDate) ++ categories
-    val query = aggregatedCategoryQuery(dateFormat, categories)
-    val queryResult = await { Global.pool.sendPreparedStatement(query, insertValues) }
-    val series = Formatter.formatSeries(queryResult.rows.get, startDate, endDate, categories, dateFormat)
+
+    val format = Formatter.normalizeDateFormat(dateFormat)
+    val sdf = new SimpleDateFormat(format)
+
+    val raw = await {
+      Global.db.run(CategoryController.getCategoryTransactions(startDate, endDate, dateFormat, categories))
+    }
+
+
+    val totalFlow = raw
+      .map(x => (sdf.format(x._1.getOrElse("")), x._2.getOrElse(""), x._3.getOrElse(BigDecimal(0.0))))
+      .groupBy(x => x._1)
+      .map{ x =>
+        (
+          x._1,
+          x._2.groupBy(_._2).map(y => (y._1 -> y._2.map(_._3).sum)) + ("total" -> x._2.map(_._3).sum)
+        )
+      }
+
+    val series = Formatter.formatSeriesNew(totalFlow, startDate, endDate, categories, dateFormat)
 
     Ok( series )
   }}
