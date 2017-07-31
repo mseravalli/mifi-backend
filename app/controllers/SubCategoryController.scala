@@ -1,14 +1,17 @@
 package controllers
 
+import java.sql.Date
+
 import helpers.Global
 import helpers.Formatter
-
 import com.github.mauricio.async.db.util.ExecutorServiceUtils.CachedExecutionContext
 import javax.inject.Singleton
+
 import org.joda.time.LocalDate
-import org.slf4j.{LoggerFactory, Logger}
+import org.slf4j.{Logger, LoggerFactory}
 import play.api.mvc._
 import play.api.libs.json._
+
 import scala.async.Async.{async, await}
 import scala.concurrent.Future
 
