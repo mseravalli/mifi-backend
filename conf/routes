@@ -29,10 +29,10 @@ GET         /api/v0.1/categories                     @controllers.CategoryContro
 GET         /api/v0.1/categories/aggregate           @controllers.CategoryController.aggregateCategory
 GET         /api/v0.1/categories/in                  @controllers.CategoryController.totalFlowCatIn
 GET         /api/v0.1/categories/out                 @controllers.CategoryController.totalFlowCatOut
-POST        /api/v0.1/subcategories/aggregate        @controllers.SubCategoryController.aggregateSubCategory
 POST        /api/v0.1/subcategories/in               @controllers.SubCategoryController.totalFlowSubCatIn
 POST        /api/v0.1/subcategories/out              @controllers.SubCategoryController.totalFlowSubCatOut
 GET         /api/v0.1/subcategories                  @controllers.SubCategoryController.readSubCategories
+GET         /api/v0.1/subcategories/aggregate        @controllers.SubCategoryController.aggregateSubCategory
 
 # Map static resources from the /public folder to the /assets URL path
 GET         /assets/*file                            controllers.Assets.at(path="/public", file)
