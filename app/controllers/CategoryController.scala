@@ -1,13 +1,12 @@
 package controllers
 
-import java.sql.Date
-import java.text.SimpleDateFormat
-
 import helpers.Global
 import helpers.Formatter
 import models.{Category, JsonFormats, Tables}
-import javax.inject.Singleton
 
+import java.sql.Date
+import java.text.SimpleDateFormat
+import javax.inject.Singleton
 import org.slf4j.{Logger, LoggerFactory}
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.mvc._
