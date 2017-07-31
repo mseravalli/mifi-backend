@@ -25,7 +25,7 @@ object CategoryController {
   }
 
   // the flow can be either in or out
-  def totalFlowCatQuery(startDate: Date, endDate: Date, dateFormat: String, flow: String, categories: Array[String]) = {
+  def totalFlowCatQuery(startDate: Date, endDate: Date, flow: String, categories: Array[String]) = {
     Tables.Transactions
       .filter(t => t.transactionDate > startDate && t.transactionDate < endDate
         && categories.foldLeft(t.category =!= t.category)((res,c)=> res || (t.category like c) )
@@ -37,7 +37,7 @@ object CategoryController {
       .result
   }
 
-  def getCategoryTransactions(startDate: Date, endDate: Date, dateFormat: String, categories: Array[String]) = {
+  def getCategoryTransactions(startDate: Date, endDate: Date, categories: Array[String]) = {
 
     Tables.Transactions
       .filter(t => t.transactionDate > startDate && t.transactionDate < endDate
@@ -84,9 +84,8 @@ class CategoryController extends Controller {
     val sdf = new SimpleDateFormat(format)
 
     val raw = await {
-      Global.db.run(CategoryController.getCategoryTransactions(startDate, endDate, dateFormat, categories))
+      Global.db.run(CategoryController.getCategoryTransactions(startDate, endDate, categories))
     }
-
 
     val totalFlow = raw
       .map(x => (sdf.format(x._1.getOrElse("")), x._2.getOrElse(""), x._3.getOrElse(BigDecimal(0.0))))
@@ -110,7 +109,7 @@ class CategoryController extends Controller {
     val categories = "total" +: request.getQueryString("categories").getOrElse("").split(",").map(_.trim).sorted
 
     val totalFlow = await {
-      Global.db.run(CategoryController.totalFlowCatQuery(startDate, endDate, dateFormat, flow, categories))
+      Global.db.run(CategoryController.totalFlowCatQuery(startDate, endDate, flow, categories))
     }
 
     val cols = Json.arr("category", "amount")
