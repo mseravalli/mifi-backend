@@ -194,5 +194,43 @@ class ApplicationIT extends Specification with JsonMatchers {
         contentAsString(response) must /("data") /#6 /#1 /(12370.23)
       }
     }
+
+    "aggregate SubCategories" in {
+      running(FakeApplication()) {
+        val request = FakeRequest(GET, baseUrl + "/subcategories/aggregate?sumRange=yyyy-mm&startDate=2014-01-01&endDate=2017-07-31&categories=house&subCategories=electricity,furniture%20and%20accessories,general,internet,phone,rent")
+        val response = route(request).get
+        status(response) must equalTo(OK)
+        contentType(response) must beSome.which(_ == "application/json")
+
+        response.map(x => println(x.toString))
+
+        // test the headers
+        contentAsString(response) must /("data") /#0 /#0 /("date")
+        contentAsString(response) must /("data") /#0 /#1 /("total")
+        contentAsString(response) must /("data") /#0 /#2 /("electricity")
+        contentAsString(response) must /("data") /#0 /#3 /("furniture and accessories")
+        contentAsString(response) must /("data") /#0 /#4 /("general")
+        contentAsString(response) must /("data") /#0 /#5 /("internet")
+
+        // test the data
+        contentAsString(response) must /("data") /#6 /#0 /("2014-06")
+        contentAsString(response) must /("data") /#6 /#1 /(-554.9)
+        contentAsString(response) must /("data") /#6 /#2 /(0.0)
+        contentAsString(response) must /("data") /#6 /#3 /(0.0)
+        contentAsString(response) must /("data") /#6 /#4 /(0.0)
+        contentAsString(response) must /("data") /#6 /#5 /(-19.9)
+        contentAsString(response) must /("data") /#6 /#6 /(-15.0)
+        contentAsString(response) must /("data") /#6 /#7 /(-520.0)
+
+        contentAsString(response) must /("data") /#9 /#0 /("2014-09")
+        contentAsString(response) must /("data") /#9 /#1 /(-594.9)
+        contentAsString(response) must /("data") /#9 /#2 /(-40.0)
+        contentAsString(response) must /("data") /#9 /#3 /(0.0)
+        contentAsString(response) must /("data") /#9 /#4 /(0.0)
+        contentAsString(response) must /("data") /#9 /#5 /(-19.9)
+        contentAsString(response) must /("data") /#9 /#6 /(-15.0)
+        contentAsString(response) must /("data") /#9 /#7 /(-520.0)
+      }
+    }
   }
 }
