@@ -353,7 +353,7 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
       subCategoriesChart.options.colors = assignColors(response.data.data[0], $scope.subCategoryColors);
       $scope.subCatChart = subCategoriesChart;
     };
-    $http.post(baseUrl + "subcategories/aggregate", params, requestConfig)
+    $http.get(baseUrl + "subcategories/aggregate?" + params.urlParams)
       .then(success);
 
     var success = function(response) {

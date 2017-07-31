@@ -1,22 +1,35 @@
 package controllers
 
 import java.sql.Date
+import java.text.SimpleDateFormat
 
 import helpers.Global
 import helpers.Formatter
 import com.github.mauricio.async.db.util.ExecutorServiceUtils.CachedExecutionContext
+import models.{Category, JsonFormats, Tables}
 import javax.inject.Singleton
 
 import org.joda.time.LocalDate
 import org.slf4j.{Logger, LoggerFactory}
+import play.api.libs.concurrent.Execution.Implicits._
 import play.api.mvc._
 import play.api.libs.json._
 
 import scala.async.Async.{async, await}
 import scala.concurrent.Future
+import slick.driver.PostgresDriver.api._
 
 
 object SubCategoryController {
+  def getSubCategoryTransactions(startDate: Date, endDate: Date, categories: String, subCategories: Array[String]) = {
+    Tables.Transactions
+      .filter(t => t.transactionDate > startDate && t.transactionDate < endDate
+        && subCategories.foldLeft(t.subCategory =!= t.subCategory)((res, sc)=> res || ( (t.category like categories) && (t.subCategory like sc) ) )
+      )
+      .map{x => (x.transactionDate, x.subCategory, x.amount)}
+      .result
+  }
+
   val getSubCategoriesQuery = """
     SELECT sub_category, color
     FROM category_match
@@ -129,18 +142,31 @@ class SubCategoryController extends Controller {
    *    "subCategories": ["sport"]
    *  }
    */
-  def aggregateSubCategory(): Action[JsValue] = Action.async(parse.json){ request => async {
-    val jsonRequest = request.body
-    val dateFormat = Formatter.normalizeDateFormat((jsonRequest \ "sumRange").as[String])
-    val startDate = new LocalDate((jsonRequest \ "startDate").as[String])
-    val endDate =   new LocalDate((jsonRequest \ "endDate").as[String])
-    val categories = "total" +: (jsonRequest \ "categories").as[Array[String]].sorted
-    val subCategories = "total" +: (jsonRequest \ "subCategories").as[Array[String]].sorted
-    val insertValues = Array(startDate, endDate) ++ categories ++ subCategories ++
-      Array(startDate, endDate) ++ categories ++ subCategories
-    val query = aggregateSubCategoryQuery(dateFormat, categories,subCategories)
-    val queryResult = await { Global.pool.sendPreparedStatement(query, insertValues) }
-    val series = Formatter.formatSeries(queryResult.rows.get, startDate, endDate, subCategories, dateFormat)
+  def aggregateSubCategory(): Action[AnyContent] = Action.async { request => async {
+    val dateFormat = Formatter.normalizeDateFormat(request.getQueryString("sumRange").getOrElse(""))
+    val startDate = Date.valueOf(request.getQueryString("startDate").getOrElse("1900-01-01"))
+    val endDate =   Date.valueOf(request.getQueryString("endDate").getOrElse("2100-12-31"))
+    val categories = request.getQueryString("categories").getOrElse("").split(",").map(_.trim).sorted
+    val subCategories = request.getQueryString("subCategories").getOrElse("").split(",").map(_.trim).sorted
+
+    val format = Formatter.normalizeDateFormat(dateFormat)
+    val sdf = new SimpleDateFormat(format)
+
+    val raw = await {
+      Global.db.run(SubCategoryController.getSubCategoryTransactions(startDate, endDate, categories.head, subCategories))
+    }
+
+    val totalFlow = raw
+      .map(x => (sdf.format(x._1.getOrElse("")), x._2.getOrElse(""), x._3.getOrElse(BigDecimal(0.0))))
+      .groupBy(x => x._1)
+      .map{ x =>
+        (
+          x._1,
+          x._2.groupBy(_._2).map(y => (y._1 -> y._2.map(_._3).sum)) + ("total" -> x._2.map(_._3).sum)
+        )
+      }
+
+    val series = Formatter.formatSeriesNew(totalFlow, startDate, endDate, subCategories, dateFormat)
 
     Ok( series )
   }}
