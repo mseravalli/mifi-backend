@@ -46,7 +46,7 @@ class ApplicationIT extends Specification with JsonMatchers {
       }
     }
 
-    "timeseries" in {
+    "retrieve timeseries for all accounts" in {
       running(FakeApplication()) {
         val request = FakeRequest(GET, baseUrl + "/accounts/timeseries?startDate=2014-01-01&endDate=2016-03-31&sumRange=YYYY-MM")
         val response = route(request).get
@@ -71,7 +71,7 @@ class ApplicationIT extends Specification with JsonMatchers {
       }
     }
 
-    "readTransactions" in {
+    "read Transactions" in {
       running(FakeApplication()) {
         val request = FakeRequest(GET, baseUrl + "/transactions?sumRange=yyyy-mm&startDate=2014-01-01&endDate=2016-03-31&categories=house,other,finance,mobility,living,health,free%20time,work%20and%20training&subCategories=")
         val response = route(request).get
@@ -80,14 +80,14 @@ class ApplicationIT extends Specification with JsonMatchers {
 
         response.map(x => println(x.toString))
 
-        contentAsString(response) must /("transactions") /# 0   /("id" -> 3222)
-        contentAsString(response) must /("transactions") /# 200 /("id" -> 3867)
-        contentAsString(response) must /("transactions") /# 400 /("id" -> 3415)
-        contentAsString(response) must /("transactions") /# 600 /("id" -> 3768)
+        contentAsString(response) must /("transactions") /# 0   /("id" -> 388)
+        contentAsString(response) must /("transactions") /# 200 /("id" -> 38)
+        contentAsString(response) must /("transactions") /# 400 /("id" -> 4107)
+        contentAsString(response) must /("transactions") /# 600 /("id" -> 3931)
       }
     }
 
-    "readCategories" in {
+    "read Categories" in {
       running(FakeApplication()) {
         val request = FakeRequest(GET, baseUrl + "/categories")
         val response = route(request).get
@@ -117,7 +117,7 @@ class ApplicationIT extends Specification with JsonMatchers {
       }
     }
 
-    "aggregateCategories" in {
+    "aggregate Categories" in {
       running(FakeApplication()) {
         val request = FakeRequest(GET, baseUrl + "/categories/aggregate?sumRange=yyyy-mm&startDate=2014-01-01&endDate=2016-03-31&categories=house,other,finance,mobility,living,health,free time")
         val response = route(request).get
@@ -148,7 +148,7 @@ class ApplicationIT extends Specification with JsonMatchers {
       }
     }
 
-    "totalFlowCatIn" in {
+    "compute total incoming flow per category" in {
       running(FakeApplication()) {
         val request = FakeRequest(GET, baseUrl + "/categories/in?sumRange=yyyy-mm&startDate=2014-01-01&endDate=2016-03-31&categories=house,other,finance,mobility,living,health,free%20time,work%20and%20training&subCategories=")
         val response = route(request).get
@@ -170,7 +170,7 @@ class ApplicationIT extends Specification with JsonMatchers {
       }
     }
 
-    "totalFlowCatOut" in {
+    "compute total outgoing flow per category" in {
       running(FakeApplication()) {
         val request = FakeRequest(GET, baseUrl + "/categories/out?sumRange=yyyy-mm&startDate=2014-01-01&endDate=2016-03-31&categories=house,other,finance,mobility,living,health,free%20time,work%20and%20training&subCategories=")
         val response = route(request).get
