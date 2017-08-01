@@ -148,7 +148,7 @@ class ApplicationIT extends Specification with JsonMatchers {
       }
     }
 
-    "compute total incoming flow per category" in {
+    "compute total incoming flow per Category" in {
       running(FakeApplication()) {
         val request = FakeRequest(GET, baseUrl + "/categories/in?sumRange=yyyy-mm&startDate=2014-01-01&endDate=2016-03-31&categories=house,other,finance,mobility,living,health,free%20time,work%20and%20training&subCategories=")
         val response = route(request).get
@@ -170,7 +170,7 @@ class ApplicationIT extends Specification with JsonMatchers {
       }
     }
 
-    "compute total outgoing flow per category" in {
+    "compute total outgoing flow per Category" in {
       running(FakeApplication()) {
         val request = FakeRequest(GET, baseUrl + "/categories/out?sumRange=yyyy-mm&startDate=2014-01-01&endDate=2016-03-31&categories=house,other,finance,mobility,living,health,free%20time,work%20and%20training&subCategories=")
         val response = route(request).get
@@ -230,6 +230,56 @@ class ApplicationIT extends Specification with JsonMatchers {
         contentAsString(response) must /("data") /#9 /#5 /(-19.9)
         contentAsString(response) must /("data") /#9 /#6 /(-15.0)
         contentAsString(response) must /("data") /#9 /#7 /(-520.0)
+      }
+    }
+
+    "compute total incoming flow per SubCategory" in {
+      running(FakeApplication()) {
+        val request = FakeRequest(GET, baseUrl + "/subcategories/in?sumRange=yyyy-mm&startDate=2014-01-01&endDate=2017-07-31&categories=work%20and%20training&subCategories=salary,travel,contribution,material,training,general")
+        val response = route(request).get
+        status(response) must equalTo(OK)
+        contentType(response) must beSome.which(_ == "application/json")
+
+        response.map(x => println(x.toString))
+
+        // test the headers
+        contentAsString(response) must /("data") /#0 /#0 /("subCategory")
+        contentAsString(response) must /("data") /#0 /#1 /("amount")
+
+        // test the data
+        contentAsString(response) must /("data") /#2 /#0 /("salary")
+        contentAsString(response) must /("data") /#2 /#1 /(90419.97)
+
+        contentAsString(response) must /("data") /#3 /#0 /("travel")
+        contentAsString(response) must /("data") /#3 /#1 /(8787.11)
+
+        contentAsString(response) must /("data") /#1 /#0 /("contribution")
+        contentAsString(response) must /("data") /#1 /#1 /(2753.53)
+      }
+    }
+
+    "compute total outgoing flow per SubCategory" in {
+      running(FakeApplication()) {
+        val request = FakeRequest(GET, baseUrl + "/subcategories/out?sumRange=yyyy-mm&startDate=2014-01-01&endDate=2017-07-31&categories=work%20and%20training&subCategories=salary,travel,contribution,material,training,general")
+        val response = route(request).get
+        status(response) must equalTo(OK)
+        contentType(response) must beSome.which(_ == "application/json")
+
+        response.map(x => println(x.toString))
+
+        // test the headers
+        contentAsString(response) must /("data") /#0 /#0 /("subCategory")
+        contentAsString(response) must /("data") /#0 /#1 /("amount")
+
+        // test the data
+        contentAsString(response) must /("data") /#2 /#0 /("material")
+        contentAsString(response) must /("data") /#2 /#1 /(136.94)
+
+        contentAsString(response) must /("data") /#3 /#0 /("training")
+        contentAsString(response) must /("data") /#3 /#1 /(111)
+
+        contentAsString(response) must /("data") /#1 /#0 /("general")
+        contentAsString(response) must /("data") /#1 /#1 /(13)
       }
     }
   }
