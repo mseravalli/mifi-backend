@@ -1,16 +1,9 @@
 package helpers
 
 import java.sql.Date
-import java.text.SimpleDateFormat
-import java.time.Duration
-import java.time.temporal.ChronoUnit
 
-import com.github.mauricio.async.db.ResultSet
 import org.joda.time.{Days, LocalDate, Months, Years}
 import play.api.libs.json._
-
-import scala.async.Async.{async, await}
-import scala.concurrent.Future
 
 object Formatter {
   /**
@@ -70,40 +63,6 @@ object Formatter {
   /**
    * Formats the data retrieved from the database for the frontend
    */
-  def formatSeries(seriesIn: ResultSet,
-                   startDate: LocalDate,
-                   endDate: LocalDate,
-                   categories: Array[String],
-                   dateFormat: String): JsObject = {
-    var seriesOut: JsArray = Json.arr()
-
-    val timeRange = getTimeRange(dateFormat, startDate, endDate)
-    var inPos = 0
-
-    var columns = Json.arr(JsString("date"))
-    categories.foreach { c =>
-      columns = columns :+ JsString(c)
-    }
-    seriesOut = seriesOut :+ columns
-
-    for (unit <- 0 to timeRange) {
-      var outRow = categories.map(c => c -> BigDecimal(0.0)).toMap
-      val date = incrementDate(dateFormat, startDate, unit)
-
-      while (inPos < seriesIn.length && seriesIn(inPos)("t_0_date").asInstanceOf[String] == date) {
-        val c = seriesIn(inPos)("t_0_category").asInstanceOf[String]
-        outRow = outRow updated (c, seriesIn(inPos)("t_0_amount").asInstanceOf[BigDecimal])
-
-        inPos = inPos + 1
-      }
-      var jsRow = Json.arr(JsString(date))
-      categories.foreach(c => jsRow = jsRow :+ JsNumber(outRow(c)) )
-      seriesOut = seriesOut :+ jsRow
-    }
-
-    Json.obj("data" -> seriesOut)
-  }
-
   def formatSeriesNew(seriesIn: Map[String, Map[String, BigDecimal]],
                       startDate: Date,
                       endDate: Date,
