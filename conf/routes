@@ -9,11 +9,6 @@ GET         /                                        @controllers.Application.in
 GET         /main                                    @controllers.Application.index
 GET         /randomUUID                              @controllers.Application.randomUUID
 
-# User management API
-# GET     /users                              @controllers.Users.findUsers
-# POST    /user                               @controllers.Users.createUser
-# PUT     /user/:firstName/:lastName          @controllers.Users.updateUser(firstName: String, lastName: String)
-
 POST        /api/v0.1/import                         @controllers.ImportController.importTransactions
 POST        /api/v0.1/approve_import                 @controllers.ImportController.approveImport
 GET         /api/v0.1/accounts                       @controllers.AccountController.readAccounts
@@ -22,7 +17,6 @@ GET         /api/v0.1/accounts/:account              @controllers.AccountControl
 
 GET         /api/v0.1/transactions                   @controllers.TransactionController.readTransactions
 PUT         /api/v0.1/transaction/:id                @controllers.TransactionController.updateTransaction(id: String)
-POST        /api/v0.1/transaction/:id/split          @controllers.TransactionController.splitTransaction(id)
 
 # Getting account data
 GET         /api/v0.1/categories                     @controllers.CategoryController.readCategories
