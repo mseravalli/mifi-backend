@@ -6,10 +6,7 @@ import com.google.inject.{Guice, AbstractModule}
 import play.api.{Application, GlobalSettings}
 import services.{SimpleUUIDGenerator, UUIDGenerator}
 
-import com.github.mauricio.async.db.Configuration
-import com.github.mauricio.async.db.postgresql.pool.PostgreSQLConnectionFactory
-import com.github.mauricio.async.db.pool.{PoolConfiguration, ConnectionPool}
-import com.github.mauricio.async.db.postgresql.util.URLParser
+import slick.driver.PostgresDriver.api._
 
 /**
  * Set up the Guice injector and provide the mechanism for return objects from the dependency graph.
@@ -31,27 +28,15 @@ object Global extends GlobalSettings {
    */
   override def getControllerInstance[A](controllerClass: Class[A]): A = injector.getInstance(controllerClass)
 
-  private val databaseConfiguration = System.getenv("DATABASE_URL") match {
-    case url : String => URLParser.parse(url)
-    case _ => new Configuration(
-      username = "mifi",
-      host = "localhost",
-      // port: Int = 5432,
-      password = Some("M1fIn@nc3"),
-      database = Some("mifi")
-    )
-  }
-
-  private val factory = new PostgreSQLConnectionFactory( databaseConfiguration )
-
-  val pool = new ConnectionPool(factory, PoolConfiguration.Default)
-
-  override def onStop(app: Application) {
-    pool.close
-  }
-
   val baseUrl = System.getenv("MIFI_BASE_URL") match {
     case url : String => url
     case _  => "http://localhost:9000/api/v0.1/"
+  }
+
+  val db = System.getenv("DATABASE_URL") match {
+    case url: String => Database.forURL(url)
+    case _ => Database.forURL("jdbc:postgresql://localhost:5432/mifi?user=mifi&password=M1fIn@nc3",
+                driver = "org.postgresql.Driver"
+              )
   }
 }

@@ -9,30 +9,23 @@ GET         /                                        @controllers.Application.in
 GET         /main                                    @controllers.Application.index
 GET         /randomUUID                              @controllers.Application.randomUUID
 
-# User management API
-# GET     /users                              @controllers.Users.findUsers
-# POST    /user                               @controllers.Users.createUser
-# PUT     /user/:firstName/:lastName          @controllers.Users.updateUser(firstName: String, lastName: String)
-
 POST        /api/v0.1/import                         @controllers.ImportController.importTransactions
 POST        /api/v0.1/approve_import                 @controllers.ImportController.approveImport
 GET         /api/v0.1/accounts                       @controllers.AccountController.readAccounts
-POST        /api/v0.1/accounts/timeseries            @controllers.AccountController.timeSeries
-GET         /api/v0.1/accounts/:account              @controllers.AccountController.readBalance(account)
+GET         /api/v0.1/accounts/timeseries            @controllers.AccountController.timeSeries
+GET         /api/v0.1/accounts/:account              @controllers.AccountController.readAccount(account)
 
 GET         /api/v0.1/transactions                   @controllers.TransactionController.readTransactions
 PUT         /api/v0.1/transaction/:id                @controllers.TransactionController.updateTransaction(id: String)
-POST        /api/v0.1/transaction/:id/split          @controllers.TransactionController.splitTransaction(id)
 
 # Getting account data
 GET         /api/v0.1/categories                     @controllers.CategoryController.readCategories
-POST        /api/v0.1/categories/aggregate           @controllers.CategoryController.aggregateCategory
-POST        /api/v0.1/categories/in                  @controllers.CategoryController.totalFlowCatIn
-POST        /api/v0.1/categories/out                 @controllers.CategoryController.totalFlowCatOut
-POST        /api/v0.1/subcategories                  @controllers.SubCategoryController.readSubCategories
-POST        /api/v0.1/subcategories/aggregate        @controllers.SubCategoryController.aggregateSubCategory
-POST        /api/v0.1/subcategories/in               @controllers.SubCategoryController.totalFlowSubCatIn
-POST        /api/v0.1/subcategories/out              @controllers.SubCategoryController.totalFlowSubCatOut
+GET         /api/v0.1/categories/aggregate           @controllers.CategoryController.aggregateCategory
+GET         /api/v0.1/categories/in                  @controllers.CategoryController.totalFlowCatIn
+GET         /api/v0.1/categories/out                 @controllers.CategoryController.totalFlowCatOut
+GET         /api/v0.1/subcategories/aggregate        @controllers.SubCategoryController.aggregateSubCategory
+GET         /api/v0.1/subcategories/in               @controllers.SubCategoryController.totalFlowSubCatIn
+GET         /api/v0.1/subcategories/out              @controllers.SubCategoryController.totalFlowSubCatOut
 
 # Map static resources from the /public folder to the /assets URL path
 GET         /assets/*file                            controllers.Assets.at(path="/public", file)
