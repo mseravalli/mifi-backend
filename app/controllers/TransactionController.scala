@@ -6,20 +6,11 @@ import helpers.{Formatter, Global}
 
 import models._
 
-import com.github.mauricio.async.db.util.ExecutorServiceUtils.CachedExecutionContext
-import com.github.tototoshi.csv._
 import javax.inject.Singleton
-import models.{Transaction, Account}
-import org.joda.time.{LocalDate}
-import org.joda.time.format.DateTimeFormat
-import org.slf4j.{LoggerFactory, Logger}
 import play.api.mvc._
-import play.api.mvc.MultipartFormData.FilePart
-import play.api.libs.Files.TemporaryFile
 import play.api.libs.json._
+import play.api.libs.concurrent.Execution.Implicits._
 import scala.async.Async.{async, await}
-import scala.util.Failure
-import scala.concurrent.Future
 import slick.driver.PostgresDriver.api._
 
 object TransactionController {

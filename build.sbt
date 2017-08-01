@@ -14,7 +14,6 @@ libraryDependencies ++= Seq(
   "org.webjars" % "bootstrap" % "3.3.1",
   "org.webjars" % "angularjs" % "1.3.8",
   "org.webjars" % "angular-ui-bootstrap" % "0.12.0",
-  "com.github.mauricio" %% "postgresql-async" % "0.2.15",
   "org.mockito" % "mockito-core" % "1.10.17" % "test",
   "joda-time" % "joda-time" % "2.6",
   "com.github.tototoshi" %% "scala-csv" % "1.2.0",

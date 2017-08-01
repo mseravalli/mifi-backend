@@ -5,7 +5,6 @@ import java.text.SimpleDateFormat
 
 import helpers.Global
 import helpers.Formatter
-import com.github.mauricio.async.db.util.ExecutorServiceUtils.CachedExecutionContext
 import models.{Category, JsonFormats, Tables}
 import javax.inject.Singleton
 
