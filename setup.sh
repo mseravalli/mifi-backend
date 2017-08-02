@@ -22,7 +22,7 @@ docker exec -t  postgres psql -U mifi -f /opt/sql/insert_db.sql
 docker exec -t  postgres psql -U mifi -f /opt/sql/insert_kalixa.sql
 docker exec -t  postgres psql -U mifi -f /opt/sql/insert_hvb.sql
 docker exec -t  postgres psql -U mifi -f /opt/sql/insert_number26.sql
-docker exec -t  postgres psql -U mifi -f /opt/sql/bkp/2017-05-31.sql
+docker exec -t  postgres psql -U mifi -f /opt/sql/bkp/2017-07-31.sql
 
 # npm install -g bower
 bower install

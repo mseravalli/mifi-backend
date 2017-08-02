@@ -84,8 +84,8 @@ object GenericImporter {
     implicit object MyFormat extends DefaultCSVFormat {
       override val delimiter = a.delimiter.toCharArray.head
     }
-    val startDate = "2016-12-01 00:00:00"
-    val endDate   = "2016-12-31 23:59:59"
+    val startDate = "2017-06-01 00:00:00"
+    val endDate   = "2017-07-31 23:59:59"
     val encoding = a.encoding.getOrElse("UTF-8")
     val source = scala.io.Source.fromFile(csv.ref.file, enc=encoding)
     val sourceString = try source.mkString finally source.close
