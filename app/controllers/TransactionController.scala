@@ -24,12 +24,10 @@ object TransactionController {
       .result
   }
 
-  def readTransactionQuery2(id: Long) = Tables.Transactions.filter(t => t.id === id).result
-
-  def updateTransactionQuery(id: Long, category: String, subCategory: String) = {
+  def updateTransactionQuery(id: Long, category: String, subCategory: String, comment: String) = {
     Tables.Transactions.filter(t => t.id === id)
-      .map(x => (x.category, x.subCategory ))
-      .update(Some(category), Some(subCategory))
+      .map(x => (x.category, x.subCategory, x.comment ))
+      .update(Some(category), Some(subCategory), Some(comment))
   }
 }
 
@@ -57,10 +55,11 @@ class TransactionController extends Controller{
 
   def updateTransaction(id: String): Action[JsValue] = Action.async(parse.json){ request => async {
     val jsonRequest = request.body
-    val category = (jsonRequest \ "category").as[String]
-    val subCategory =   (jsonRequest \ "subCategory").as[String]
+    val category =    (jsonRequest \ "category").as[String]
+    val subCategory = (jsonRequest \ "subCategory").as[String]
+    val comment =     (jsonRequest \ "comment").as[String]
 
-    val res = await { Global.db.run(TransactionController.updateTransactionQuery(id.toLong, category, subCategory)) }
+    val res = await { Global.db.run(TransactionController.updateTransactionQuery(id.toLong, category, subCategory, comment)) }
 
     Ok(Json.obj("result" -> JsString(res.toString)))
   }}

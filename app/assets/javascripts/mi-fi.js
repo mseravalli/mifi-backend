@@ -285,13 +285,15 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
     return colors;
   }
 
-  $scope.updateTransaction = function(tid, category, subCategory) {
+  $scope.updateTransaction = function(tid, category, subCategory, comment) {
     console.log(tid);
     console.log(category);
     console.log(subCategory);
+    console.log(comment);
+    comment = comment ? comment : "";
     var success = function(response) {};
     var error = function(response) {};
-    var params = {"category": category, "subCategory": subCategory};
+    var params = {"category": category, "subCategory": subCategory, "comment": comment};
     $http.put(baseUrl + "transaction/" + tid, params, requestConfig)
       .then(success, error);
   };
