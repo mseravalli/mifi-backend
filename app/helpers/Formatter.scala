@@ -1,6 +1,7 @@
 package helpers
 
 import java.sql.Date
+import java.time.format.DateTimeFormatter
 
 import org.joda.time.{Days, LocalDate, Months, Years}
 import play.api.libs.json._
@@ -60,20 +61,31 @@ object Formatter {
     }
   }
 
+  def timeIterator(startDate: Date, endDate: Date, dateFormat: String) = {
+    val start: java.time.LocalDate = startDate.toLocalDate
+    val end: java.time.LocalDate = endDate.toLocalDate
+    Iterator.iterate(start)(Formatter.incrementDate(_, dateFormat) ) takeWhile (_ isBefore end)
+  }
+
   /**
    * Formats the data retrieved from the database for the frontend
    */
-  def formatSeriesNew(seriesIn: Map[String, Map[String, BigDecimal]],
-                      startDate: Date,
-                      endDate: Date,
-                      categories: Array[String],
-                      dateFormat: String): JsObject = {
+  def formatSeries(seriesIn: Map[String, Map[String, BigDecimal]],
+                   startDate: Date,
+                   endDate: Date,
+                   categories: Array[String],
+                   dateFormat: String): JsObject = {
 
     val cats = "total" +: (categories.filter(_ != "total").sorted)
 
     val catsJson = JsArray(JsString("date") +: cats.map(JsString(_)))
 
-    val dataJson = seriesIn
+    val seriesFilled: Map[String, Map[String, BigDecimal]] = Formatter.timeIterator(startDate, endDate, dateFormat).map{ date =>
+      val d: String = date.format(DateTimeFormatter.ofPattern(dateFormat))
+      Map[String, Map[String, BigDecimal]](d -> seriesIn.getOrElse(d, Map[String, BigDecimal]("total" -> BigDecimal(0.0))))
+    }.toList.flatten.toMap
+
+    val dataJson = seriesFilled
       .toList
       .sortWith(_._1 < _._1)
       .map{ x =>

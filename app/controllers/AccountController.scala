@@ -38,11 +38,7 @@ object AccountController {
       .result
   }
 
-  def timeIterator(startDate: Date, endDate: Date, dateFormat: String) = {
-    val start: java.time.LocalDate = startDate.toLocalDate
-    val end: java.time.LocalDate = endDate.toLocalDate
-    Iterator.iterate(start)(Formatter.incrementDate(_, dateFormat) ) takeWhile (_ isBefore end)
-  }
+
 
   def createTimeSeries(startDate: Date, endDate: Date, dateFormat: String) = async {
     val accounts = await {
@@ -63,7 +59,8 @@ object AccountController {
       .withDefaultValue(BigDecimal(0))
 
     var previousBalance = balances.map(_._2)
-    val timeSeries = timeIterator(startDate, endDate, dateFormat).map { i =>
+    // TODO: change with fold left
+    val timeSeries = Formatter.timeIterator(startDate, endDate, dateFormat).map { i =>
       val currentDate = i.format(DateTimeFormatter.ofPattern(dateFormat))
       val currentBalance = balances
         .map(x => groupedTransactions((Some(currentDate), Some(x._1))))

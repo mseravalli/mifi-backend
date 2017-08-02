@@ -75,7 +75,7 @@ class SubCategoryController extends Controller {
         )
       }
 
-    val series = Formatter.formatSeriesNew(totalFlow, startDate, endDate, subCategories, dateFormat)
+    val series = Formatter.formatSeries(totalFlow, startDate, endDate, subCategories, dateFormat)
 
     Ok( series )
   }}
