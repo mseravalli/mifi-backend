@@ -115,6 +115,7 @@
               <th numeric name="Amount" unit="€"></th>
               <th name="Category"></th>
               <th name="Subcategory"></th>
+              <th name="Comment"></th>
             </tr>
           </thead>
           <tbody>
@@ -132,14 +133,16 @@
               <td>
                 <span ng-repeat="c in categories">
                   <span ng-if="c.name === t.category">
-                    <md-select ng-model="t.subCategory" placeholder="other" ng-change="updateTransaction(t.id, t.category, t.subCategory)">
+                    <md-select ng-model="t.subCategory" placeholder="other" ng-change="updateTransaction(t.id, t.category, t.subCategory, t.comment)">
                       <md-option ng-value="s.name" ng-repeat="s in c.subCategories">{{s.name}}</md-option>
                     </md-select>
                   </span>
                 </span>
               </td>
               <td>
-                <md-button class="md-primary">Split</md-button>
+                <md-input-container>
+                  <input ng-model="t.comment" ng-blur="updateTransaction(t.id, t.category, t.subCategory, t.comment)">
+                </md-input-container>
               </td>
             </tr>
           </tbody>
