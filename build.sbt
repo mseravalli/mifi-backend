@@ -1,6 +1,6 @@
 name := "mi-fi"
 
-version := "0.4.3"
+version := "1.0.0"
 
 scalaVersion := "2.11.6"
 
