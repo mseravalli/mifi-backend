@@ -1,3 +1,5 @@
+DROP INDEX transaction_date_idx;
+DROP TABLE transactions_categorization;
 DROP TABLE transactions;
 DROP TABLE category_match;
 DROP TABLE sub_categories;
@@ -7,19 +9,20 @@ DROP TABLE accounts;
 CREATE TABLE accounts
 (
   account VARCHAR(32),
-  initial_amount  NUMERIC(8,4),
-  rows_to_skip INTEGER,
-  delimiter VARCHAR(1),
-  date_format VARCHAR(32),
+  initial_amount  NUMERIC(8,4) NOT NULL,
+  rows_to_skip INTEGER NOT NULL,
+  delimiter VARCHAR(8) NOT NULL,
+  date_format VARCHAR(32) NOT NULL,
   final_row VARCHAR(32),
-  transaction_date INTEGER,
-  exchange_date INTEGER,
-  receiver INTEGER[],
-  purpose INTEGER[],
-  amount_in INTEGER,
-  amount_out INTEGER,
-  currency INTEGER,
-  currency_default VARCHAR(3),
+  transaction_date_pos INTEGER NOT NULL,
+  exchange_date_pos INTEGER NOT NULL,
+  receiver_pos INTEGER[] NOT NULL,
+  purpose_pos INTEGER[] NOT NULL,
+  amount_in_pos INTEGER NOT NULL,
+  amount_out_pos INTEGER NOT NULL,
+  currency_pos INTEGER NOT NULL,
+  currency_default VARCHAR(3) NOT NULL,
+  encoding VARCHAR(16),
   PRIMARY KEY (account)
 );
 
@@ -44,6 +47,14 @@ CREATE TABLE category_match
   PRIMARY KEY (category, sub_category)
 );
 
+CREATE TABLE transactions_categorization
+(
+  description VARCHAR(128),
+  category VARCHAR(32) REFERENCES categories(category) ON UPDATE CASCADE NOT NULL,
+  sub_category VARCHAR(32) REFERENCES sub_categories(sub_category) ON UPDATE CASCADE NOT NULL,
+  PRIMARY KEY (description)
+);
+
 CREATE TABLE transactions
 (
   id serial8 PRIMARY KEY,
@@ -60,3 +71,5 @@ CREATE TABLE transactions
   approved BOOLEAN NOT NULL,
   FOREIGN KEY (category,sub_category) REFERENCES category_match(category,sub_category)
 ); 
+
+CREATE INDEX transaction_date_idx ON transactions USING btree (transaction_date DESC);

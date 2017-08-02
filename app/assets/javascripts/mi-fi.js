@@ -51,18 +51,18 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
   };
 
   function initCategories() {
+    var success = function(response) {
+      $scope.categoryColors["total"] = "#2979FF";
+      $scope.categories = JSON.parse(JSON.stringify(response.data.categories));
+      var tmp = {};
+      for (var i = 0; i < response.data.categories.length; ++i) {
+        $scope.categories[i]["selected"] = true;
+        $scope.categoryColors[$scope.categories[i].name] = $scope.categories[i].color;
+      }
+      $scope.update();
+    }
     $http.get(baseUrl + "categories")
-      .success(function(data, status, headers, config) {
-        $scope.categoryColors["total"] = "#2979FF";
-        $scope.categories = JSON.parse(JSON.stringify(data.categories));
-        var tmp = {};
-        for (var i = 0; i < data.categories.length; ++i) {
-          $scope.categories[i]["selected"] = true;
-          $scope.categoryColors[$scope.categories[i].name] = $scope.categories[i].color;
-        }
-        $scope.update();
-      })
-      .error(function(data, status, headers, config) { });
+      .then(success);
   };
 
   $scope.selectNoneCategory = function selectNoneCategory(c) {
@@ -141,15 +141,15 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
   };
 
   function initAccounts() {
+    var success = function(response) {
+      var tmp = JSON.parse(JSON.stringify(response.data.accounts));
+      for (var i = 0; i < tmp.length; ++i) {
+        var a = tmp[i];
+        $scope.accounts.push(a.account);
+      }
+    }
     $http.get(baseUrl + "accounts")
-      .success(function(data, status, headers, config) {
-        var tmp = JSON.parse(JSON.stringify(data.accounts));
-        for (var i = 0; i < tmp.length; ++i) {
-          var a = tmp[i];
-          $scope.accounts.push(a.account);
-        }
-      })
-      .error(function(data, status, headers, config) { });
+      .then(success);
   };
   // The refresh logic is split also in this method
   function initialize() {
@@ -160,9 +160,10 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
 
   var approveImport = function(isApproved) {
     var params = {"isApproved": isApproved};
+    var success = function(response) {};
+    var error = function(response) {};
     $http.post(baseUrl + "approve_import", params, requestConfig)
-      .success(function(data, status, headers, config) { })
-      .error(function(data, status, headers, config) { });
+      .then(success, error);
   }
 
   $scope.importStatus = function(ev, status) {
@@ -188,23 +189,24 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
       var fd = new FormData();
       fd.append("csv", file);
       fd.append("importAccount", $scope.importAccount);
+      var success = function(response) {
+        var account = response.data.account.account;
+        var balance = response.data.account.balance;
+        var message = "The import for account " + account + " completed successfully. " +
+          "The current balance is " + balance;
+        $scope.importStatus(ev, message);
+      }
+      var error = function(response) {
+        var message = "The import was not completed successfully. " +
+          "Please check the parameters.";
+        $scope.importStatus(ev, message);
+      }
       $http.post(baseUrl + "import", fd, {
         withCredentials: true,
         headers: {'Content-Type': undefined },
         transformRequest: angular.identity
       })
-        .success(function(data, status, headers, config) {
-          var account = data.account.account;
-          var balance = data.account.balance;
-          var message = "The import for account " + account + " completed successfully. " +
-              "The current balance is " + balance;
-          $scope.importStatus(ev, message);
-        })
-        .error(function(data, status, headers, config) {
-          var message = "The import was not completed successfully. " +
-              "Please check the parameters.";
-          $scope.importStatus(ev, message);
-        });
+        .then(success, error);
     }
   };
 
@@ -287,11 +289,11 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
     console.log(tid);
     console.log(category);
     console.log(subCategory);
+    var success = function(response) {};
+    var error = function(response) {};
     var params = {"category": category, "subCategory": subCategory};
     $http.put(baseUrl + "transaction/" + tid, params, requestConfig)
-      .success(function(data, status, headers, config) { })
-      .error(function(data, status, headers, config) { });
-
+      .then(success, error);
   };
 
   $scope.update = function update(){
@@ -329,92 +331,100 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
 
   function updateTransactionTable() {
     updateParams();
+    var success = function(response) {
+      $scope.transactions = JSON.parse(JSON.stringify(response.data.transactions));
+    };
     $http.get(baseUrl + "transactions?" + params.urlParams )
-      .success(function(data, status, headers, config) {
-        $scope.transactions = JSON.parse(JSON.stringify(data.transactions));
-      })
-      .error(function(data, status, headers, config) { });
+      .then(success);
   };
 
   function updateCharts() {
     updateParams();
-    $http.post(baseUrl + "categories/aggregate", params, requestConfig)
-      .success(function(data, status, headers, config) {
-        categoriesChart.data = data.data;
-        categoriesChart.options.colors = assignColors(data.data[0], $scope.categoryColors);
-        $scope.catChart = categoriesChart;
-      });
+    var success = function(response) {
+      categoriesChart.data = response.data.data;
+      categoriesChart.options.colors = assignColors(response.data.data[0], $scope.categoryColors);
+      $scope.catChart = categoriesChart;
+    };
+    $http.get(baseUrl + "categories/aggregate?" + params.urlParams)
+      .then(success);
 
-    $http.post(baseUrl + "subcategories/aggregate", params, requestConfig)
-      .success(function(data, status, headers, config) {
-        subCategoriesChart.data = data.data;
-        subCategoriesChart.options.colors = assignColors(data.data[0], $scope.subCategoryColors);
-        $scope.subCatChart = subCategoriesChart;
-      });
+    var success = function(response) {
+      subCategoriesChart.data = response.data.data;
+      subCategoriesChart.options.colors = assignColors(response.data.data[0], $scope.subCategoryColors);
+      $scope.subCatChart = subCategoriesChart;
+    };
+    $http.get(baseUrl + "subcategories/aggregate?" + params.urlParams)
+      .then(success);
 
-    $http.post(baseUrl + "categories/in", params, requestConfig)
-      .success(function(data, status, headers, config) {
-        pieInCatChart.data = data.data;
-        // the data have a different format in this type of graph
-        var categories = [];
-        for (var i = 1; i < data.data.length; ++i) {
-          categories.push(data.data[i][0]);
-        }
-        pieInCatChart.options.colors = assignColors(categories, $scope.categoryColors);
-        $scope.inCatChart = pieInCatChart;
-      });
+    var success = function(response) {
+      pieInCatChart.data = response.data.data;
+      // the data have a different format in this type of graph
+      var categories = [];
+      for (var i = 1; i < response.data.data.length; ++i) {
+        categories.push(response.data.data[i][0]);
+      }
+      pieInCatChart.options.colors = assignColors(categories, $scope.categoryColors);
+      $scope.inCatChart = pieInCatChart;
+    };
+    $http.get(baseUrl + "categories/in?" + params.urlParams)
+      .then(success);
 
-    $http.post(baseUrl + "categories/out", params, requestConfig)
-      .success(function(data, status, headers, config) {
-        pieOutCatChart.data = data.data;
-        // the data have a different format in this type of graph
-        var categories = [];
-        for (var i = 1; i < data.data.length; ++i) {
-          categories.push(data.data[i][0]);
-        }
-        pieOutCatChart.options.colors = assignColors(categories, $scope.categoryColors);
-        $scope.outCatChart = pieOutCatChart;
-      });
+    var success = function(response) {
+      pieOutCatChart.data = response.data.data;
+      // the data have a different format in this type of graph
+      var categories = [];
+      for (var i = 1; i < response.data.data.length; ++i) {
+        categories.push(response.data.data[i][0]);
+      }
+      pieOutCatChart.options.colors = assignColors(categories, $scope.categoryColors);
+      $scope.outCatChart = pieOutCatChart;
+    };
+    $http.get(baseUrl + "categories/out?" + params.urlParams)
+      .then(success);
 
-    $http.post(baseUrl + "subcategories/in", params, requestConfig)
-      .success(function(data, status, headers, config) {
-        pieInSubCatChart.data = data.data;
-        // the data have a different format in this type of graph
-        var categories = [];
-        for (var i = 1; i < data.data.length; ++i) {
-          categories.push(data.data[i][0]);
-        }
-        pieInSubCatChart.options.colors = assignColors(categories, $scope.subCategoryColors);
-        $scope.inSubCatChart = pieInSubCatChart;
-      });
+    var success = function(response) {
+      pieInSubCatChart.data = response.data.data;
+      // the data have a different format in this type of graph
+      var categories = [];
+      for (var i = 1; i < response.data.data.length; ++i) {
+        categories.push(response.data.data[i][0]);
+      }
+      pieInSubCatChart.options.colors = assignColors(categories, $scope.subCategoryColors);
+      $scope.inSubCatChart = pieInSubCatChart;
+    };
+    $http.get(baseUrl + "subcategories/in?" + params.urlParams)
+      .then(success);
 
-    $http.post(baseUrl + "subcategories/out", params, requestConfig)
-      .success(function(data, status, headers, config) {
-        pieOutSubCatChart.data = data.data;
-        // the data have a different format in this type of graph
-        var categories = [];
-        for (var i = 1; i < data.data.length; ++i) {
-          categories.push(data.data[i][0]);
-        }
-        pieOutSubCatChart.options.colors = assignColors(categories, $scope.subCategoryColors);
-        $scope.outSubCatChart = pieOutSubCatChart;
-      });
+    var success = function(response) {
+      pieOutSubCatChart.data = response.data.data;
+      // the data have a different format in this type of graph
+      var categories = [];
+      for (var i = 1; i < response.data.data.length; ++i) {
+        categories.push(response.data.data[i][0]);
+      }
+      pieOutSubCatChart.options.colors = assignColors(categories, $scope.subCategoryColors);
+      $scope.outSubCatChart = pieOutSubCatChart;
+    };
+    $http.get(baseUrl + "subcategories/out?" + params.urlParams)
+      .then(success);
 
+    var success = function(response) {
+      var acc = [["account", "balance"]];
+      for (var i = 0; i < response.data.accounts.length; ++i){
+        acc.push([response.data.accounts[i].account, response.data.accounts[i].balance]);
+      }
+      pieAccountChart.data = acc;
+      $scope.accountChart = pieAccountChart;
+    };
     $http.get(baseUrl + "accounts?" + params.urlParams )
-      .success(function(data, status, headers, config) {
-        var acc = [["account", "balance"]];
-        for (var i = 0; i < data.accounts.length; ++i){
-          acc.push([data.accounts[i].account, data.accounts[i].balance]);
-        }
-        pieAccountChart.data = acc;
-        $scope.accountChart = pieAccountChart;
-      });
+      .then(success);
 
-    $http.post(baseUrl + "accounts/timeseries", params, requestConfig)
-      .success(function(data, status, headers, config) {
-        timeSeriesChart.data = data.data;
-        $scope.seriesChart = timeSeriesChart;
-      });
+    var success = function(response) {
+      timeSeriesChart.data = response.data.data;
+      $scope.seriesChart = timeSeriesChart;
+    };
+    $http.get(baseUrl + "accounts/timeseries?" + params.urlParams)
+      .then(success);
   };
 });
 

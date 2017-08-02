@@ -100,3 +100,26 @@ INSERT INTO category_match (category, sub_category, color) VALUES
   ('mobility', 'vehicle', '#827717'),
   ('finance', 'internal transfer', '#FF8A65')
 ;
+
+INSERT INTO transactions_categorization (description, category, sub_category) VALUES
+  ('rewe sagt danke', 'living', 'food'),
+  ('dean&david', 'living', 'food'),
+  ('dean+david', 'living', 'food'),
+  ('sausalitos', 'free time', 'going out'),
+  ('mvg automat', 'mobility', 'public transport'),
+  ('miete', 'house', 'rent'),
+  ('kabel deutschland', 'house', 'internet'),
+  ('kabeldeutschland', 'house', 'internet'),
+  ('primastrom', 'house', 'electricity'),
+  ('kalixa pay limited', 'finance', 'internal transfer'),
+  ('dauerauftrag salary', 'finance', 'internal transfer'),
+  ('seravalli, marco salary', 'finance', 'internal transfer'),
+  ('internal transfer', 'finance', 'internal transfer'),
+  ('load with bank transfer', 'finance', 'internal transfer'),
+  ('loading fee', 'finance', 'costs and fees'),
+  ('lohn/gehalt', 'work and training', 'salary'),
+  ('bexp spesen', 'work and training', 'travel'),
+  ('sepa-direct debit, american express', 'work and training', 'travel'),
+  ('e-plus service', 'house', 'phone'),
+  ('rundfunk ard', 'finance', 'taxes')
+;
