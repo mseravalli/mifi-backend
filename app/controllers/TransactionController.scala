@@ -24,8 +24,6 @@ object TransactionController {
       .result
   }
 
-  def readTransactionQuery2(id: Long) = Tables.Transactions.filter(t => t.id === id).result
-
   def updateTransactionQuery(id: Long, category: String, subCategory: String) = {
     Tables.Transactions.filter(t => t.id === id)
       .map(x => (x.category, x.subCategory ))
