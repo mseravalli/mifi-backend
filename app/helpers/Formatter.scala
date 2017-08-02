@@ -63,11 +63,11 @@ object Formatter {
   /**
    * Formats the data retrieved from the database for the frontend
    */
-  def formatSeriesNew(seriesIn: Map[String, Map[String, BigDecimal]],
-                      startDate: Date,
-                      endDate: Date,
-                      categories: Array[String],
-                      dateFormat: String): JsObject = {
+  def formatSeries(seriesIn: Map[String, Map[String, BigDecimal]],
+                   startDate: Date,
+                   endDate: Date,
+                   categories: Array[String],
+                   dateFormat: String): JsObject = {
 
     val cats = "total" +: (categories.filter(_ != "total").sorted)
 
