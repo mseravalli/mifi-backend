@@ -223,7 +223,11 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
   categoriesChart.options = {
     "isStacked": "true",
     seriesType: "bars",
-    series: {0: {type: "line"}},
+    series: {
+      0: {type: "line"},
+      1: {type: "line"},
+      2: {type: "line"}
+    },
     chartArea: {'left':50, 'top':20, 'width': '100%', 'height': '80%'},
     'legend': {'position': 'bottom'}
   };
@@ -234,7 +238,11 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
   subCategoriesChart.options = {
     "isStacked": "true",
     seriesType: "bars",
-    series: {0: {type: "line"}},
+    series: {
+        0: {type: "line"},
+        1: {type: "line"},
+        2: {type: "line"}
+    },
     chartArea: {'left':50, 'top':20, 'width': '100%', 'height': '80%'},
     'legend': {'position': 'bottom'}
   };
