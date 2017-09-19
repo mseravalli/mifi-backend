@@ -76,7 +76,8 @@ object Formatter {
                    categories: Array[String],
                    dateFormat: String): JsObject = {
 
-    val cats = "total" +: (categories.filter(_ != "total").sorted)
+    val aggregates = Array[String]("total", "min", "max")
+    val cats = aggregates ++ (categories.filter(!aggregates.contains(_)).sorted)
 
     val catsJson = JsArray(JsString("date") +: cats.map(JsString(_)))
 
