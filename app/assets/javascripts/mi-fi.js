@@ -27,8 +27,8 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
   $scope.categories  = [];
   $scope.subCategories  = [];
   $scope.selectedSubCategories  = [];
-  $scope.categoryColors =    {"total": "#2979FF"};
-  $scope.subCategoryColors = {"total": "#2979FF"};
+  $scope.categoryColors =    {"total": "#2979ff", "min": "#ff80ab", "max": "#68efad"};
+  $scope.subCategoryColors = {"total": "#2979ff", "min": "#ff80ab", "max": "#68efad"};
 
   $scope.query = {
     filter: '',
