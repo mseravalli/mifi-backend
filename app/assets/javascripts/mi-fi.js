@@ -19,7 +19,7 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
   }
 
   $scope.range = "yyyy-mm";
-  $scope.startDate = new Date("2014-01-01");
+  $scope.startDate = new Date( ((new Date()).getFullYear()-2) + "-" + (new Date().getMonth()) + "-01" );
   $scope.endDate   = new Date();
   $scope.accounts = [];
   $scope.importAccount = "";
@@ -27,8 +27,8 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
   $scope.categories  = [];
   $scope.subCategories  = [];
   $scope.selectedSubCategories  = [];
-  $scope.categoryColors =    {"total": "#2979FF"};
-  $scope.subCategoryColors = {"total": "#2979FF"};
+  $scope.categoryColors =    {"total": "#2979ff", "min": "#ff80ab", "max": "#68efad"};
+  $scope.subCategoryColors = {"total": "#2979ff", "min": "#ff80ab", "max": "#68efad"};
 
   $scope.query = {
     filter: '',
@@ -223,7 +223,11 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
   categoriesChart.options = {
     "isStacked": "true",
     seriesType: "bars",
-    series: {0: {type: "line"}},
+    series: {
+      0: {type: "line"},
+      1: {type: "line"},
+      2: {type: "line"}
+    },
     chartArea: {'left':50, 'top':20, 'width': '100%', 'height': '80%'},
     'legend': {'position': 'bottom'}
   };
@@ -234,7 +238,11 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
   subCategoriesChart.options = {
     "isStacked": "true",
     seriesType: "bars",
-    series: {0: {type: "line"}},
+    series: {
+        0: {type: "line"},
+        1: {type: "line"},
+        2: {type: "line"}
+    },
     chartArea: {'left':50, 'top':20, 'width': '100%', 'height': '80%'},
     'legend': {'position': 'bottom'}
   };
