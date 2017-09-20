@@ -71,7 +71,10 @@ class SubCategoryController extends Controller {
       .map{ x =>
         (
           x._1,
-          x._2.groupBy(_._2).map(y => (y._1 -> y._2.map(_._3).sum)) + ("total" -> x._2.map(_._3).sum)
+          x._2.groupBy(_._2).map(y => (y._1 -> y._2.map(_._3).sum))
+            + ("total" -> x._2.map(_._3).sum)
+            + ("max" -> x._2.groupBy(_._2).map(y => y._2.map(_._3).sum).filter(_ > 0).sum)
+            + ("min" -> x._2.groupBy(_._2).map(y => y._2.map(_._3).sum).filter(_ < 0).sum)
         )
       }
 
