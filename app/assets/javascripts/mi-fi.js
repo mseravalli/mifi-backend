@@ -19,7 +19,7 @@ angular.module('mifi', ['googlechart', 'ngMaterial', 'md.data.table']).controlle
   }
 
   $scope.range = "yyyy-mm";
-  $scope.startDate = new Date("2014-01-01");
+  $scope.startDate = new Date( ((new Date()).getFullYear()-2) + "-" + (new Date().getMonth()) + "-01" );
   $scope.endDate   = new Date();
   $scope.accounts = [];
   $scope.importAccount = "";
