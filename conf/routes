@@ -4,11 +4,6 @@
 # Note: @controllers syntax signifies the actual controller instance, retrieved via GlobalSettings.getController().
 # ~~~~
 
-# Single endpoint for serving AngularJS
-GET         /                                        @controllers.Application.index
-GET         /main                                    @controllers.Application.index
-GET         /randomUUID                              @controllers.Application.randomUUID
-
 POST        /api/v0.1/import                         @controllers.ImportController.importTransactions
 POST        /api/v0.1/approve_import                 @controllers.ImportController.approveImport
 GET         /api/v0.1/accounts                       @controllers.AccountController.readAccounts
