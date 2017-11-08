@@ -80,21 +80,39 @@ object GenericImporter {
     reportResp.body
   }
 
-  def importCSV(csv: FilePart[TemporaryFile], a: Tables.AccountsRow, categories: Map[String, Tuple2[String, String]]): Future[List[Tables.TransactionsRow]] = async {
+  def fetchCSV(csv: Option[FilePart[TemporaryFile]], a: Tables.AccountsRow ): Future[String] = async {
     implicit object MyFormat extends DefaultCSVFormat {
       override val delimiter = a.delimiter.toCharArray.head
     }
-    val startDate = "2017-06-01 00:00:00"
-    val endDate   = "2017-07-31 23:59:59"
-    val encoding = a.encoding.getOrElse("UTF-8")
-    val source = scala.io.Source.fromFile(csv.ref.file, enc=encoding)
-    val sourceString = try source.mkString finally source.close
-    val csvString = a.account.toLowerCase() match {
+
+    val startDate = "2017-08-01 00:00:00"
+    val endDate   = "2017-10-31 23:59:59"
+
+    val csvString: String = a.account.toLowerCase() match {
       case "number26" => await{ retrieveCSV(startDate, endDate) }
-      case _ => sourceString
+      case _ => {
+        csv match {
+          case Some(f) => {
+            val encoding = a.encoding.getOrElse("UTF-8")
+            val source = scala.io.Source.fromFile(f.ref.file, enc = encoding)
+            val sourceString = try source.mkString finally source.close
+            sourceString
+          }
+          case None => {throw new NoSuchElementException("Missing CSV File")}
+        }
+      }
     }
 
-    val reader = CSVReader.open(new StringReader(csvString))
+    csvString
+  }
+
+  def trasformCSVIntoTransactions(csvString: String, a: Tables.AccountsRow, categories: Map[String, Tuple2[String, String]]): Future[List[Tables.TransactionsRow]] = async {
+    implicit object MyFormat extends DefaultCSVFormat {
+      override val delimiter = a.delimiter.toCharArray.head
+    }
+
+    val s = csvString
+    val reader = CSVReader.open(new StringReader(s))
 
     // skip the first rows
     for (i <- 0 until a.rowsToSkip) { reader.readNext }
@@ -200,8 +218,10 @@ class ImportController extends Controller {
     Ok(Json.obj("result" -> JsString(s"$action ${res.toString}")))
   } }
 
+
+  
+  // TODO improve search of single account
   def importTransactions = Action.async(parse.multipartFormData) { request =>
-    request.body.file("csv").map { csv =>
       request.body.dataParts.get("importAccount").map { accounts => async {
         accounts match {
           case accountName :: tail => {
@@ -211,16 +231,18 @@ class ImportController extends Controller {
             val categories: Map[String, Tuple2[String, String]] = await {
               Global.db.run(Tables.TransactionsCategorization.result)
             }.map(x => x.description -> (x.category, x.subCategory)).toMap
-
+      
             accounts.length match {
               case 1 => {
                 val a = accounts.head
-                val transactions = await { GenericImporter.importCSV(csv, a._1, categories) }
 
-                val queryResult = await {
-                  Global.db.run(importQuery(transactions))
-                }
+                val csv = request.body.file("csv")
 
+                val csvString = await{ GenericImporter.fetchCSV(csv, a._1) }
+                val transactions = await { GenericImporter.trasformCSVIntoTransactions(csvString, a._1, categories) }
+          
+                val queryResult = await { Global.db.run(importQuery(transactions)) }
+          
                 val status = queryResult.toString
                 val balance = await {
                   Global.db.run(AccountController.readAccountsQuery(a._1.account))
@@ -237,7 +259,6 @@ class ImportController extends Controller {
           case Nil => BadRequest("Missing account")
         }
       }}.getOrElse{ async { BadRequest("Missing account") } }
-    }.getOrElse { async { BadRequest("Missing file") } }
   }
 }
 
