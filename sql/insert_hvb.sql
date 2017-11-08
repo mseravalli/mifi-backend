@@ -14,5 +14,5 @@ INSERT INTO accounts ( account,
                        currency_default,
                        encoding
 ) VALUES
-  ('hvb',    0.0, 1, ';', 'dd.MM.yyyy',          NULL,              1, 2, '{3, 4}', '{5}', 6,  6,  7,  'EUR', 'ISO-8859-1')
+  ('hvb',    6035.50, 1, ';', 'dd.MM.yyyy',          NULL,              1, 2, '{3, 4}', '{5}', 6,  6,  7,  'EUR', 'ISO-8859-1')
 ;
