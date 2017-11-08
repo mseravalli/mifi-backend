@@ -9,5 +9,5 @@ psql -U mifi -f /opt/sql/insert_db.sql
 psql -U mifi -f /opt/sql/insert_kalixa.sql
 psql -U mifi -f /opt/sql/insert_hvb.sql
 psql -U mifi -f /opt/sql/insert_number26.sql
-psql -U mifi -f /opt/sql/bkp/2017-09-30.sql
+psql -U mifi -f /opt/sql/bkp/2017-10-31.sql
 
