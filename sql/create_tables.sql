@@ -9,7 +9,7 @@ DROP TABLE accounts;
 CREATE TABLE accounts
 (
   account VARCHAR(32),
-  initial_amount  NUMERIC(8,4) NOT NULL,
+  initial_amount  NUMERIC(16,4) NOT NULL,
   rows_to_skip INTEGER NOT NULL,
   delimiter VARCHAR(8) NOT NULL,
   date_format VARCHAR(32) NOT NULL,
@@ -63,7 +63,7 @@ CREATE TABLE transactions
   exchange_date DATE,
   receiver VARCHAR(512),
   purpose VARCHAR(512),
-  amount NUMERIC(8,4),
+  amount NUMERIC(16,4),
   currency VARCHAR(3),
   category VARCHAR(32) REFERENCES categories(category) ON UPDATE CASCADE,
   sub_category VARCHAR(32) REFERENCES sub_categories(sub_category) ON UPDATE CASCADE,
