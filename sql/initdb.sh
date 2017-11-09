@@ -2,7 +2,7 @@
 
 set -e
 
-runuser -l postgres -c "psql -f /opt/sql/create_database.sql"
+psql -f /opt/sql/create_database.sql
 psql -U mifi -f /opt/sql/create_tables.sql
 psql -U mifi -f /opt/sql/populate_categories.sql
 psql -U mifi -f /opt/sql/insert_db.sql

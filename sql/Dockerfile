@@ -1,4 +1,4 @@
-FROM postgres:9.4.5
+FROM postgres:10.0-alpine
 
 RUN mkdir -p /home/postgres
 
