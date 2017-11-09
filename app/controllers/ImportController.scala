@@ -1,16 +1,17 @@
 package controllers
 
 import java.io.StringReader
+import java.nio.file.FileAlreadyExistsException
 
 import helpers.Global
 import models._
-
 import com.github.tototoshi.csv._
 import java.sql.Date
 import java.sql.Timestamp
 import javax.inject.Singleton
-import org.joda.time.format.{DateTimeFormatter, DateTimeFormat}
-import org.slf4j.{LoggerFactory, Logger}
+
+import org.joda.time.format.{DateTimeFormat, DateTimeFormatter}
+import org.slf4j.{Logger, LoggerFactory}
 import play.api.mvc._
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.libs.concurrent.Execution.Implicits._
@@ -19,8 +20,10 @@ import play.api.libs.json._
 import play.api.libs.ws._
 import play.api.libs.ws.ning.NingAsyncHttpClientConfigBuilder
 import play.api.Play.current
+
 import scala.async.Async.{async, await}
 import scala.concurrent.Future
+import scala.util.{Failure, Success, Try}
 import slick.driver.PostgresDriver.api._
 
 object GenericImporter {
@@ -59,7 +62,7 @@ object GenericImporter {
     val oauthTokenUrl = "https://api.tech26.de/oauth/token"
     val oauthTokenData: Map[String, Seq[String]] = Map(
       "username" -> Seq("marco.seravalli@gmail.com"),
-      "password" -> Seq("^35*burn*SPACE*with*AGAIN*88^"),
+      "password" -> Seq("%k8XK&E6!b05EZ&QYSu4iTwH"),
       "grant_type" -> Seq("password")
     )
     val oauthTokenResp = await{
@@ -80,7 +83,7 @@ object GenericImporter {
     reportResp.body
   }
 
-  def fetchCSV(csv: Option[FilePart[TemporaryFile]], a: Tables.AccountsRow ): Future[String] = async {
+  def fetchCSV(csv: Option[FilePart[TemporaryFile]], a: Tables.AccountsRow ): Future[Try[String]] = async {
     implicit object MyFormat extends DefaultCSVFormat {
       override val delimiter = a.delimiter.toCharArray.head
     }
@@ -88,17 +91,17 @@ object GenericImporter {
     val startDate = "2017-08-01 00:00:00"
     val endDate   = "2017-10-31 23:59:59"
 
-    val csvString: String = a.account.toLowerCase() match {
-      case "number26" => await{ retrieveCSV(startDate, endDate) }
+    val csvString: Try[String] = a.account.toLowerCase() match {
+      case "number26" => Success( await{ retrieveCSV(startDate, endDate) } )
       case _ => {
         csv match {
           case Some(f) => {
             val encoding = a.encoding.getOrElse("UTF-8")
             val source = scala.io.Source.fromFile(f.ref.file, enc = encoding)
             val sourceString = try source.mkString finally source.close
-            sourceString
+            Success(sourceString)
           }
-          case None => {throw new NoSuchElementException("Missing CSV File")}
+          case None => Failure(new Exception("Missing CSV File"))
         }
       }
     }
@@ -218,47 +221,64 @@ class ImportController extends Controller {
     Ok(Json.obj("result" -> JsString(s"$action ${res.toString}")))
   } }
 
-
-  
   // TODO improve search of single account
-  def importTransactions = Action.async(parse.multipartFormData) { request =>
-      request.body.dataParts.get("importAccount").map { accounts => async {
-        accounts match {
-          case accountName :: tail => {
-            val accounts = await {
-              Global.db.run(AccountController.readAccountsQuery(accountName))
-            }
-            val categories: Map[String, Tuple2[String, String]] = await {
-              Global.db.run(Tables.TransactionsCategorization.result)
-            }.map(x => x.description -> (x.category, x.subCategory)).toMap
-      
-            accounts.length match {
-              case 1 => {
-                val a = accounts.head
+  def importTransactions = Action.async(parse.multipartFormData) { request => async {
+    val accounts = request.body.dataParts.get("importAccount") match {
+      case Some(a) => Success(a)
+      case None => Failure(new Exception("Missing account"))
+    }
 
-                val csv = request.body.file("csv")
-
-                val csvString = await{ GenericImporter.fetchCSV(csv, a._1) }
-                val transactions = await { GenericImporter.trasformCSVIntoTransactions(csvString, a._1, categories) }
-          
-                val queryResult = await { Global.db.run(importQuery(transactions)) }
-          
-                val status = queryResult.toString
-                val balance = await {
-                  Global.db.run(AccountController.readAccountsQuery(a._1.account))
-                }.head._2
-                val result = Json.obj("status" -> status,
-                  "account" ->
-                    Json.obj("account" -> a._1.account,
-                      "balance" -> Json.toJson(balance)))
-                Ok(result)
-              }
-              case _ => BadRequest("Account not present in the database")
-            }
-          }
-          case Nil => BadRequest("Missing account")
+    val account = accounts match {
+      case Success(accountName :: tail) => {
+        val accounts = await {
+          Global.db.run(AccountController.readAccountsQuery(accountName))
         }
-      }}.getOrElse{ async { BadRequest("Missing account") } }
-  }
+        accounts.length match {
+          case 1 => Success(accounts.head)
+          case _ => Failure(new Exception("Account not present in the database"))
+        }
+      }
+      case Success(Nil) => Failure(new Exception("Missing account"))
+      // useless check just to get rid of the warning
+      case Success(x) => Failure(new Exception("Missing account"))
+      case Failure(e) => Failure(e)
+    }
+
+    val csv = request.body.file("csv")
+
+    val categories: Map[String, Tuple2[String, String]] = await {
+      Global.db.run(Tables.TransactionsCategorization.result)
+    }.map(x => x.description -> (x.category, x.subCategory)).toMap
+
+    val result: Try[Future[Try[JsObject]]] = account.map { a => async {
+      val csvString = await{ GenericImporter.fetchCSV(csv, a._1) }
+
+      csvString match {
+        case Success(c) => {
+          val transactions = await { GenericImporter.trasformCSVIntoTransactions(c, a._1, categories) }
+          val queryResult = await { Global.db.run(importQuery(transactions)) }
+          val status = queryResult.toString
+          val balance = await {
+            Global.db.run(AccountController.readAccountsQuery(a._1.account))
+          }.head._2
+
+          val res = Json.obj("status" -> status, "account" -> Json.obj("account" -> a._1.account, "balance" -> Json.toJson(balance)))
+          Success(res)
+        }
+        case Failure(e) => Failure(e)
+      }
+    }}
+
+    result match {
+      case Success(r) =>
+        val res = await{r}
+        res match {
+          case Success(s) => Ok(s)
+          case Failure(e) => BadRequest(e.getMessage)
+        }
+      case Failure(e) => BadRequest(e.getMessage)
+    }
+
+  }}
 }
 
