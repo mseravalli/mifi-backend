@@ -19,23 +19,42 @@ import slick.driver.PostgresDriver.api._
 
 
 object SubCategoryController {
-  def getSubCategoryTransactions(startDate: Date, endDate: Date, category: String, subCategories: Array[String]) = {
+  def getSubCategoryTransactions(startDate: Date,
+                                 endDate: Date,
+                                 category: String,
+                                 subCategories: Array[String],
+                                 accounts: Option[Seq[String]] = None) = {
+    val accountsTable = Tables.Accounts.filter( a =>
+      accounts.getOrElse(List("%")).foldLeft(a.account =!= a.account)((res, x) => res || (a.account like x))
+    )
+
     Tables.Transactions
       .filter(t => t.transactionDate > startDate && t.transactionDate < endDate
         && subCategories.foldLeft(t.subCategory =!= t.subCategory)((res, sc)=> res || ( (t.category like category) && (t.subCategory like sc) ) )
       )
-      .map{x => (x.transactionDate, x.subCategory, x.amount)}
+      .join(accountsTable).on(_.accountNumber === _.account)
+      .map{x => (x._1.transactionDate, x._1.subCategory, x._1.amount)}
       .result
   }
 
   // the flow can be either in or out
-  def totalFlowSubCatQuery(startDate: Date, endDate: Date, flow: String, category: String, subCategories: Array[String]) = {
+  def totalFlowSubCatQuery(startDate: Date,
+                           endDate: Date,
+                           flow: String,
+                           category: String,
+                           subCategories: Array[String],
+                           accounts: Option[Seq[String]] = None) = {
+    val accountsTable = Tables.Accounts.filter( a =>
+      accounts.getOrElse(List("%")).foldLeft(a.account =!= a.account)((res, x) => res || (a.account like x))
+    )
+
     Tables.Transactions
       .filter(t => t.transactionDate > startDate && t.transactionDate < endDate
         && subCategories.foldLeft(t.subCategory =!= t.subCategory)((res, sc)=> res || ( (t.category like category) && (t.subCategory like sc) ) )
       )
-      .groupBy(_.subCategory)
-      .map(x => (x._1, x._2.map(_.amount).sum))
+      .join(accountsTable).on(_.accountNumber === _.account)
+      .groupBy(_._1.subCategory)
+      .map(x => (x._1, x._2.map(_._1.amount).sum))
       .filter(x => flow match { case "in" => x._2 > BigDecimal(0) case "out" => x._2 < BigDecimal(0) } )
       .sortBy(_._1.asc)
       .result
@@ -57,12 +76,13 @@ class SubCategoryController extends Controller {
     val endDate =   Date.valueOf(request.getQueryString("endDate").getOrElse("2100-12-31"))
     val categories = request.getQueryString("categories").getOrElse("").split(",").map(_.trim).sorted
     val subCategories = request.getQueryString("subCategories").getOrElse("").split(",").map(_.trim).sorted
+    val accounts = request.getQueryString("accounts").map(x => x.split(",").toSeq)
 
     val format = Formatter.normalizeDateFormat(dateFormat)
     val sdf = new SimpleDateFormat(format)
 
     val raw = await {
-      Global.db.run(SubCategoryController.getSubCategoryTransactions(startDate, endDate, categories.head, subCategories))
+      Global.db.run(SubCategoryController.getSubCategoryTransactions(startDate, endDate, categories.head, subCategories, accounts))
     }
 
     val totalFlow = raw
@@ -89,9 +109,10 @@ class SubCategoryController extends Controller {
     val endDate =   Date.valueOf(request.getQueryString("endDate").getOrElse("2100-12-31"))
     val categories = request.getQueryString("categories").getOrElse("").split(",").map(_.trim).sorted
     val subCategories = request.getQueryString("subCategories").getOrElse("").split(",").map(_.trim).sorted
+    val accounts = request.getQueryString("accounts").map(x => x.split(",").toSeq)
 
     val totalFlow = await {
-      Global.db.run(SubCategoryController.totalFlowSubCatQuery(startDate, endDate, flow, categories.head, subCategories))
+      Global.db.run(SubCategoryController.totalFlowSubCatQuery(startDate, endDate, flow, categories.head, subCategories, accounts))
     }
 
     val cols = Json.arr("subCategory", "amount")
