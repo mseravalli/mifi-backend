@@ -71,6 +71,44 @@ class ApplicationIT extends Specification with JsonMatchers {
       }
     }
 
+    "retrieve timeseries for single account: hvb" in {
+      running(FakeApplication()) {
+        val request = FakeRequest(GET, baseUrl + "/accounts/timeseries?startDate=2014-01-01&endDate=2016-03-31&sumRange=YYYY-MM&accounts=hvb")
+        val response = route(request).get
+        status(response) must equalTo(OK)
+        contentType(response) must beSome.which(_ == "application/json")
+
+        response.map(x => println(x.toString))
+
+        contentAsString(response) must /("data") /# 0 /# 0 /("date")
+        contentAsString(response) must /("data") /# 0 /# 1 /("hvb")
+        contentAsString(response) must /("data") /# 0 /# 2 /("total")
+
+        contentAsString(response) must /("data") /# 25 /# 0 /("2016-01")
+        contentAsString(response) must /("data") /# 25 /# 1 /(18900.7900)
+        contentAsString(response) must /("data") /# 25 /# 2 /(18900.7900)
+      }
+    }
+
+    "retrieve timeseries for single account: db" in {
+      running(FakeApplication()) {
+        val request = FakeRequest(GET, baseUrl + "/accounts/timeseries?startDate=2014-01-01&endDate=2016-03-31&sumRange=YYYY-MM&accounts=db")
+        val response = route(request).get
+        status(response) must equalTo(OK)
+        contentType(response) must beSome.which(_ == "application/json")
+
+        response.map(x => println(x.toString))
+
+        contentAsString(response) must /("data") /# 0 /# 0 /("date")
+        contentAsString(response) must /("data") /# 0 /# 1 /("db")
+        contentAsString(response) must /("data") /# 0 /# 2 /("total")
+
+        contentAsString(response) must /("data") /# 25 /# 0 /("2016-01")
+        contentAsString(response) must /("data") /# 25 /# 1 /(7022.4400)
+        contentAsString(response) must /("data") /# 25 /# 2 /(7022.4400)
+      }
+    }
+
     "read Transactions" in {
       running(FakeApplication()) {
         val request = FakeRequest(GET, baseUrl + "/transactions?sumRange=yyyy-mm&startDate=2014-01-01&endDate=2016-03-31&categories=house,other,finance,mobility,living,health,free%20time,work%20and%20training&subCategories=")
