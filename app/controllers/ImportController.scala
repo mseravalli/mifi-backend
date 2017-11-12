@@ -206,7 +206,7 @@ class ImportController extends Controller {
         accounts match {
           case accountName :: tail => {
             val accounts = await {
-              Global.db.run(AccountController.readAccountsQuery(accountName))
+              Global.db.run(AccountController.readAccountsQuery(Some(List(accountName))))
             }
             val categories: Map[String, Tuple2[String, String]] = await {
               Global.db.run(Tables.TransactionsCategorization.result)
@@ -223,7 +223,7 @@ class ImportController extends Controller {
 
                 val status = queryResult.toString
                 val balance = await {
-                  Global.db.run(AccountController.readAccountsQuery(a._1.account))
+                  Global.db.run(AccountController.readAccountsQuery(Some(List(a._1.account))))
                 }.head._2
                 val result = Json.obj("status" -> status,
                   "account" ->

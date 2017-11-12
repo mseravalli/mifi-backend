@@ -16,9 +16,12 @@ import scala.async.Async.{async, await}
 import slick.driver.PostgresDriver.api._
 
 object AccountController {
-  def readAccountsQuery(accountName: String, endDate: Date = Date.valueOf("2100-12-31")) = {
+  def readAccountsQuery(accounts: Option[Seq[String]] = None,
+                        endDate: Date = Date.valueOf("2100-12-31")) = {
     (for {
-      (a, t) <- Tables.Accounts.filter(_.account like accountName)
+      (a, t) <- Tables.Accounts.filter(a =>
+          accounts.getOrElse(List("%")).foldLeft(a.account =!= a.account)((res, x) => res || (a.account like x))
+        )
         .joinLeft(Tables.Transactions.filter(_.transactionDate < endDate))
         .on(_.account === _.accountNumber)
     } yield (a, t.map(_.amount)))
@@ -40,12 +43,15 @@ object AccountController {
 
 
 
-  def createTimeSeries(startDate: Date, endDate: Date, dateFormat: String) = async {
+  def createTimeSeries(startDate: Date,
+                       endDate: Date,
+                       dateFormat: String,
+                       requestedAccounts: Option[Seq[String]]) = async {
     val accounts = await {
-      Global.db.run(AccountController.readAccountsQuery("%", startDate))
+      Global.db.run(AccountController.readAccountsQuery(requestedAccounts, startDate))
     }
 
-    val accountBalances = accounts.map{ x => (x._1.account, x._2.getOrElse(BigDecimal(0))) }
+    val accountBalances: Seq[(String, scala.math.BigDecimal)] = accounts.map{ x => (x._1.account, x._2.getOrElse(BigDecimal(0))) }
     val totalBalance: BigDecimal = accountBalances.map(_._2).sum
     val balances = accountBalances // :+ ("total", totalBalance)
 
@@ -86,7 +92,7 @@ class AccountController extends Controller {
     val endDate = Date.valueOf(request.getQueryString("endDate") .getOrElse("2100-12-31"))
 
     val res = await {
-      Global.db.run(AccountController.readAccountsQuery("%", endDate))
+      Global.db.run(AccountController.readAccountsQuery(endDate = endDate))
     }
 
     val jsonRes = res.map { x =>
@@ -100,7 +106,7 @@ class AccountController extends Controller {
     val endDate = Date.valueOf(request.getQueryString("endDate") .getOrElse("2100-12-31"))
 
     val res = await {
-      Global.db.run(AccountController.readAccountsQuery(accountName, endDate))
+      Global.db.run(AccountController.readAccountsQuery(Some(List(accountName)), endDate))
     }
 
     val jsonRes = Json.toJson(res.head._1)(JsonFormats.accountFmt).as[JsObject] ++ Json.obj("balance" -> Json.toJson(res.head._2))
@@ -110,10 +116,11 @@ class AccountController extends Controller {
 
   def timeSeries(): Action[AnyContent] =  Action.async { request => async {
     val dateFormat = Formatter.normalizeDateFormat(request.getQueryString("sumRange").getOrElse(""))
-    val startDate = Date.valueOf(request.getQueryString("startDate") .getOrElse("1900-01-01"))
-    val endDate = Date.valueOf(request.getQueryString("endDate") .getOrElse("2100-12-31"))
+    val startDate = Date.valueOf(request.getQueryString("startDate").getOrElse("1900-01-01"))
+    val endDate = Date.valueOf(request.getQueryString("endDate").getOrElse("2100-12-31"))
+    val accounts = request.getQueryString("accounts").map(x => x.split(",").toSeq)
 
-    val res = await{createTimeSeries(startDate, endDate, dateFormat)}
+    val res = await{createTimeSeries(startDate, endDate, dateFormat, accounts)}
     val jsonRes = res.map{ x => x.map {
       case b:BigDecimal => JsNumber(b)
       case s:String => JsString(s)
