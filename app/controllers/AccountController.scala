@@ -16,12 +16,11 @@ import scala.async.Async.{async, await}
 import slick.driver.PostgresDriver.api._
 
 object AccountController {
-  def readAccountsQuery(accountList: Option[Seq[String]],
+  def readAccountsQuery(accounts: Option[Seq[String]] = None,
                         endDate: Date = Date.valueOf("2100-12-31")) = {
-    val accounts = accountList.getOrElse(List("%"))
     (for {
       (a, t) <- Tables.Accounts.filter(a =>
-          accounts.foldLeft(a.account =!= a.account)((res, x) => res || (a.account like x))
+          accounts.getOrElse(List("%")).foldLeft(a.account =!= a.account)((res, x) => res || (a.account like x))
         )
         .joinLeft(Tables.Transactions.filter(_.transactionDate < endDate))
         .on(_.account === _.accountNumber)
@@ -93,7 +92,7 @@ class AccountController extends Controller {
     val endDate = Date.valueOf(request.getQueryString("endDate") .getOrElse("2100-12-31"))
 
     val res = await {
-      Global.db.run(AccountController.readAccountsQuery(None, endDate))
+      Global.db.run(AccountController.readAccountsQuery(endDate = endDate))
     }
 
     val jsonRes = res.map { x =>

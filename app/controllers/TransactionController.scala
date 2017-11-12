@@ -15,12 +15,21 @@ import slick.driver.PostgresDriver.api._
 
 object TransactionController {
 
-  def readTransactionsQuery(startDate: Date, endDate: Date, categories: Array[String], subCategories: Array[String]) = {
+  def readTransactionsQuery(startDate: Date,
+                            endDate: Date,
+                            categories: Array[String],
+                            subCategories: Array[String],
+                            accounts: Option[Seq[String]] = None) = {
+    val accountsTable = Tables.Accounts.filter( a =>
+      accounts.getOrElse(List("%")).foldLeft(a.account =!= a.account)((res, x) => res || (a.account like x))
+    )
     Tables.Transactions
       .filter(t => t.transactionDate > startDate && t.transactionDate < endDate
         && categories.foldLeft(t.category =!= t.category)((res,c)=> res || (t.category like c) )
         && subCategories.foldLeft(t.subCategory =!= t.subCategory)((res,s)=> res || (t.subCategory like s) )
       )
+      .join(accountsTable).on(_.accountNumber === _.account)
+      .map(x => x._1)
       .result
   }
 
@@ -45,9 +54,10 @@ class TransactionController extends Controller{
       .map(x => x.split(","))
       .getOrElse(Array[String]("%"))
       .map{x => x match {case "" => "%"; case x => x}}
+    val accounts = request.getQueryString("accounts").map(x => x.split(",").toSeq)
 
     val res: Seq[Tables.TransactionsRow] = await {
-      Global.db.run(TransactionController.readTransactionsQuery(startDate, endDate, categories, subCategories))
+      Global.db.run(TransactionController.readTransactionsQuery(startDate, endDate, categories, subCategories, accounts))
     }
 
     Ok(Json.obj("transactions" -> res.map(x => Json.toJson(x)(JsonFormats.transactionFmt))) )
