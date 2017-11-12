@@ -83,16 +83,27 @@ object GenericImporter {
     reportResp.body
   }
 
-  def fetchCSV(csv: Option[FilePart[TemporaryFile]], a: Tables.AccountsRow ): Future[Try[String]] = async {
+  def fetchCSV(csv: Option[FilePart[TemporaryFile]],
+               a: Tables.AccountsRow,
+               startDate: Option[String],
+               endDate: Option[String]
+              ): Future[Try[String]] = async {
     implicit object MyFormat extends DefaultCSVFormat {
       override val delimiter = a.delimiter.toCharArray.head
     }
 
-    val startDate = "2017-08-01 00:00:00"
-    val endDate   = "2017-10-31 23:59:59"
+    // val startDate = "2017-08-01 00:00:00"
+    val start = startDate match {
+      case Some(s) => s
+      case None => ""// error
+    }
+    val end = endDate match {
+      case Some(s) => s
+      case None => ""// error
+    }
 
     val csvString: Try[String] = a.account.toLowerCase() match {
-      case "number26" => Success( await{ retrieveCSV(startDate, endDate) } )
+      case "number26" => Success( await{ retrieveCSV(start, end) } )
       case _ => {
         csv match {
           case Some(f) => {
@@ -234,7 +245,7 @@ class ImportController extends Controller {
           Global.db.run(AccountController.readAccountsQuery(accountName))
         }
         accounts.length match {
-          case 1 => Success(accounts.head)
+          case 1 => Success(accounts.last)
           case _ => Failure(new Exception("Account not present in the database"))
         }
       }
@@ -251,7 +262,9 @@ class ImportController extends Controller {
     }.map(x => x.description -> (x.category, x.subCategory)).toMap
 
     val result: Try[Future[Try[JsObject]]] = account.map { a => async {
-      val csvString = await{ GenericImporter.fetchCSV(csv, a._1) }
+      val startDate = request.body.dataParts.get("startDate").map(_.last)
+      val endDate = request.body.dataParts.get("endDate").map(_.last)
+      val csvString = await{ GenericImporter.fetchCSV(csv, a._1, startDate, endDate) }
 
       csvString match {
         case Success(c) => {
