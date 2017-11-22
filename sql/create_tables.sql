@@ -23,6 +23,11 @@ CREATE TABLE accounts
   currency_pos INTEGER NOT NULL,
   currency_default VARCHAR(3) NOT NULL,
   encoding VARCHAR(16),
+  api_oauth_url VARCHAR(512),
+  api_authorization VARCHAR(512),
+  api_report_url VARCHAR(512),
+  api_user VARCHAR(64),
+  api_pass VARCHAR(64),
   PRIMARY KEY (account)
 );
 
