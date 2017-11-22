@@ -11,7 +11,31 @@ INSERT INTO accounts ( account,
                        amount_in_pos,
                        amount_out_pos,
                        currency_pos,
-                       currency_default
-) VALUES
-  ('number26', 0.0, 1, ',', 'yyyy-MM-dd', NULL, 0, 0, '{1}', '{3,4}', 6, 6, -1, 'EUR')
+                       currency_default,
+                       api_oauth_url,
+                       api_report_url,
+                       api_authorization,
+                       api_user,
+                       api_pass
+)
+  VALUES (
+    'number26',
+    0.0,
+    1,
+    ',',
+    'yyyy-MM-dd',
+    NULL,
+    0,
+    0,
+    '{1}',
+    '{3,4}',
+    6,
+    6,
+    -1,
+    'EUR',
+    'https://api.tech26.de/oauth/token',
+    'https://api.tech26.de/api/smrt/reports/mifiStartDate/mifiEndDate/statements',
+    '',
+    '',
+    '')
 ;

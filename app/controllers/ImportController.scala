@@ -58,23 +58,26 @@ object GenericImporter {
     positions.map{i => x.lift(i).getOrElse("")}.reduce((a, b) => a +", "+b)
   }
 
-  def retrieveCSV(startDate: String, endDate: String): Future[String] = async {
-    val oauthTokenUrl = "https://api.tech26.de/oauth/token"
+  // if username of password are not present a null value will be passed
+  def retrieveCSV(account: models.Tables.AccountsRow, startDate: String, endDate: String): Future[String] = async {
+    val oauthTokenUrl = account.apiOauthUrl.getOrElse("")
     val oauthTokenData: Map[String, Seq[String]] = Map(
-      "username" -> Seq("marco.seravalli@gmail.com"),
-      "password" -> Seq("%k8XK&E6!b05EZ&QYSu4iTwH"),
+      "username" -> Seq(account.apiUser.getOrElse("")),
+      "password" -> Seq(account.apiPass.getOrElse("")),
       "grant_type" -> Seq("password")
     )
     val oauthTokenResp = await{
       WS.url(oauthTokenUrl)
-        .withHeaders("Authorization" -> "Basic bXktdHJ1c3RlZC13ZHBDbGllbnQ6c2VjcmV0")
+        .withHeaders("Authorization" -> account.apiAuthorization.getOrElse(""))
         .post(oauthTokenData)
     }
     val bearerToken = (oauthTokenResp.json \ "access_token").toString.replaceAll("\"", "")
-    val startDateTimestamp = Timestamp.valueOf(startDate).getTime
-    val endDateTimestamp   = Timestamp.valueOf(endDate).getTime
-                                                            
-    val reportUrl = s"https://api.tech26.de/api/smrt/reports/$startDateTimestamp/$endDateTimestamp/statements"
+    val startDateTimestamp = Timestamp.valueOf(startDate).getTime.toString
+    val endDateTimestamp   = Timestamp.valueOf(endDate).getTime.toString
+
+    val reportUrl = account.apiReportUrl.getOrElse("")
+      .replace("mifiStartDate", startDateTimestamp)
+      .replace("mifiEndDate", endDateTimestamp)
     val reportResp = await{
       WS.url(reportUrl)
         .withHeaders("Authorization" -> s"bearer $bearerToken")
@@ -103,7 +106,7 @@ object GenericImporter {
     }
 
     val csvString: Try[String] = a.account.toLowerCase() match {
-      case "number26" => Success( await{ retrieveCSV(start, end) } )
+      case "number26" => Success( await{ retrieveCSV(a, start, end) } )
       case _ => {
         csv match {
           case Some(f) => {
