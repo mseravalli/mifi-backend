@@ -245,7 +245,7 @@ class ImportController extends Controller {
     val account = accounts match {
       case Success(accountName :: tail) => {
         val accounts = await {
-          Global.db.run(AccountController.readAccountsQuery(accountName))
+          Global.db.run(AccountController.readAccountsQuery(Some(List(accountName))))
         }
         accounts.length match {
           case 1 => Success(accounts.last)
@@ -275,7 +275,7 @@ class ImportController extends Controller {
           val queryResult = await { Global.db.run(importQuery(transactions)) }
           val status = queryResult.toString
           val balance = await {
-            Global.db.run(AccountController.readAccountsQuery(a._1.account))
+            Global.db.run(AccountController.readAccountsQuery(Some(List(a._1.account))))
           }.head._2
 
           val res = Json.obj("status" -> status, "account" -> Json.obj("account" -> a._1.account, "balance" -> Json.toJson(balance)))
