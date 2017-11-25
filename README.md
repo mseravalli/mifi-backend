@@ -1,24 +1,21 @@
-# mi-fi
+# mifi
 Web application for managing personal finance.
 
-[![Build Status](https://travis-ci.org/mseravalli/mi-fi.svg?branch=master)](https://travis-ci.org/mseravalli/mi-fi)
-
-## Setup
+## Development Setup
 Prerequisites:
  * java (1.7+)
- * postgresql (9.4+)
 
 For possible problems encountered during the setup please refer to the [HELP.md](https://github.com/mseravalli/mi-fi/blob/master/HELP.md) file, or open an [issue](https://github.com/mseravalli/mi-fi/issues).
+
+Run all the necessary containers.
+```
+$ docker container run -d -p 5432:5432 mseravalli/postgres:2.2.2
+$ docker container run -d -p 4200:4200 mseravalli/mifi-frontend:1.0.1
+```
 
 Clone the repo.
 ```
 $ git clone https://github.com/mseravalli/mi-fi.git
-```
-
-Run the setup from the main folder.
-```
-$ cd mi-fi
-$ ./setup.sh
 ```
 
 Run the application, the first run might take a while.
@@ -26,4 +23,10 @@ Run the application, the first run might take a while.
 $ ./activator run
 ```
 
-Point your browser to [http://localhost:9000](http://localhost:9000).
+Open your favourite Browser with CORS disabled. Be sure to access only localhost when using this mode.
+Here and example with Chrome:
+```
+$ google-chrome --disable-web-security --user-data-dir 
+```
+
+Point your browser to [http://localhost:4200](http://localhost:4200).
