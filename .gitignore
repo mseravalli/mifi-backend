@@ -24,4 +24,4 @@ project/target
 public/lib/
 sql/bkp/
 node_modules
-
+scripts/project/
