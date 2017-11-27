@@ -7,9 +7,6 @@ stages:
   - package
   - deploy
 
-before_script:
-  - sbt sbt-version
-
 build:
   stage: build
   script:
