@@ -30,12 +30,7 @@ object Global extends GlobalSettings {
   //  */
   // override def getControllerInstance[A](controllerClass: Class[A]): A = injector.getInstance(controllerClass)
 
-  val baseUrl = System.getenv("MIFI_BASE_URL") match {
-    case url : String => url
-    case _  => "http://localhost:9000/api/v0.1/"
-  }
-
-  val db = System.getenv("DATABASE_URL") match {
+  val db = System.getenv("MIFI_DATABASE_URL") match {
     case url: String => {logger.info(s"$url"); Database.forURL(url, driver = "org.postgresql.Driver")}
     case _ => Database.forURL("jdbc:postgresql://localhost:5432/mifi?user=mifi&password=alcolismo",
                 driver = "org.postgresql.Driver"
