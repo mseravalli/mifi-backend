@@ -1,0 +1,46 @@
+image: java:8
+
+stages:
+  - build
+  - lint
+  - test
+  - package
+  - deploy
+
+before_script:
+  - apt-get update -y
+  - apt-get install apt-transport-https -y
+  ## Install SBT
+  - echo "deb http://dl.bintray.com/sbt/debian /" | tee -a /etc/apt/sources.list.d/sbt.list
+  - apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 642AC823
+  - apt-get update -y
+  - apt-get install sbt -y
+  - sbt sbt-version
+
+build:
+  stage: build
+  script:
+    - sbt clean
+    - sbt compile
+
+lint:
+  stage: lint
+  script:
+    - echo "TODO"
+
+test:
+  stage: test
+  script:
+    - sbt clean
+    - sbt coverage test coverageReport
+
+package:
+  stage: package
+  script:
+    - build-image.sh
+
+deploy:
+  stage: deploy
+  script:
+    - echo "TODO"
+
