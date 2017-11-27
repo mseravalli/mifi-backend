@@ -1,4 +1,4 @@
-image: mseravalli/sbt:1.0.0
+image: mseravalli/sbt:1.0.1
 
 stages:
   - build
