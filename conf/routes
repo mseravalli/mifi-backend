@@ -4,23 +4,23 @@
 # Note: @controllers syntax signifies the actual controller instance, retrieved via GlobalSettings.getController().
 # ~~~~
 
-POST        /api/v0.1/import                         @controllers.ImportController.importTransactions
-POST        /api/v0.1/approve_import                 @controllers.ImportController.approveImport
-GET         /api/v0.1/accounts                       @controllers.AccountController.readAccounts
-GET         /api/v0.1/accounts/timeseries            @controllers.AccountController.timeSeries
-GET         /api/v0.1/accounts/:account              @controllers.AccountController.readAccount(account)
+POST        /import                         @controllers.ImportController.importTransactions
+POST        /approve_import                 @controllers.ImportController.approveImport
+GET         /accounts                       @controllers.AccountController.readAccounts
+GET         /accounts/timeseries            @controllers.AccountController.timeSeries
+GET         /accounts/:account              @controllers.AccountController.readAccount(account)
 
-GET         /api/v0.1/transactions                   @controllers.TransactionController.readTransactions
-PUT         /api/v0.1/transaction/:id                @controllers.TransactionController.updateTransaction(id: String)
+GET         /transactions                   @controllers.TransactionController.readTransactions
+PUT         /transaction/:id                @controllers.TransactionController.updateTransaction(id: String)
 
 # Getting account data
-GET         /api/v0.1/categories                     @controllers.CategoryController.readCategories
-GET         /api/v0.1/categories/aggregate           @controllers.CategoryController.aggregateCategory
-GET         /api/v0.1/categories/in                  @controllers.CategoryController.totalFlowCatIn
-GET         /api/v0.1/categories/out                 @controllers.CategoryController.totalFlowCatOut
-GET         /api/v0.1/subcategories/aggregate        @controllers.SubCategoryController.aggregateSubCategory
-GET         /api/v0.1/subcategories/in               @controllers.SubCategoryController.totalFlowSubCatIn
-GET         /api/v0.1/subcategories/out              @controllers.SubCategoryController.totalFlowSubCatOut
+GET         /categories                     @controllers.CategoryController.readCategories
+GET         /categories/aggregate           @controllers.CategoryController.aggregateCategory
+GET         /categories/in                  @controllers.CategoryController.totalFlowCatIn
+GET         /categories/out                 @controllers.CategoryController.totalFlowCatOut
+GET         /subcategories/aggregate        @controllers.SubCategoryController.aggregateSubCategory
+GET         /subcategories/in               @controllers.SubCategoryController.totalFlowSubCatIn
+GET         /subcategories/out              @controllers.SubCategoryController.totalFlowSubCatOut
 
 # Map static resources from the /public folder to the /assets URL path
 GET         /assets/*file                            controllers.Assets.at(path="/public", file)
