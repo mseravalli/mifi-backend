@@ -8,8 +8,6 @@ stages:
   - deploy
 
 before_script:
-  - lsb_release -a
-  - pwd
   - apt-get update -y
   - apt-get install apt-transport-https -y
   ## Install SBT
