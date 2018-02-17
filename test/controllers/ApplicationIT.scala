@@ -12,7 +12,7 @@ import play.api.test._
 class ApplicationIT extends Specification with JsonMatchers {
 
   "Application" should {
-    val baseUrl: String = "/api/v0.1"
+    val baseUrl: String = ""
 
     "read accounts" in {
       running(FakeApplication()) {
