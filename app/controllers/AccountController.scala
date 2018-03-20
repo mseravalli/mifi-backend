@@ -51,7 +51,8 @@ object AccountController {
       Global.db.run(AccountController.readAccountsQuery(requestedAccounts, startDate))
     }
 
-    val accountBalances: Seq[(String, scala.math.BigDecimal)] = accounts.map{ x => (x._1.account, x._2.getOrElse(BigDecimal(0))) }
+    val accountBalances: Seq[(String, scala.math.BigDecimal)] =
+      accounts.map{ x => (x._1.account, x._2.getOrElse( x._1.initialAmount )) }
 
     val transactions = await {
       Global.db.run(AccountController.timeSeriesQuery(startDate, endDate))
