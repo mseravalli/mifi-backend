@@ -62,8 +62,8 @@ class ApplicationUnitTest extends Specification with Mockito {
       GenericImporter.formatAmount("+11.00") must beEqualTo("11.00").ignoreCase
       GenericImporter.formatAmount("-11.00") must beEqualTo("-11.00").ignoreCase
 
-      GenericImporter.formatAmount("1.234,56+") must beEqualTo("1234.46").ignoreCase
-      GenericImporter.formatAmount("1.234,56-") must beEqualTo("-1234.46").ignoreCase
+      GenericImporter.formatAmount("1.234,56+") must beEqualTo("1234.56").ignoreCase
+      GenericImporter.formatAmount("1.234,56-") must beEqualTo("-1234.56").ignoreCase
     }
   }
 }
