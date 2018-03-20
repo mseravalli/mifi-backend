@@ -31,10 +31,14 @@ object GenericImporter {
     val _a = """\d+(,\d+|\.\d+)?\-""".r   // 11,00-
     val _b = """\d+(,\d+|\.\d+)?(\+)?""".r   // 11,00+
     val _c = """(\+|\-)?\d+(,\d+|\.\d+)?""".r   // -11,00 +11,00
+    val _d = """\d+(.\d+)?(,\d+)?(\+)?""".r   // 1.001,95+
+    val _e = """\d+(.\d+)?(,\d+)?(\-)?""".r   // 1.001,95-
     val res = s match {
       case _a(_*) => "-" + (s.replace(",",".").replace("-",""))
       case _b(_*) => s.replace(",",".").replace("+","")
       case _c(_*) => s.replace(",",".").replace("+","")
+      case _d(_*) => s.replace(".","").replace(",",".").replace("+","")
+      case _e(_*) => "-" + s.replace(".","").replace(",",".").replace("-","")
       case _ => s
     }
     res
@@ -147,8 +151,13 @@ object GenericImporter {
             }
           }
           case None => {
-            val row = readCSVRow(a, format, x, categories)
-            loadValues(r, values :+ row)
+            if (x.foldLeft("")((sum, y) => sum + y ) == "") {
+              values
+            }
+            else {
+              val row = readCSVRow(a, format, x, categories)
+              loadValues(r, values :+ row)
+            }
           }
         }
       }
