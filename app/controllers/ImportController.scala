@@ -11,7 +11,6 @@ import java.sql.Timestamp
 import javax.inject.Singleton
 
 import org.joda.time.format.{DateTimeFormat, DateTimeFormatter}
-import org.slf4j.{Logger, LoggerFactory}
 import play.api.mvc._
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.libs.concurrent.Execution.Implicits._
@@ -27,20 +26,22 @@ import scala.util.{Failure, Success, Try}
 import slick.driver.PostgresDriver.api._
 
 object GenericImporter {
+  // need to( transform 11.00, 11,00, 11.0, 11,0, 11 in 11.00
   def formatAmount(s: String): String = {
-    if (s.length > 2) {
-      s.reverse.charAt(2) match {
-        case ',' => s.replace(".", "").replace(",", ".")
-        case '.' => s.replace(",", "")
-        case t => formatAmount(s"${s}0")
-      }
+    val _a = """\d+(,\d+|\.\d+)?\-""".r   // 11,00-
+    val _b = """\d+(,\d+|\.\d+)?(\+)?""".r   // 11,00+
+    val _c = """(\+|\-)?\d+(,\d+|\.\d+)?""".r   // -11,00 +11,00
+    val _d = """\d+(.\d+)?(,\d+)?(\+)?""".r   // 1.001,95+
+    val _e = """\d+(.\d+)?(,\d+)?(\-)?""".r   // 1.001,95-
+    val res = s match {
+      case _a(_*) => "-" + (s.replace(",",".").replace("-",""))
+      case _b(_*) => s.replace(",",".").replace("+","")
+      case _c(_*) => s.replace(",",".").replace("+","")
+      case _d(_*) => s.replace(".","").replace(",",".").replace("+","")
+      case _e(_*) => "-" + s.replace(".","").replace(",",".").replace("-","")
+      case _ => s
     }
-    else if(s.equals("")) {
-      "0.00"
-    }
-    else {
-      s
-    }
+    res
   }
 
   def getAmount(x: List[String], a: Tables.AccountsRow): BigDecimal = {
@@ -150,8 +151,13 @@ object GenericImporter {
             }
           }
           case None => {
-            val row = readCSVRow(a, format, x, categories)
-            loadValues(r, values :+ row)
+            if (x.foldLeft("")((sum, y) => sum + y ) == "") {
+              values
+            }
+            else {
+              val row = readCSVRow(a, format, x, categories)
+              loadValues(r, values :+ row)
+            }
           }
         }
       }
@@ -199,8 +205,6 @@ object GenericImporter {
 
 @Singleton
 class ImportController extends Controller {
-  private final val logger: Logger = LoggerFactory.getLogger(classOf[ImportController])
-
   def importQuery(transactions: List[Tables.TransactionsRow]) = {
     val t = Tables.Transactions
     val insertQuery = t returning t.map(_.id) into ((item, id) => item.copy(id = id))
