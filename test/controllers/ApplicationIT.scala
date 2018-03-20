@@ -12,7 +12,7 @@ import play.api.test._
 class ApplicationIT extends Specification with JsonMatchers {
 
   "Application" should {
-    val baseUrl: String = "/api/v0.1"
+    val baseUrl: String = ""
 
     "read accounts" in {
       running(FakeApplication()) {
@@ -21,14 +21,14 @@ class ApplicationIT extends Specification with JsonMatchers {
         status(response) must equalTo(OK)
         contentType(response) must beSome.which(_ == "application/json")
 
-        contentAsString(response) must /("accounts") /# 0 /("account" -> "db")
-        contentAsString(response) must /("accounts") /# 0 /("balance" -> 7023.44)
-        contentAsString(response) must /("accounts") /# 0 /("currencyPos" -> 17)
-        contentAsString(response) must /("accounts") /# 0 /("finalRow" -> "Account balance")
+        contentAsString(response) must /("accounts") /# 1 /("account" -> "db")
+        contentAsString(response) must /("accounts") /# 1 /("balance" -> 7023.44)
+        contentAsString(response) must /("accounts") /# 1 /("currencyPos" -> 17)
+        contentAsString(response) must /("accounts") /# 1 /("finalRow" -> "Account balance")
 
-        contentAsString(response) must /("accounts") /# 1 /("account" -> "hvb")
-        contentAsString(response) must /("accounts") /# 1 /("balance" -> 19151.32)
-        contentAsString(response) must /("accounts") /# 1 /("currencyPos" -> 7)
+        contentAsString(response) must /("accounts") /# 2 /("account" -> "hvb")
+        contentAsString(response) must /("accounts") /# 2 /("balance" -> 19151.32)
+        contentAsString(response) must /("accounts") /# 2 /("currencyPos" -> 7)
       }
     }
 
@@ -56,18 +56,18 @@ class ApplicationIT extends Specification with JsonMatchers {
         response.map(x => println(x.toString))
 
         contentAsString(response) must /("data") /# 0 /# 0 /("date")
-        contentAsString(response) must /("data") /# 0 /# 1 /("db")
-        contentAsString(response) must /("data") /# 0 /# 2 /("hvb")
-        contentAsString(response) must /("data") /# 0 /# 3 /("kalixa")
-        contentAsString(response) must /("data") /# 0 /# 4 /("number26")
-        contentAsString(response) must /("data") /# 0 /# 5 /("total")
+        contentAsString(response) must /("data") /# 0 /# 2 /("db")
+        contentAsString(response) must /("data") /# 0 /# 3 /("hvb")
+        contentAsString(response) must /("data") /# 0 /# 4 /("kalixa")
+        contentAsString(response) must /("data") /# 0 /# 5 /("number26")
+        contentAsString(response) must /("data") /# 0 /# 6 /("total")
 
         contentAsString(response) must /("data") /# 25 /# 0 /("2016-01")
-        contentAsString(response) must /("data") /# 25 /# 1 /(7022.4400)
-        contentAsString(response) must /("data") /# 25 /# 2 /(18900.7900)
-        contentAsString(response) must /("data") /# 25 /# 3 /(200.2100)
-        contentAsString(response) must /("data") /# 25 /# 4 /(0.0)
-        contentAsString(response) must /("data") /# 25 /# 5 /(26123.4400)
+        contentAsString(response) must /("data") /# 25 /# 2 /(7022.4400)
+        contentAsString(response) must /("data") /# 25 /# 3 /(18900.7900)
+        contentAsString(response) must /("data") /# 25 /# 4 /(200.2100)
+        contentAsString(response) must /("data") /# 25 /# 5 /(0.0)
+        contentAsString(response) must /("data") /# 25 /# 6 /(26123.4400)
       }
     }
 
