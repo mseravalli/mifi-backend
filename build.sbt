@@ -19,7 +19,9 @@ libraryDependencies ++= Seq(
   "org.asynchttpclient" % "async-http-client" % "2.4.4",
   "org.mockito" % "mockito-core" % "1.10.17" % "test",
   "org.postgresql" % "postgresql" % "42.2.2",
-  "org.scala-lang.modules" %% "scala-async" % "0.9.7"
+  "org.scala-lang.modules" %% "scala-async" % "0.9.7",
+  cache,
+  specs2 % Test
 )
 
 libraryDependencies ++= Seq(
