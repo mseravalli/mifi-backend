@@ -8,7 +8,7 @@ import models._
 import com.github.tototoshi.csv._
 import java.sql.Date
 import java.sql.Timestamp
-import javax.inject.Singleton
+import javax.inject._
 
 import org.joda.time.format.{DateTimeFormat, DateTimeFormatter}
 import play.api.mvc._
@@ -17,7 +17,8 @@ import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.Files.TemporaryFile
 import play.api.libs.json._
 import play.api.libs.ws._
-import play.api.libs.ws.ning.NingAsyncHttpClientConfigBuilder
+// import play.api.libs.ws.ning.NingAsyncHttpClientConfigBuilder
+
 import play.api.Play.current
 
 import scala.async.Async.{async, await}
@@ -40,7 +41,7 @@ object GenericImporter {
     res
   }
 
-  def getAmount(x: List[String], a: Tables.AccountsRow): BigDecimal = {
+  def getAmount(x: List[String], a: AccountsRow): BigDecimal = {
     val in = BigDecimal.apply(x.lift(a.amountInPos).map{amount => formatAmount(amount)}.getOrElse("0.00"))
     val out = BigDecimal.apply(formatAmount(x.lift(a.amountOutPos).getOrElse("0.00")).replace("-", ""))
     if (in.abs == out.abs) {
@@ -55,72 +56,8 @@ object GenericImporter {
     positions.map{i => x.lift(i).getOrElse("")}.reduce((a, b) => a +", "+b)
   }
 
-  // if username of password are not present a null value will be passed
-  def retrieveCSV(account: models.Tables.AccountsRow, startDate: String, endDate: String): Future[String] = async {
-    val oauthTokenUrl = account.apiOauthUrl.getOrElse("")
-    val oauthTokenData: Map[String, Seq[String]] = Map(
-      "username" -> Seq(account.apiUser.getOrElse("")),
-      "password" -> Seq(account.apiPass.getOrElse("")),
-      "grant_type" -> Seq("password")
-    )
-    val oauthTokenResp = await{
-      WS.url(oauthTokenUrl)
-        .withHeaders("Authorization" -> account.apiAuthorization.getOrElse(""))
-        .post(oauthTokenData)
-    }
-    val bearerToken = (oauthTokenResp.json \ "access_token").toString.replaceAll("\"", "")
-    val startDateTimestamp = Timestamp.valueOf(startDate).getTime.toString
-    val endDateTimestamp   = Timestamp.valueOf(endDate).getTime.toString
 
-    val reportUrl = account.apiReportUrl.getOrElse("")
-      .replace("mifiStartDate", startDateTimestamp)
-      .replace("mifiEndDate", endDateTimestamp)
-    val reportResp = await{
-      WS.url(reportUrl)
-        .withHeaders("Authorization" -> s"bearer $bearerToken")
-        .get
-    }
-    reportResp.body
-  }
-
-  def fetchCSV(csv: Option[FilePart[TemporaryFile]],
-               a: Tables.AccountsRow,
-               startDate: Option[String],
-               endDate: Option[String]
-              ): Future[Try[String]] = async {
-    implicit object MyFormat extends DefaultCSVFormat {
-      override val delimiter = a.delimiter.toCharArray.head
-    }
-
-    // val startDate = "2017-08-01 00:00:00"
-    val start = startDate match {
-      case Some(s) => s
-      case None => ""// error
-    }
-    val end = endDate match {
-      case Some(s) => s
-      case None => ""// error
-    }
-
-    val csvString: Try[String] = a.account.toLowerCase() match {
-      case "number26" => Success( await{ retrieveCSV(a, start, end) } )
-      case _ => {
-        csv match {
-          case Some(f) => {
-            val encoding = a.encoding.getOrElse("UTF-8")
-            val source = scala.io.Source.fromFile(f.ref.file, enc = encoding)
-            val sourceString = try source.mkString finally source.close
-            Success(sourceString)
-          }
-          case None => Failure(new Exception("Missing CSV File"))
-        }
-      }
-    }
-
-    csvString
-  }
-
-  def trasformCSVIntoTransactions(csvString: String, a: Tables.AccountsRow, categories: Map[String, Tuple2[String, String]]): Future[List[Tables.TransactionsRow]] = async {
+  def trasformCSVIntoTransactions(csvString: String, a: AccountsRow, categories: Map[String, Tuple2[String, String]]): Future[List[TransactionsRow]] = async {
     implicit object MyFormat extends DefaultCSVFormat {
       override val delimiter = a.delimiter.toCharArray.head
     }
@@ -133,7 +70,7 @@ object GenericImporter {
     val format = DateTimeFormat.forPattern(a.dateFormat);
 
     @scala.annotation.tailrec
-    def loadValues(r: CSVReader, values: List[Tables.TransactionsRow]): List[Tables.TransactionsRow] = r.readNext match {
+    def loadValues(r: CSVReader, values: List[TransactionsRow]): List[TransactionsRow] = r.readNext match {
       case None => values
       case Some(x) => {
         a.finalRow match {
@@ -170,14 +107,14 @@ object GenericImporter {
     c.getOrElse(("other", "to categorize"))
   }
 
-  def readCSVRow(a: Tables.AccountsRow, format: DateTimeFormatter, x: List[String], categories: Map[String, Tuple2[String, String]]): Tables.TransactionsRow = {
+  def readCSVRow(a: AccountsRow, format: DateTimeFormatter, x: List[String], categories: Map[String, Tuple2[String, String]]): TransactionsRow = {
     val receiver = mergeStrings(x, a.receiverPos.replace("{", "").replace("}", "").split(",").map(_.toInt))
     val purpose = mergeStrings(x, a.purposePos.replace("{", "").replace("}", "").split(",").map(_.toInt))
     val fields = List(receiver, purpose)
     val c = categorize(categories, fields)
     val transactionDate = new java.text.SimpleDateFormat(a.dateFormat).parse(x(a.transactionDatePos))
     val exchangeDate = new java.text.SimpleDateFormat(a.dateFormat).parse(x(a.exchangeDatePos))
-    Tables.TransactionsRow (
+    TransactionsRow (
       id = 0,
       accountNumber = Some(a.account),
       transactionDate = Some(new Date(transactionDate.getTime)),
@@ -195,8 +132,74 @@ object GenericImporter {
 }
 
 @Singleton
-class ImportController extends Controller {
-  def importQuery(transactions: List[Tables.TransactionsRow]) = {
+class ImportController @Inject() (ws: WSClient) extends Controller {
+
+  // if username of password are not present a null value will be passed
+  def retrieveCSV(account: models.AccountsRow, startDate: String, endDate: String): Future[String] = async {
+    val oauthTokenUrl = account.apiOauthUrl.getOrElse("")
+    val oauthTokenData: Map[String, Seq[String]] = Map(
+      "username" -> Seq(account.apiUser.getOrElse("")),
+      "password" -> Seq(account.apiPass.getOrElse("")),
+      "grant_type" -> Seq("password")
+    )
+    val oauthTokenResp = await{
+      ws.url(oauthTokenUrl)
+        .withHeaders("Authorization" -> account.apiAuthorization.getOrElse(""))
+        .post(oauthTokenData)
+    }
+    val bearerToken = (oauthTokenResp.json \ "access_token").toString.replaceAll("\"", "")
+    val startDateTimestamp = Timestamp.valueOf(startDate).getTime.toString
+    val endDateTimestamp   = Timestamp.valueOf(endDate).getTime.toString
+
+    val reportUrl = account.apiReportUrl.getOrElse("")
+      .replace("mifiStartDate", startDateTimestamp)
+      .replace("mifiEndDate", endDateTimestamp)
+    val reportResp = await{
+      ws.url(reportUrl)
+        .withHeaders("Authorization" -> s"bearer $bearerToken")
+        .get
+    }
+    reportResp.body
+  }
+
+  def fetchCSV(csv: Option[FilePart[TemporaryFile]],
+               a: AccountsRow,
+               startDate: Option[String],
+               endDate: Option[String]
+              ): Future[Try[String]] = async {
+    implicit object MyFormat extends DefaultCSVFormat {
+      override val delimiter = a.delimiter.toCharArray.head
+    }
+
+    // val startDate = "2017-08-01 00:00:00"
+    val start = startDate match {
+      case Some(s) => s
+      case None => ""// TODO error
+    }
+    val end = endDate match {
+      case Some(s) => s
+      case None => ""// TODO error
+    }
+
+    val csvString: Try[String] = a.account.toLowerCase() match {
+      case "number26" => Success( await{ retrieveCSV(a, start, end) } )
+      case _ => {
+        csv match {
+          case Some(f) => {
+            val encoding = a.encoding.getOrElse("UTF-8")
+            val source = scala.io.Source.fromFile(f.ref.file, enc = encoding)
+            val sourceString = try source.mkString finally source.close
+            Success(sourceString)
+          }
+          case None => Failure(new Exception("Missing CSV File"))
+        }
+      }
+    }
+
+    csvString
+  }
+
+  def importQuery(transactions: List[TransactionsRow]) = {
     val t = Tables.Transactions
     val insertQuery = t returning t.map(_.id) into ((item, id) => item.copy(id = id))
 
@@ -262,7 +265,7 @@ class ImportController extends Controller {
     val result: Try[Future[Try[JsObject]]] = account.map { a => async {
       val startDate = request.body.dataParts.get("startDate").map(_.last)
       val endDate = request.body.dataParts.get("endDate").map(_.last)
-      val csvString = await{ GenericImporter.fetchCSV(csv, a._1, startDate, endDate) }
+      val csvString = await{ fetchCSV(csv, a._1, startDate, endDate) }
 
       csvString match {
         case Success(c) => {

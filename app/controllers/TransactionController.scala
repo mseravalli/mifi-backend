@@ -56,7 +56,7 @@ class TransactionController extends Controller{
       .map{x => x match {case "" => "%"; case x => x}}
     val accounts = request.getQueryString("accounts").map(x => x.split(",").toSeq)
 
-    val res: Seq[Tables.TransactionsRow] = await {
+    val res: Seq[TransactionsRow] = await {
       Global.db.run(TransactionController.readTransactionsQuery(startDate, endDate, categories, subCategories, accounts))
     }
 
