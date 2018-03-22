@@ -23,7 +23,10 @@ import scala.util.{Failure, Success, Try}
 import slick.jdbc.PostgresProfile.api._
 
 @Singleton
-class ImportController @Inject() (implicit ec: ExecutionContext, cc: ControllerComponents, ws: WSClient, pbp:PlayBodyParsers) 
+class ImportController @Inject() (implicit ec: ExecutionContext,
+                                  cc: ControllerComponents,
+                                  ws: WSClient,
+                                  pbp:PlayBodyParsers) 
     extends AbstractController(cc) {
 
   // need to( transform 11.00, 11,00, 11.0, 11,0, 11 in 11.00

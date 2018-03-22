@@ -15,7 +15,9 @@ import scala.concurrent.ExecutionContext
 import slick.jdbc.PostgresProfile.api._
 
 @Singleton
-class TransactionController @Inject()(implicit ec: ExecutionContext, cc: ControllerComponents, pbp:PlayBodyParsers)
+class TransactionController @Inject()(implicit ec: ExecutionContext,
+                                      cc: ControllerComponents,
+                                      pbp:PlayBodyParsers)
     extends AbstractController(cc) {
   def readTransactionsQuery(startDate: Date,
                             endDate: Date,
