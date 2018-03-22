@@ -16,7 +16,8 @@ import scala.concurrent.ExecutionContext
 import slick.jdbc.PostgresProfile.api._
 
 @Singleton
-class AccountController @Inject() (implicit ec: ExecutionContext) extends Controller {
+class AccountController @Inject() (implicit ec: ExecutionContext, cc: ControllerComponents)
+    extends AbstractController(cc) {
   def readAccountsQuery(accounts: Option[Seq[String]] = None,
                         endDate: Date = Date.valueOf("2100-12-31")) = {
     (for {

@@ -16,7 +16,8 @@ import scala.concurrent.{Future, ExecutionContext}
 import slick.jdbc.PostgresProfile.api._
 
 @Singleton
-class CategoryController @Inject() (implicit ec: ExecutionContext) extends Controller {
+class CategoryController @Inject() (implicit ec: ExecutionContext, cc: ControllerComponents)
+    extends AbstractController(cc) {
   def getCategoriesQuery = {
     Tables.Categories
       .join(Tables.CategoryMatch)

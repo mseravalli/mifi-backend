@@ -17,7 +17,8 @@ import scala.concurrent.{Future, ExecutionContext}
 import slick.jdbc.PostgresProfile.api._
 
 @Singleton
-class SubCategoryController @Inject() (implicit ec: ExecutionContext) extends Controller {
+class SubCategoryController @Inject() (implicit ec: ExecutionContext, cc: ControllerComponents)
+    extends AbstractController(cc) {
   def getSubCategoryTransactions(startDate: Date,
                                  endDate: Date,
                                  category: String,
