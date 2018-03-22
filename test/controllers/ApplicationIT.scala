@@ -46,8 +46,6 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
         status(response) must equalTo(OK)
         contentType(response) must beSome.which(_ == "application/json")
 
-        response.map(x => println(x.toString))
-
         contentAsString(response) must /("data") /# 0 /# 0 /("date")
         contentAsString(response) must /("data") /# 0 /# 1 /("bcard")
         contentAsString(response) must /("data") /# 0 /# 2 /("db")
@@ -71,8 +69,6 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
         status(response) must equalTo(OK)
         contentType(response) must beSome.which(_ == "application/json")
 
-        response.map(x => println(x.toString))
-
         contentAsString(response) must /("data") /# 0 /# 0 /("date")
         contentAsString(response) must /("data") /# 0 /# 1 /("db")
         contentAsString(response) must /("data") /# 0 /# 2 /("total")
@@ -88,8 +84,6 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
         status(response) must equalTo(OK)
         contentType(response) must beSome.which(_ == "application/json")
 
-        response.map(x => println(x.toString))
-
         contentAsString(response) must /("transactions") /# 0   /("id" -> 388)
         contentAsString(response) must /("transactions") /# 200 /("id" -> 38)
         contentAsString(response) must /("transactions") /# 400 /("id" -> 4107)
@@ -102,8 +96,6 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
         val response = route(app, request).get
         status(response) must equalTo(OK)
         contentType(response) must beSome.which(_ == "application/json")
-
-        response.map(x => println(x.toString))
 
         // check if all categories are ok
         contentAsString(response) must /("categories") */("name" -> "house")
@@ -129,8 +121,6 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
         val response = route(app, request).get
         status(response) must equalTo(OK)
         contentType(response) must beSome.which(_ == "application/json")
-
-        response.map(x => println(x.toString))
 
         // test the headers
         contentAsString(response) must /("data") /#0 /#0 /("date")
@@ -165,8 +155,6 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
         status(response) must equalTo(OK)
         contentType(response) must beSome.which(_ == "application/json")
 
-        response.map(x => println(x.toString))
-
         // test the headers
         contentAsString(response) must /("data") /#0 /#0 /("category")
         contentAsString(response) must /("data") /#0 /#1 /("amount")
@@ -184,8 +172,6 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
         val response = route(app, request).get
         status(response) must equalTo(OK)
         contentType(response) must beSome.which(_ == "application/json")
-
-        response.map(x => println(x.toString))
 
         // test the headers
         contentAsString(response) must /("data") /#0 /#0 /("category")
@@ -207,8 +193,6 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
         val response = route(app, request).get
         status(response) must equalTo(OK)
         contentType(response) must beSome.which(_ == "application/json")
-
-        response.map(x => println(x.toString))
 
         // test the headers
         contentAsString(response) must /("data") /#0 /#0 /("date")
@@ -250,8 +234,6 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
         status(response) must equalTo(OK)
         contentType(response) must beSome.which(_ == "application/json")
 
-        response.map(x => println(x.toString))
-
         // test the headers
         contentAsString(response) must /("data") /#0 /#0 /("subCategory")
         contentAsString(response) must /("data") /#0 /#1 /("amount")
@@ -272,8 +254,6 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
         val response = route(app, request).get
         status(response) must equalTo(OK)
         contentType(response) must beSome.which(_ == "application/json")
-
-        response.map(x => println(x.toString))
 
         // test the headers
         contentAsString(response) must /("data") /#0 /#0 /("subCategory")

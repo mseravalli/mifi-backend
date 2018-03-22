@@ -3,7 +3,6 @@ package controllers
 import java.io.StringReader
 import java.nio.file.FileAlreadyExistsException
 
-import helpers.Global
 import models._
 import helpers._
 import com.github.tototoshi.csv._
@@ -12,6 +11,7 @@ import java.sql.Timestamp
 import javax.inject._
 
 import org.joda.time.format.{DateTimeFormat, DateTimeFormatter}
+import play.api.db.slick._
 import play.api.mvc._
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.libs.Files.TemporaryFile
@@ -21,14 +21,16 @@ import play.api.libs.ws._
 import scala.async.Async.{async, await}
 import scala.concurrent.{Future, ExecutionContext}
 import scala.util.{Failure, Success, Try}
+import slick.jdbc.JdbcProfile
 import slick.jdbc.PostgresProfile.api._
 
 @Singleton
 class ImportController @Inject() (implicit ec: ExecutionContext,
+                                  protected val dbConfigProvider: DatabaseConfigProvider,
                                   cc: ControllerComponents,
                                   ws: WSClient,
                                   pbp:PlayBodyParsers) 
-    extends AbstractController(cc) {
+    extends AbstractController(cc) with HasDatabaseConfigProvider[JdbcProfile] {
 
   def getAmount(x: List[String], a: AccountsRow): BigDecimal = {
     val in = BigDecimal.apply(x.lift(a.amountInPos).map{amount => Formatter.formatAmount(amount)}.getOrElse("0.00"))
@@ -218,7 +220,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
       case false => ("delete", invalidateQuery)
     }
 
-    val res = await { Global.db.run(query) }
+    val res = await { db.run(query) }
 
     Ok(Json.obj("result" -> JsString(s"$action ${res.toString}")))
   } }
@@ -233,7 +235,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
     val account = accounts match {
       case Success(accountName :: tail) => {
         val accounts = await {
-          Global.db.run(new AccountController().readAccountsQuery(Some(List(accountName))))
+          db.run(new AccountController().readAccountsQuery(Some(List(accountName))))
         }
         accounts.length match {
           case 1 => Success(accounts.last)
@@ -249,7 +251,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
     val csv = request.body.file("csv")
 
     val categories: Map[String, Tuple2[String, String]] = await {
-      Global.db.run(Tables.TransactionsCategorization.result)
+      db.run(Tables.TransactionsCategorization.result)
     }.map(x => x.description -> (x.category, x.subCategory)).toMap
 
     val result: Try[Future[Try[JsObject]]] = account.map { a => async {
@@ -260,10 +262,10 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
       csvString match {
         case Success(c) => {
           val transactions = await { trasformCSVIntoTransactions(c, a._1, categories) }
-          val queryResult = await { Global.db.run(importQuery(transactions)) }
+          val queryResult = await { db.run(importQuery(transactions)) }
           val status = queryResult.toString
           val balance = await {
-            Global.db.run(new AccountController().readAccountsQuery(Some(List(a._1.account))))
+            db.run(new AccountController().readAccountsQuery(Some(List(a._1.account))))
           }.head._2
 
           val res = Json.obj("status" -> status, "account" -> Json.obj("account" -> a._1.account, "balance" -> Json.toJson(balance)))

@@ -1,6 +1,5 @@
 package controllers
 
-import helpers.Global
 import helpers.Formatter
 import models.{Category, JsonFormats, Tables}
 
@@ -8,17 +7,21 @@ import java.sql.Date
 import java.text.SimpleDateFormat
 import javax.inject._
 import org.slf4j.{Logger, LoggerFactory}
+
+import play.api.db.slick._
 import play.api.mvc._
 import play.api.libs.json._
 
 import scala.async.Async.{async, await}
 import scala.concurrent.{Future, ExecutionContext}
+import slick.jdbc.JdbcProfile
 import slick.jdbc.PostgresProfile.api._
 
 @Singleton
 class CategoryController @Inject() (implicit ec: ExecutionContext,
+                                    protected val dbConfigProvider: DatabaseConfigProvider,
                                     cc: ControllerComponents)
-    extends AbstractController(cc) {
+    extends AbstractController(cc) with HasDatabaseConfigProvider[JdbcProfile] {
   def getCategoriesQuery = {
     Tables.Categories
       .join(Tables.CategoryMatch)
@@ -69,7 +72,7 @@ class CategoryController @Inject() (implicit ec: ExecutionContext,
 
   def readCategories(): Action[AnyContent] = Action.async { async {
     val categories = await {
-      Global.db.run(getCategoriesQuery)
+      db.run(getCategoriesQuery)
     }.map{x =>
       Category (
         name = x._1.category,
@@ -98,7 +101,7 @@ class CategoryController @Inject() (implicit ec: ExecutionContext,
     val sdf = new SimpleDateFormat(format)
 
     val raw = await {
-      Global.db.run(getCategoryTransactions(startDate, endDate, categories, accounts))
+      db.run(getCategoryTransactions(startDate, endDate, categories, accounts))
     }
 
     val totalFlow = raw
@@ -127,7 +130,7 @@ class CategoryController @Inject() (implicit ec: ExecutionContext,
     val accounts = request.getQueryString("accounts").map(x => x.split(",").toSeq)
 
     val totalFlow = await {
-      Global.db.run(totalFlowCatQuery(startDate, endDate, flow, categories, accounts))
+      db.run(totalFlowCatQuery(startDate, endDate, flow, categories, accounts))
     }
 
     val cols = Json.arr("category", "amount")
