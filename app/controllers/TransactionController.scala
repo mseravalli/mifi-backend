@@ -12,7 +12,7 @@ import play.api.libs.json._
 import play.api.mvc.PlayBodyParsers
 import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext
-import slick.driver.PostgresDriver.api._
+import slick.jdbc.PostgresProfile.api._
 
 @Singleton
 class TransactionController @Inject()(implicit ec: ExecutionContext, pbp:PlayBodyParsers)

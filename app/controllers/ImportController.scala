@@ -20,7 +20,7 @@ import play.api.libs.ws._
 import scala.async.Async.{async, await}
 import scala.concurrent.{Future, ExecutionContext}
 import scala.util.{Failure, Success, Try}
-import slick.driver.PostgresDriver.api._
+import slick.jdbc.PostgresProfile.api._
 
 @Singleton
 class ImportController @Inject() (implicit ec: ExecutionContext, ws: WSClient, pbp:PlayBodyParsers) 
@@ -238,7 +238,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext, ws: WSClient, p
     val account = accounts match {
       case Success(accountName :: tail) => {
         val accounts = await {
-          Global.db.run(AccountController.readAccountsQuery(Some(List(accountName))))
+          Global.db.run(new AccountController().readAccountsQuery(Some(List(accountName))))
         }
         accounts.length match {
           case 1 => Success(accounts.last)
@@ -268,7 +268,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext, ws: WSClient, p
           val queryResult = await { Global.db.run(importQuery(transactions)) }
           val status = queryResult.toString
           val balance = await {
-            Global.db.run(AccountController.readAccountsQuery(Some(List(a._1.account))))
+            Global.db.run(new AccountController().readAccountsQuery(Some(List(a._1.account))))
           }.head._2
 
           val res = Json.obj("status" -> status, "account" -> Json.obj("account" -> a._1.account, "balance" -> Json.toJson(balance)))

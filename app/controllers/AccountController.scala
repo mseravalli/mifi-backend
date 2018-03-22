@@ -7,15 +7,16 @@ import models._
 
 import java.sql.Date
 import java.time.format.DateTimeFormatter
-import javax.inject.Singleton
+import javax.inject._
 import org.slf4j.{LoggerFactory, Logger}
 import play.api.mvc._
-import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.json._
 import scala.async.Async.{async, await}
-import slick.driver.PostgresDriver.api._
+import scala.concurrent.ExecutionContext
+import slick.jdbc.PostgresProfile.api._
 
-object AccountController {
+@Singleton
+class AccountController @Inject() (implicit ec: ExecutionContext) extends Controller {
   def readAccountsQuery(accounts: Option[Seq[String]] = None,
                         endDate: Date = Date.valueOf("2100-12-31")) = {
     (for {
@@ -48,7 +49,7 @@ object AccountController {
                        dateFormat: String,
                        requestedAccounts: Option[Seq[String]]) = async {
     val accounts = await {
-      Global.db.run(AccountController.readAccountsQuery(requestedAccounts, startDate))
+      Global.db.run(readAccountsQuery(requestedAccounts, startDate))
     }
 
     val accountBalances: Seq[(String, scala.math.BigDecimal)] = accounts.map{ x => (x._1.account, x._2.getOrElse(BigDecimal(0))) }
@@ -56,7 +57,7 @@ object AccountController {
     val balances = accountBalances // :+ ("total", totalBalance)
 
     val transactions = await {
-      Global.db.run(AccountController.timeSeriesQuery(startDate, endDate))
+      Global.db.run(timeSeriesQuery(startDate, endDate))
     }
 
     val groupedTransactions = transactions
@@ -80,11 +81,6 @@ object AccountController {
 
     header +: timeSeries
   }
-}
-
-@Singleton
-class AccountController extends Controller {
-  import AccountController._
 
   private final val logger: Logger = LoggerFactory.getLogger(classOf[AccountController])
 
@@ -92,7 +88,7 @@ class AccountController extends Controller {
     val endDate = Date.valueOf(request.getQueryString("endDate") .getOrElse("2100-12-31"))
 
     val res = await {
-      Global.db.run(AccountController.readAccountsQuery(endDate = endDate))
+      Global.db.run(readAccountsQuery(endDate = endDate))
     }
 
     val jsonRes = res.map { x =>
@@ -106,7 +102,7 @@ class AccountController extends Controller {
     val endDate = Date.valueOf(request.getQueryString("endDate") .getOrElse("2100-12-31"))
 
     val res = await {
-      Global.db.run(AccountController.readAccountsQuery(Some(List(accountName)), endDate))
+      Global.db.run(readAccountsQuery(Some(List(accountName)), endDate))
     }
 
     val jsonRes = Json.toJson(res.head._1)(JsonFormats.accountFmt).as[JsObject] ++ Json.obj("balance" -> Json.toJson(res.head._2))

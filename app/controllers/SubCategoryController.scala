@@ -6,19 +6,18 @@ import java.text.SimpleDateFormat
 import helpers.Global
 import helpers.Formatter
 import models.{Category, JsonFormats, Tables}
-import javax.inject.Singleton
+import javax.inject._
 
 import org.slf4j.{Logger, LoggerFactory}
-import play.api.libs.concurrent.Execution.Implicits._
 import play.api.mvc._
 import play.api.libs.json._
 
 import scala.async.Async.{async, await}
-import scala.concurrent.Future
-import slick.driver.PostgresDriver.api._
+import scala.concurrent.{Future, ExecutionContext}
+import slick.jdbc.PostgresProfile.api._
 
-
-object SubCategoryController {
+@Singleton
+class SubCategoryController @Inject() (implicit ec: ExecutionContext) extends Controller {
   def getSubCategoryTransactions(startDate: Date,
                                  endDate: Date,
                                  category: String,
@@ -60,11 +59,6 @@ object SubCategoryController {
       .result
   }
 
-}
-@Singleton
-class SubCategoryController extends Controller {
-  import SubCategoryController._
-
   private final val logger: Logger = LoggerFactory.getLogger(classOf[SubCategoryController])
 
   /**
@@ -82,7 +76,7 @@ class SubCategoryController extends Controller {
     val sdf = new SimpleDateFormat(format)
 
     val raw = await {
-      Global.db.run(SubCategoryController.getSubCategoryTransactions(startDate, endDate, categories.head, subCategories, accounts))
+      Global.db.run(getSubCategoryTransactions(startDate, endDate, categories.head, subCategories, accounts))
     }
 
     val totalFlow = raw
@@ -112,7 +106,7 @@ class SubCategoryController extends Controller {
     val accounts = request.getQueryString("accounts").map(x => x.split(",").toSeq)
 
     val totalFlow = await {
-      Global.db.run(SubCategoryController.totalFlowSubCatQuery(startDate, endDate, flow, categories.head, subCategories, accounts))
+      Global.db.run(totalFlowSubCatQuery(startDate, endDate, flow, categories.head, subCategories, accounts))
     }
 
     val cols = Json.arr("subCategory", "amount")
