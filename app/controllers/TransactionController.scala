@@ -2,23 +2,26 @@ package controllers
 
 import java.sql.Date
 
-import helpers.{Formatter, Global}
+import helpers.Formatter
 
 import models._
 
 import javax.inject._
+import play.api.db.slick._
 import play.api.mvc._
 import play.api.libs.json._
 import play.api.mvc.PlayBodyParsers
 import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext
+import slick.jdbc.JdbcProfile
 import slick.jdbc.PostgresProfile.api._
 
 @Singleton
 class TransactionController @Inject()(implicit ec: ExecutionContext,
+                                      protected val dbConfigProvider: DatabaseConfigProvider,
                                       cc: ControllerComponents,
                                       pbp:PlayBodyParsers)
-    extends AbstractController(cc) {
+    extends AbstractController(cc) with HasDatabaseConfigProvider[JdbcProfile] {
   def readTransactionsQuery(startDate: Date,
                             endDate: Date,
                             categories: Array[String],
@@ -56,7 +59,7 @@ class TransactionController @Inject()(implicit ec: ExecutionContext,
     val accounts = request.getQueryString("accounts").map(x => x.split(",").toSeq)
 
     val res: Seq[TransactionsRow] = await {
-      Global.db.run(readTransactionsQuery(startDate, endDate, categories, subCategories, accounts))
+      db.run(readTransactionsQuery(startDate, endDate, categories, subCategories, accounts))
     }
 
     Ok(Json.obj("transactions" -> res.map(x => Json.toJson(x)(JsonFormats.transactionFmt))) )
@@ -68,7 +71,7 @@ class TransactionController @Inject()(implicit ec: ExecutionContext,
     val subCategory = (jsonRequest \ "subCategory").as[String]
     val comment =     (jsonRequest \ "comment").as[String]
 
-    val res = await { Global.db.run(updateTransactionQuery(id.toLong, category, subCategory, comment)) }
+    val res = await { db.run(updateTransactionQuery(id.toLong, category, subCategory, comment)) }
 
     Ok(Json.obj("result" -> JsString(res.toString)))
   }}

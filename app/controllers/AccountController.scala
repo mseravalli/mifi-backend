@@ -1,7 +1,5 @@
 package controllers
 
-
-import helpers.Global
 import helpers.Formatter
 import models._
 
@@ -9,16 +7,19 @@ import java.sql.Date
 import java.time.format.DateTimeFormatter
 import javax.inject._
 import org.slf4j.{LoggerFactory, Logger}
+import play.api.db.slick._
 import play.api.mvc._
 import play.api.libs.json._
 import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext
+import slick.jdbc.JdbcProfile
 import slick.jdbc.PostgresProfile.api._
 
 @Singleton
 class AccountController @Inject() (implicit ec: ExecutionContext,
+                                   protected val dbConfigProvider: DatabaseConfigProvider,
                                    cc: ControllerComponents)
-    extends AbstractController(cc) {
+    extends AbstractController(cc) with HasDatabaseConfigProvider[JdbcProfile] {
   def readAccountsQuery(accounts: Option[Seq[String]] = None,
                         endDate: Date = Date.valueOf("2100-12-31")) = {
     (for {
@@ -51,14 +52,14 @@ class AccountController @Inject() (implicit ec: ExecutionContext,
                        dateFormat: String,
                        requestedAccounts: Option[Seq[String]]) = async {
     val accounts = await {
-      Global.db.run(readAccountsQuery(requestedAccounts, startDate))
+      db.run(readAccountsQuery(requestedAccounts, startDate))
     }
 
     val accountBalances: Seq[(String, scala.math.BigDecimal)] =
       accounts.map{ x => (x._1.account, x._2.getOrElse( x._1.initialAmount )) }
 
     val transactions = await {
-      Global.db.run(timeSeriesQuery(startDate, endDate))
+      db.run(timeSeriesQuery(startDate, endDate))
     }
 
     // group transactions per time unit (day, month, year) and per account
@@ -90,7 +91,7 @@ class AccountController @Inject() (implicit ec: ExecutionContext,
     val endDate = Date.valueOf(request.getQueryString("endDate") .getOrElse("2100-12-31"))
 
     val res = await {
-      Global.db.run(readAccountsQuery(endDate = endDate))
+      db.run(readAccountsQuery(endDate = endDate))
     }
 
     val jsonRes = res.map { x =>
@@ -104,7 +105,7 @@ class AccountController @Inject() (implicit ec: ExecutionContext,
     val endDate = Date.valueOf(request.getQueryString("endDate") .getOrElse("2100-12-31"))
 
     val res = await {
-      Global.db.run(readAccountsQuery(Some(List(accountName)), endDate))
+      db.run(readAccountsQuery(Some(List(accountName)), endDate))
     }
 
     val jsonRes = Json.toJson(res.head._1)(JsonFormats.accountFmt).as[JsObject] ++ Json.obj("balance" -> Json.toJson(res.head._2))
