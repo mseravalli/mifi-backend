@@ -142,7 +142,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
     )
     val oauthTokenResp = await{
       ws.url(oauthTokenUrl)
-        .withHeaders("Authorization" -> account.apiAuthorization.getOrElse(""))
+        .addHttpHeaders("Authorization" -> account.apiAuthorization.getOrElse(""))
         .post(oauthTokenData)
     }
     val bearerToken = (oauthTokenResp.json \ "access_token").toString.replaceAll("\"", "")
@@ -154,7 +154,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
       .replace("mifiEndDate", endDateTimestamp)
     val reportResp = await{
       ws.url(reportUrl)
-        .withHeaders("Authorization" -> s"bearer $bearerToken")
+        .addHttpHeaders("Authorization" -> s"bearer $bearerToken")
         .get
     }
     reportResp.body
