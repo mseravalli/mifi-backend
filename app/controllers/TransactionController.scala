@@ -6,15 +6,17 @@ import helpers.{Formatter, Global}
 
 import models._
 
-import javax.inject.Singleton
+import javax.inject._
 import play.api.mvc._
 import play.api.libs.json._
-import play.api.libs.concurrent.Execution.Implicits._
+import play.api.mvc.PlayBodyParsers
 import scala.async.Async.{async, await}
+import scala.concurrent.ExecutionContext
 import slick.driver.PostgresDriver.api._
 
-object TransactionController {
-
+@Singleton
+class TransactionController @Inject()(implicit ec: ExecutionContext, pbp:PlayBodyParsers)
+    extends Controller {
   def readTransactionsQuery(startDate: Date,
                             endDate: Date,
                             categories: Array[String],
@@ -38,11 +40,6 @@ object TransactionController {
       .map(x => (x.category, x.subCategory, x.comment ))
       .update(Some(category), Some(subCategory), Some(comment))
   }
-}
-
-@Singleton
-class TransactionController extends Controller{
-  import models.JsonFormats
 
   def readTransactions(): Action[AnyContent] = Action.async { request => async {
     val startDate = Date.valueOf(request.getQueryString("startDate").getOrElse("1900-01-01"))
@@ -57,19 +54,19 @@ class TransactionController extends Controller{
     val accounts = request.getQueryString("accounts").map(x => x.split(",").toSeq)
 
     val res: Seq[TransactionsRow] = await {
-      Global.db.run(TransactionController.readTransactionsQuery(startDate, endDate, categories, subCategories, accounts))
+      Global.db.run(readTransactionsQuery(startDate, endDate, categories, subCategories, accounts))
     }
 
     Ok(Json.obj("transactions" -> res.map(x => Json.toJson(x)(JsonFormats.transactionFmt))) )
   }}
 
-  def updateTransaction(id: String): Action[JsValue] = Action.async(parse.json){ request => async {
+  def updateTransaction(id: String): Action[JsValue] = Action.async(pbp.json){ request => async {
     val jsonRequest = request.body
     val category =    (jsonRequest \ "category").as[String]
     val subCategory = (jsonRequest \ "subCategory").as[String]
     val comment =     (jsonRequest \ "comment").as[String]
 
-    val res = await { Global.db.run(TransactionController.updateTransactionQuery(id.toLong, category, subCategory, comment)) }
+    val res = await { Global.db.run(updateTransactionQuery(id.toLong, category, subCategory, comment)) }
 
     Ok(Json.obj("result" -> JsString(res.toString)))
   }}

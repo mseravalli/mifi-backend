@@ -13,20 +13,19 @@ import javax.inject._
 import org.joda.time.format.{DateTimeFormat, DateTimeFormatter}
 import play.api.mvc._
 import play.api.mvc.MultipartFormData.FilePart
-import play.api.libs.concurrent.Execution.Implicits._
 import play.api.libs.Files.TemporaryFile
 import play.api.libs.json._
 import play.api.libs.ws._
-// import play.api.libs.ws.ning.NingAsyncHttpClientConfigBuilder
-
-import play.api.Play.current
 
 import scala.async.Async.{async, await}
-import scala.concurrent.Future
+import scala.concurrent.{Future, ExecutionContext}
 import scala.util.{Failure, Success, Try}
 import slick.driver.PostgresDriver.api._
 
-object GenericImporter {
+@Singleton
+class ImportController @Inject() (implicit ec: ExecutionContext, ws: WSClient, pbp:PlayBodyParsers) 
+    extends Controller {
+
   // need to( transform 11.00, 11,00, 11.0, 11,0, 11 in 11.00
   def formatAmount(s: String): String = {
     val _a = """\d+(,\d+|\.\d+)?\-""".r   // 11,00-
@@ -129,10 +128,6 @@ object GenericImporter {
       approved = false
     )
   }
-}
-
-@Singleton
-class ImportController @Inject() (ws: WSClient) extends Controller {
 
   // if username of password are not present a null value will be passed
   def retrieveCSV(account: models.AccountsRow, startDate: String, endDate: String): Future[String] = async {
@@ -220,7 +215,7 @@ class ImportController @Inject() (ws: WSClient) extends Controller {
       .delete
   }
 
-  def approveImport(): Action[JsValue] = Action.async(parse.json) { request => async{
+  def approveImport(): Action[JsValue] = Action.async(pbp.json) { request => async{
     val jsonRequest = request.body
     val isApproved = (jsonRequest \ "isApproved").as[Boolean]
     val (action, query)= isApproved match {
@@ -234,7 +229,7 @@ class ImportController @Inject() (ws: WSClient) extends Controller {
   } }
 
   // TODO improve search of single account
-  def importTransactions = Action.async(parse.multipartFormData) { request => async {
+  def importTransactions = Action.async(pbp.multipartFormData) { request => async {
     val accounts = request.body.dataParts.get("importAccount") match {
       case Some(a) => Success(a)
       case None => Failure(new Exception("Missing account"))
@@ -269,7 +264,7 @@ class ImportController @Inject() (ws: WSClient) extends Controller {
 
       csvString match {
         case Success(c) => {
-          val transactions = await { GenericImporter.trasformCSVIntoTransactions(c, a._1, categories) }
+          val transactions = await { trasformCSVIntoTransactions(c, a._1, categories) }
           val queryResult = await { Global.db.run(importQuery(transactions)) }
           val status = queryResult.toString
           val balance = await {
