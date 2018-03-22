@@ -185,7 +185,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
         csv match {
           case Some(f) => {
             val encoding = a.encoding.getOrElse("UTF-8")
-            val source = scala.io.Source.fromFile(f.ref.file, enc = encoding)
+            val source = scala.io.Source.fromFile(f.ref.path.toFile, enc = encoding)
             val sourceString = try source.mkString finally source.close
             Success(sourceString)
           }
