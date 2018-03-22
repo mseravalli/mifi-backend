@@ -1,40 +1,23 @@
 package helpers
 
-import models._
-
-import org.slf4j.{LoggerFactory, Logger}
-
-import com.google.inject.{Guice, AbstractModule}
-import play.api.{Application, GlobalSettings}
-
-import slick.driver.PostgresDriver.api._
+import slick.jdbc.JdbcProfile
 
 /**
  * Set up the Guice injector and provide the mechanism for return objects from the dependency graph.
  */
-object Global extends GlobalSettings {
-  private final val logger: Logger = LoggerFactory.getLogger(classOf[GlobalSettings])
+object Global { // extends GlobalSettings {
+  val slickDriver = "slick.jdbc.PostgresProfile"
+  val jdbcDriver = "org.postgresql.Driver"
+  val url = "jdbc:postgresql://localhost:5432/mifi"
+  val outputFolder = "../app"
+  val pkg = "models"
+  val user = Some("mifi")
+  val password = Some("alcolismo")
 
-  // /**
-  //  * Bind types such that whenever UUIDGenerator is required, an instance of SimpleUUIDGenerator will be used.
-  //  */
-  // val injector = Guice.createInjector(new AbstractModule {
-  //   protected def configure() {
-  //     bind(classOf[UUIDGenerator]).to(classOf[SimpleUUIDGenerator])
-  //   }
-  // })
-
-  // /**
-  //  * Controllers must be resolved through the application context. There is a special method of GlobalSettings
-  //  * that we can override to resolve a given controller. This resolution is required by the Play router.
-  //  */
-  // override def getControllerInstance[A](controllerClass: Class[A]): A = injector.getInstance(controllerClass)
-
-  val db = System.getenv("MIFI_DATABASE_URL") match {
-    case url: String => {logger.info(s"$url"); Database.forURL(url, driver = "org.postgresql.Driver")}
-    case _ => Database.forURL("jdbc:postgresql://localhost:5432/mifi?user=mifi&password=alcolismo",
-                driver = "org.postgresql.Driver"
-              )
-  }
+  val driver: JdbcProfile =
+    Class.forName(slickDriver + "$").getField("MODULE$").get(null).asInstanceOf[JdbcProfile]
+  val dbFactory = driver.api.Database
+  val db = dbFactory.forURL(url, driver = jdbcDriver,
+    user = user.getOrElse(null), password = password.getOrElse(null), keepAliveConnection = true)
 
 }

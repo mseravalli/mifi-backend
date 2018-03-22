@@ -7,6 +7,25 @@ import org.joda.time.{Days, LocalDate, Months, Years}
 import play.api.libs.json._
 
 object Formatter {
+
+  // need to( transform 11.00, 11,00, 11.0, 11,0, 11 in 11.00
+  def formatAmount(s: String): String = {
+    val _a = """\d+(,\d+|\.\d+)?\-""".r   // 11,00-
+    val _b = """\d+(,\d+|\.\d+)?(\+)?""".r   // 11,00+
+    val _c = """(\+|\-)?\d+(,\d+|\.\d+)?""".r   // -11,00 +11,00
+    val _d = """\d+(.\d+)?(,\d+)?(\+)?""".r   // 1.001,95+
+    val _e = """\d+(.\d+)?(,\d+)?(\-)?""".r   // 1.001,95-
+    val res = s match {
+      case _a(_*) => "-" + (s.replace(",",".").replace("-",""))
+      case _b(_*) => s.replace(",",".").replace("+","")
+      case _c(_*) => s.replace(",",".").replace("+","")
+      case _d(_*) => s.replace(".","").replace(",",".").replace("+","")
+      case _e(_*) => "-" + s.replace(".","").replace(",",".").replace("-","")
+      case _ => s
+    }
+    res
+  }
+
   /**
    * Ensures that only valid date formats are used to avoid SQL injection.
    */

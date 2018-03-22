@@ -1,29 +1,32 @@
 name := "mi-fi"
 
-version := "3.1.0"
+version := "3.1.1"
 
-scalaVersion := "2.11.6"
+scalaVersion := "2.12.2"
 
 lazy val root = (project in file(".")).enablePlugins(PlayScala)
 
 resolvers += "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
 
 libraryDependencies ++= Seq(
-  "com.google.inject" % "guice" % "3.0",
-  "javax.inject" % "javax.inject" % "1",
-  "org.webjars" % "bootstrap" % "3.3.1",
-  "org.webjars" % "angularjs" % "1.3.8",
-  "org.webjars" % "angular-ui-bootstrap" % "0.12.0",
-  "org.mockito" % "mockito-core" % "1.10.17" % "test",
-  "joda-time" % "joda-time" % "2.6",
   "com.github.tototoshi" %% "scala-csv" % "1.3.5",
-  "org.scala-lang.modules" %% "scala-async" % "0.9.2",
-  "com.typesafe.slick" %% "slick" % "3.1.1",
-  "com.typesafe.slick" %% "slick-codegen" % "3.1.1",
-  "org.postgresql" % "postgresql" % "9.4.1207"
+  "com.google.inject" % "guice" % "3.0",
+  "com.typesafe.play" %% "play-json" % "2.6.7",
+  "com.typesafe.slick" %% "slick" % "3.2.2",
+  "com.typesafe.slick" %% "slick-codegen" % "3.2.2",
+  "javax.inject" % "javax.inject" % "1",
+  "joda-time" % "joda-time" % "2.6",
+  "org.asynchttpclient" % "async-http-client" % "2.4.4",
+  "org.mockito" % "mockito-core" % "1.10.17" % "test",
+  "org.postgresql" % "postgresql" % "42.2.2",
+  "org.scala-lang.modules" %% "scala-async" % "0.9.7",
+  ehcache,
+  guice,
+  ws,
+  "org.specs2" %% "specs2-matcher" % "3.8.9" % Test,
+  "org.specs2" %% "specs2-matcher-extra" % "3.8.9" % Test,
+  specs2 % Test
 )
 
-libraryDependencies ++= Seq(
-  ws
-)
+scalacOptions in Test ++= Seq("-Yrangepos")
 

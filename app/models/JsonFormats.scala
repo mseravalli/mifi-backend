@@ -1,12 +1,10 @@
 package models
 
+import play.api.libs.json._
+import models._
+import java.sql.Date
 
 object JsonFormats {
-  import play.api.libs.json._
-  import models.Tables.AccountsRow
-  import models.Tables.TransactionsRow
-  import java.sql.Date
-
   implicit val sqlDateFmt = new Format[Date] {
     val sdf = new java.text.SimpleDateFormat("yyyy-MM-dd")
     val sdfPattern = "\\b(0[1-9]|[1-3][0-9])-(0[1-9]|1[0-2])-[1-9][0-9]{3}\\b"
@@ -24,7 +22,7 @@ object JsonFormats {
     def writes(sd: Date): JsValue = JsString(sdf.format(sd))
   }
 
-  implicit val accountFmt = Json.format[AccountsRow]
+  implicit val accountFmt = Json.format[models.AccountsRow]
   implicit val categoryFmt = Json.format[Category]
-  implicit val transactionFmt = Json.format[TransactionsRow]
+  implicit val transactionFmt = Json.format[models.TransactionsRow]
 }

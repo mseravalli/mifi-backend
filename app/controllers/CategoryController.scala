@@ -6,17 +6,19 @@ import models.{Category, JsonFormats, Tables}
 
 import java.sql.Date
 import java.text.SimpleDateFormat
-import javax.inject.Singleton
+import javax.inject._
 import org.slf4j.{Logger, LoggerFactory}
-import play.api.libs.concurrent.Execution.Implicits._
 import play.api.mvc._
 import play.api.libs.json._
 
 import scala.async.Async.{async, await}
-import scala.concurrent.Future
-import slick.driver.PostgresDriver.api._
+import scala.concurrent.{Future, ExecutionContext}
+import slick.jdbc.PostgresProfile.api._
 
-object CategoryController {
+@Singleton
+class CategoryController @Inject() (implicit ec: ExecutionContext,
+                                    cc: ControllerComponents)
+    extends AbstractController(cc) {
   def getCategoriesQuery = {
     Tables.Categories
       .join(Tables.CategoryMatch)
@@ -62,17 +64,12 @@ object CategoryController {
       .map{x => (x._1.transactionDate, x._1.category, x._1.amount)}
       .result
   }
-}
-
-@Singleton
-class CategoryController extends Controller {
-  import CategoryController._
 
   private final val logger: Logger = LoggerFactory.getLogger(classOf[CategoryController])
 
   def readCategories(): Action[AnyContent] = Action.async { async {
     val categories = await {
-      Global.db.run(CategoryController.getCategoriesQuery)
+      Global.db.run(getCategoriesQuery)
     }.map{x =>
       Category (
         name = x._1.category,
@@ -101,7 +98,7 @@ class CategoryController extends Controller {
     val sdf = new SimpleDateFormat(format)
 
     val raw = await {
-      Global.db.run(CategoryController.getCategoryTransactions(startDate, endDate, categories, accounts))
+      Global.db.run(getCategoryTransactions(startDate, endDate, categories, accounts))
     }
 
     val totalFlow = raw
@@ -130,7 +127,7 @@ class CategoryController extends Controller {
     val accounts = request.getQueryString("accounts").map(x => x.split(",").toSeq)
 
     val totalFlow = await {
-      Global.db.run(CategoryController.totalFlowCatQuery(startDate, endDate, flow, categories, accounts))
+      Global.db.run(totalFlowCatQuery(startDate, endDate, flow, categories, accounts))
     }
 
     val cols = Json.arr("category", "amount")
