@@ -21,14 +21,12 @@ libraryDependencies ++= Seq(
   "org.postgresql" % "postgresql" % "42.2.2",
   "org.scala-lang.modules" %% "scala-async" % "0.9.7",
   ehcache,
+  guice,
+  ws,
   "org.specs2" %% "specs2-matcher" % "3.8.9" % Test,
   "org.specs2" %% "specs2-matcher-extra" % "3.8.9" % Test,
   specs2 % Test
 )
 
 scalacOptions in Test ++= Seq("-Yrangepos")
-
-libraryDependencies ++= Seq(
-  ws
-)
 
