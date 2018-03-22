@@ -54,24 +54,24 @@ class AccountController @Inject() (implicit ec: ExecutionContext,
       Global.db.run(readAccountsQuery(requestedAccounts, startDate))
     }
 
-    val accountBalances: Seq[(String, scala.math.BigDecimal)] = accounts.map{ x => (x._1.account, x._2.getOrElse(BigDecimal(0))) }
-    val totalBalance: BigDecimal = accountBalances.map(_._2).sum
-    val balances = accountBalances // :+ ("total", totalBalance)
+    val accountBalances: Seq[(String, scala.math.BigDecimal)] =
+      accounts.map{ x => (x._1.account, x._2.getOrElse( x._1.initialAmount )) }
 
     val transactions = await {
       Global.db.run(timeSeriesQuery(startDate, endDate))
     }
 
+    // group transactions per time unit (day, month, year) and per account
     val groupedTransactions = transactions
       .groupBy( x => (x.transactionDate.map(_.toLocalDate.format(DateTimeFormatter.ofPattern(dateFormat))), x.accountNumber ))
       .map(x => (x._1 -> x._2.map(_.amount.getOrElse(BigDecimal(0))).sum ))
       .withDefaultValue(BigDecimal(0))
 
-    var previousBalance = balances.map(_._2)
+    var previousBalance = accountBalances.map(_._2)
     // TODO: change with fold left
     val timeSeries = Formatter.timeIterator(startDate, endDate, dateFormat).map { i =>
       val currentDate = i.format(DateTimeFormatter.ofPattern(dateFormat))
-      val currentBalance = balances
+      val currentBalance = accountBalances
         .map(x => groupedTransactions((Some(currentDate), Some(x._1))))
         .zip(previousBalance)
         .map { case (a, b) => a + b }
@@ -79,7 +79,7 @@ class AccountController @Inject() (implicit ec: ExecutionContext,
       currentDate +: currentBalance :+ currentBalance.sum
     }.toList
 
-    val header = "date" +: balances.map(_._1) :+ "total"
+    val header = "date" +: accountBalances.map(_._1) :+ "total"
 
     header +: timeSeries
   }

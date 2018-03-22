@@ -49,6 +49,7 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
         response.map(x => println(x.toString))
 
         contentAsString(response) must /("data") /# 0 /# 0 /("date")
+        contentAsString(response) must /("data") /# 0 /# 1 /("bcard")
         contentAsString(response) must /("data") /# 0 /# 2 /("db")
         contentAsString(response) must /("data") /# 0 /# 3 /("hvb")
         contentAsString(response) must /("data") /# 0 /# 4 /("kalixa")
@@ -56,6 +57,8 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
         contentAsString(response) must /("data") /# 0 /# 6 /("total")
 
         contentAsString(response) must /("data") /# 25 /# 0 /("2016-01")
+        contentAsString(response) must /("data") /# 25 /# 1 /(0.0)
+        contentAsString(response) must /("data") /# 25 /# 2 /(7022.4400)
         contentAsString(response) must /("data") /# 25 /# 3 /(18900.7900)
         contentAsString(response) must /("data") /# 25 /# 4 /(200.2100)
         contentAsString(response) must /("data") /# 25 /# 5 /(0.0)
@@ -258,7 +261,7 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
         contentAsString(response) must /("data") /#2 /#1 /(90419.97)
 
         contentAsString(response) must /("data") /#3 /#0 /("travel")
-        contentAsString(response) must /("data") /#3 /#1 /(8797.11)
+        contentAsString(response) must /("data") /#3 /#1 /(8671.78)
 
         contentAsString(response) must /("data") /#1 /#0 /("contribution")
         contentAsString(response) must /("data") /#1 /#1 /(2753.53)

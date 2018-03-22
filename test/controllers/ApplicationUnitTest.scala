@@ -1,4 +1,4 @@
-package controllers
+package helpers
 
 import play.api.test._
 import play.api.test.Helpers._
@@ -15,37 +15,40 @@ class ApplicationUnitTest extends PlaySpecification {
   "Application" should {
 
     "format amount" in {
-      GenericImporter.formatAmount("11") must beEqualTo("11").ignoreCase
-      GenericImporter.formatAmount("11+") must beEqualTo("11").ignoreCase
-      GenericImporter.formatAmount("11-") must beEqualTo("-11").ignoreCase
-      GenericImporter.formatAmount("+11") must beEqualTo("11").ignoreCase
-      GenericImporter.formatAmount("-11") must beEqualTo("-11").ignoreCase
+      Formatter.formatAmount("11") must beEqualTo("11").ignoreCase
+      Formatter.formatAmount("11+") must beEqualTo("11").ignoreCase
+      Formatter.formatAmount("11-") must beEqualTo("-11").ignoreCase
+      Formatter.formatAmount("+11") must beEqualTo("11").ignoreCase
+      Formatter.formatAmount("-11") must beEqualTo("-11").ignoreCase
 
       // with comma
-      GenericImporter.formatAmount("11,0") must beEqualTo("11.0").ignoreCase
-      GenericImporter.formatAmount("11,0+") must beEqualTo("11.0").ignoreCase
-      GenericImporter.formatAmount("11,0-") must beEqualTo("-11.0").ignoreCase
-      GenericImporter.formatAmount("+11,0") must beEqualTo("11.0").ignoreCase
-      GenericImporter.formatAmount("-11,0") must beEqualTo("-11.0").ignoreCase
+      Formatter.formatAmount("11,0") must beEqualTo("11.0").ignoreCase
+      Formatter.formatAmount("11,0+") must beEqualTo("11.0").ignoreCase
+      Formatter.formatAmount("11,0-") must beEqualTo("-11.0").ignoreCase
+      Formatter.formatAmount("+11,0") must beEqualTo("11.0").ignoreCase
+      Formatter.formatAmount("-11,0") must beEqualTo("-11.0").ignoreCase
 
-      GenericImporter.formatAmount("11,00") must beEqualTo("11.00").ignoreCase
-      GenericImporter.formatAmount("11,00+") must beEqualTo("11.00").ignoreCase
-      GenericImporter.formatAmount("11,00-") must beEqualTo("-11.00").ignoreCase
-      GenericImporter.formatAmount("+11,00") must beEqualTo("11.00").ignoreCase
-      GenericImporter.formatAmount("-11,00") must beEqualTo("-11.00").ignoreCase
+      Formatter.formatAmount("11,00") must beEqualTo("11.00").ignoreCase
+      Formatter.formatAmount("11,00+") must beEqualTo("11.00").ignoreCase
+      Formatter.formatAmount("11,00-") must beEqualTo("-11.00").ignoreCase
+      Formatter.formatAmount("+11,00") must beEqualTo("11.00").ignoreCase
+      Formatter.formatAmount("-11,00") must beEqualTo("-11.00").ignoreCase
 
       // with point
-      GenericImporter.formatAmount("11.0") must beEqualTo("11.0").ignoreCase
-      GenericImporter.formatAmount("11.0+") must beEqualTo("11.0").ignoreCase
-      GenericImporter.formatAmount("11.0-") must beEqualTo("-11.0").ignoreCase
-      GenericImporter.formatAmount("+11.0") must beEqualTo("11.0").ignoreCase
-      GenericImporter.formatAmount("-11.0") must beEqualTo("-11.0").ignoreCase
+      Formatter.formatAmount("11.0") must beEqualTo("11.0").ignoreCase
+      Formatter.formatAmount("11.0+") must beEqualTo("11.0").ignoreCase
+      Formatter.formatAmount("11.0-") must beEqualTo("-11.0").ignoreCase
+      Formatter.formatAmount("+11.0") must beEqualTo("11.0").ignoreCase
+      Formatter.formatAmount("-11.0") must beEqualTo("-11.0").ignoreCase
 
-      GenericImporter.formatAmount("11.00") must beEqualTo("11.00").ignoreCase
-      GenericImporter.formatAmount("11.00+") must beEqualTo("11.00").ignoreCase
-      GenericImporter.formatAmount("11.00-") must beEqualTo("-11.00").ignoreCase
-      GenericImporter.formatAmount("+11.00") must beEqualTo("11.00").ignoreCase
-      GenericImporter.formatAmount("-11.00") must beEqualTo("-11.00").ignoreCase
+      Formatter.formatAmount("11.00") must beEqualTo("11.00").ignoreCase
+      Formatter.formatAmount("11.00+") must beEqualTo("11.00").ignoreCase
+      Formatter.formatAmount("11.00-") must beEqualTo("-11.00").ignoreCase
+      Formatter.formatAmount("+11.00") must beEqualTo("11.00").ignoreCase
+      Formatter.formatAmount("-11.00") must beEqualTo("-11.00").ignoreCase
+
+      Formatter.formatAmount("1.234,56+") must beEqualTo("1234.56").ignoreCase
+      Formatter.formatAmount("1.234,56-") must beEqualTo("-1234.56").ignoreCase
     }
   }
 }

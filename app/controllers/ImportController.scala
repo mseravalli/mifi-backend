@@ -5,6 +5,7 @@ import java.nio.file.FileAlreadyExistsException
 
 import helpers.Global
 import models._
+import helpers._
 import com.github.tototoshi.csv._
 import java.sql.Date
 import java.sql.Timestamp
@@ -29,23 +30,9 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
                                   pbp:PlayBodyParsers) 
     extends AbstractController(cc) {
 
-  // need to( transform 11.00, 11,00, 11.0, 11,0, 11 in 11.00
-  def formatAmount(s: String): String = {
-    val _a = """\d+(,\d+|\.\d+)?\-""".r   // 11,00-
-    val _b = """\d+(,\d+|\.\d+)?(\+)?""".r   // 11,00+
-    val _c = """(\+|\-)?\d+(,\d+|\.\d+)?""".r   // -11,00 +11,00
-    val res = s match {
-      case _a(_*) => "-" + (s.replace(",",".").replace("-",""))
-      case _b(_*) => s.replace(",",".").replace("+","")
-      case _c(_*) => s.replace(",",".").replace("+","")
-      case _ => s
-    }
-    res
-  }
-
   def getAmount(x: List[String], a: AccountsRow): BigDecimal = {
-    val in = BigDecimal.apply(x.lift(a.amountInPos).map{amount => formatAmount(amount)}.getOrElse("0.00"))
-    val out = BigDecimal.apply(formatAmount(x.lift(a.amountOutPos).getOrElse("0.00")).replace("-", ""))
+    val in = BigDecimal.apply(x.lift(a.amountInPos).map{amount => Formatter.formatAmount(amount)}.getOrElse("0.00"))
+    val out = BigDecimal.apply(Formatter.formatAmount(x.lift(a.amountOutPos).getOrElse("0.00")).replace("-", ""))
     if (in.abs == out.abs) {
       in
     }
@@ -86,8 +73,13 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
             }
           }
           case None => {
-            val row = readCSVRow(a, format, x, categories)
-            loadValues(r, values :+ row)
+            if (x.foldLeft("")((sum, y) => sum + y ) == "") {
+              values
+            }
+            else {
+              val row = readCSVRow(a, format, x, categories)
+              loadValues(r, values :+ row)
+            }
           }
         }
       }
