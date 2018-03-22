@@ -20,9 +20,13 @@ libraryDependencies ++= Seq(
   "org.mockito" % "mockito-core" % "1.10.17" % "test",
   "org.postgresql" % "postgresql" % "42.2.2",
   "org.scala-lang.modules" %% "scala-async" % "0.9.7",
-  cache,
+  ehcache,
+  "org.specs2" %% "specs2-matcher" % "3.8.9" % Test,
+  "org.specs2" %% "specs2-matcher-extra" % "3.8.9" % Test,
   specs2 % Test
 )
+
+scalacOptions in Test ++= Seq("-Yrangepos")
 
 libraryDependencies ++= Seq(
   ws
