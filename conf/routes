@@ -4,6 +4,7 @@
 # Note: @controllers syntax signifies the actual controller instance, retrieved via GlobalSettings.getController().
 # ~~~~
 
+GET         /health                         @controllers.HealthController.getHealth
 POST        /import                         @controllers.ImportController.importTransactions
 POST        /approve_import                 @controllers.ImportController.approveImport
 GET         /accounts                       @controllers.AccountController.readAccounts
