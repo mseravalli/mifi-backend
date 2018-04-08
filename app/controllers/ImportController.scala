@@ -227,8 +227,11 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
 
   // TODO improve search of single account
   def importTransactions = Action.async(pbp.multipartFormData) { request => async {
-    val accounts = request.body.dataParts.get("importAccount") match {
-      case Some(a) => Success(a)
+    val accounts:Try[List[String]] = request.body.dataParts.get("importAccount") match {
+      case Some(a) => a match {
+        case s:Seq[String] => Success(s.toList)
+        case _ => Failure(new Exception("Account wrapped in wrong type"))
+      }
       case None => Failure(new Exception("Missing account"))
     }
 
