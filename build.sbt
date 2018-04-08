@@ -1,6 +1,6 @@
-name := "mifi-backend"
+name := "mi-fi"
 
-version := "3.2.3"
+version := "3.2.4"
 
 scalaVersion := "2.12.4"
 
