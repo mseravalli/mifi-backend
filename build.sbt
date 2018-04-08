@@ -1,4 +1,4 @@
-name := "mi-fi"
+name := "mifi-backend"
 
 version := "3.2.2"
 
