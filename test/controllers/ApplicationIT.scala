@@ -247,7 +247,7 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
     }
 
     "compute total incoming flow per SubCategory" in new WithApplication() {
-      val request = FakeRequest(GET, "/subcategories/in?sumRange=yyyy-mm&startDate=2014-01-01&endDate=2017-05-30&categories=work%20and%20training&subCategories=salary,travel,contribution,material,training,general")
+      val request = FakeRequest(GET, "/subcategories/in?sumRange=yyyy-mm&startDate=2014-01-01&endDate=2016-05-30&categories=work%20and%20training&subCategories=salary,travel,contribution,material,training,general")
       val response = route(app, request).get
       status(response) must equalTo(OK)
       contentType(response) must beSome.which(_ == "application/json")
@@ -258,13 +258,13 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
 
       // test the data
       contentAsString(response) must /("data") /#2 /#0 /("salary")
-      contentAsString(response) must /("data") /#2 /#1 /(90419.97)
+      contentAsString(response) must /("data") /#2 /#1 /(56754.83)
 
       contentAsString(response) must /("data") /#3 /#0 /("travel")
-      contentAsString(response) must /("data") /#3 /#1 /(8671.78)
+      contentAsString(response) must /("data") /#3 /#1 /(6231.12)
 
       contentAsString(response) must /("data") /#1 /#0 /("contribution")
-      contentAsString(response) must /("data") /#1 /#1 /(2753.53)
+      contentAsString(response) must /("data") /#1 /#1 /(1092.14)
     }
 
     "compute total outgoing flow per SubCategory" in new WithApplication() {
