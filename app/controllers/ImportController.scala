@@ -33,8 +33,8 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
     extends AbstractController(cc) with HasDatabaseConfigProvider[JdbcProfile] {
 
   def getAmount(x: List[String], a: AccountsRow): BigDecimal = {
-    val in = BigDecimal.apply(x.lift(a.amountInPos).map{amount => Formatter.formatAmount(amount)}.getOrElse("0.00"))
-    val out = BigDecimal.apply(Formatter.formatAmount(x.lift(a.amountOutPos).getOrElse("0.00")).replace("-", ""))
+    val in = BigDecimal.apply(x.lift(a.amountInPos).map{amount => Formatter.formatAmount(amount)}.filter(!_.equals("")).getOrElse("0.00"))
+    val out = BigDecimal.apply(Formatter.formatAmount(x.lift(a.amountOutPos).filter(!_.equals("")).getOrElse("0.00")).replace("-", ""))
     if (in.abs == out.abs) {
       in
     }
