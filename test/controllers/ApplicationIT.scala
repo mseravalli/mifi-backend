@@ -30,6 +30,7 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
 
       contentAsString(response) must /("accounts") /# 1 /("account" -> "db")
       contentAsString(response) must /("accounts") /# 1 /("balance" -> 7023.44)
+      contentAsString(response) must /("accounts") /# 1 /("color" -> "#0018A8")
       contentAsString(response) must /("accounts") /# 1 /("currencyPos" -> 17)
       contentAsString(response) must /("accounts") /# 1 /("finalRow" -> "Account balance")
 
