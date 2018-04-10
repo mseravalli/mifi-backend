@@ -29,13 +29,13 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
       contentType(response) must beSome.which(_ == "application/json")
 
       contentAsString(response) must /("accounts") /# 1 /("account" -> "db")
-      contentAsString(response) must /("accounts") /# 1 /("balance" -> 7023.44)
       contentAsString(response) must /("accounts") /# 1 /("color" -> "#0018A8")
+      contentAsString(response) must /("accounts") /# 1 /("balance" -> 590.43)
       contentAsString(response) must /("accounts") /# 1 /("currencyPos" -> 17)
       contentAsString(response) must /("accounts") /# 1 /("finalRow" -> "Account balance")
 
       contentAsString(response) must /("accounts") /# 2 /("account" -> "hvb")
-      contentAsString(response) must /("accounts") /# 2 /("balance" -> 19151.32)
+      contentAsString(response) must /("accounts") /# 2 /("balance" -> 1330.73)
       contentAsString(response) must /("accounts") /# 2 /("currencyPos" -> 7)
     }
 
@@ -46,7 +46,7 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
       contentType(response) must beSome.which(_ == "application/json")
 
       contentAsString(response) must /("account" -> "db")
-      contentAsString(response) must /("balance" -> 7023.44)
+      contentAsString(response) must /("balance" -> 590)
       contentAsString(response) must /("currencyPos" -> 17)
       contentAsString(response) must /("finalRow" -> "Account balance")
     }
