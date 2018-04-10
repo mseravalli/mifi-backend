@@ -48,7 +48,11 @@ class ApplicationUnitTest extends PlaySpecification {
       Formatter.formatAmount("-11.00") must beEqualTo("-11.00").ignoreCase
 
       Formatter.formatAmount("1.234,56+") must beEqualTo("1234.56").ignoreCase
+      Formatter.formatAmount("-1.234,56") must beEqualTo("-1234.56").ignoreCase
       Formatter.formatAmount("1.234,56-") must beEqualTo("-1234.56").ignoreCase
+
+      Formatter.formatAmount("1,234.56") must beEqualTo("1234.56").ignoreCase
+      Formatter.formatAmount("-1,234.56") must beEqualTo("-1234.56").ignoreCase
     }
   }
 }
