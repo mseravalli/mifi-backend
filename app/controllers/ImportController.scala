@@ -1,7 +1,6 @@
 package controllers
 
 import java.io.StringReader
-import java.nio.file.FileAlreadyExistsException
 
 import models._
 import helpers._
@@ -48,7 +47,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
   }
 
 
-  def trasformCSVIntoTransactions(csvString: String, a: AccountsRow, categories: Map[String, Tuple2[String, String]]): Future[List[TransactionsRow]] = async {
+  def transformCSVIntoTransactions(csvString: String, a: AccountsRow): Future[List[TransactionsRow]] = async {
     implicit object MyFormat extends DefaultCSVFormat {
       override val delimiter = a.delimiter.toCharArray.head
     }
@@ -70,7 +69,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
               values
             }
             else {
-              val row = readCSVRow(a, format, x, categories)
+              val row = readCSVRow(a, format, x)
               loadValues(r, values :+ row)
             }
           }
@@ -79,7 +78,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
               values
             }
             else {
-              val row = readCSVRow(a, format, x, categories)
+              val row = readCSVRow(a, format, x)
               loadValues(r, values :+ row)
             }
           }
@@ -90,24 +89,9 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
     loadValues(reader, List())
   }
 
-  /**
-    * Returns for the provided fields the categories associated otherwise "other" "to categorize"
-    * @param categories
-    * @param fields
-    * @return
-    */
-  def categorize(categories: Map[String, Tuple2[String, String]], fields: List[String]): Tuple2[String, String] = {
-    val c = categories.find(c => {
-      fields.map(f => f.toLowerCase.contains(c._1.toLowerCase)).reduce(_ || _)
-    }).map(c => c._2)
-    c.getOrElse(("other", "to categorize"))
-  }
-
-  def readCSVRow(a: AccountsRow, format: DateTimeFormatter, x: List[String], categories: Map[String, Tuple2[String, String]]): TransactionsRow = {
+  def readCSVRow(a: AccountsRow, format: DateTimeFormatter, x: List[String]): TransactionsRow = {
     val receiver = mergeStrings(x, a.receiverPos.replace("{", "").replace("}", "").split(",").map(_.toInt))
     val purpose = mergeStrings(x, a.purposePos.replace("{", "").replace("}", "").split(",").map(_.toInt))
-    val fields = List(receiver, purpose)
-    val c = categorize(categories, fields)
     val transactionDate = new java.text.SimpleDateFormat(a.dateFormat).parse(x(a.transactionDatePos))
     val exchangeDate = new java.text.SimpleDateFormat(a.dateFormat).parse(x(a.exchangeDatePos))
     TransactionsRow (
@@ -119,8 +103,8 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
       purpose = Some(purpose),
       amount = Some(getAmount(x, a)),
       currency = Some(x.lift(a.currencyPos).getOrElse(a.currencyDefault)),
-      category = Some(c._1),
-      subCategory = Some(c._2),
+      category = Some("other"),
+      subCategory = Some("to categorize"),
       comment = None,
       approved = false
     )
@@ -253,10 +237,6 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
 
     val csv = request.body.file("csv")
 
-    val categories: Map[String, Tuple2[String, String]] = await {
-      db.run(Tables.TransactionsCategorization.result)
-    }.map(x => x.description -> (x.category, x.subCategory)).toMap
-
     val result: Try[Future[Try[JsObject]]] = account.map { a => async {
       val startDate = request.body.dataParts.get("startDate").map(_.last)
       val endDate = request.body.dataParts.get("endDate").map(_.last)
@@ -264,7 +244,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
 
       csvString match {
         case Success(c) => {
-          val transactions = await { trasformCSVIntoTransactions(c, a._1, categories) }
+          val transactions = await { transformCSVIntoTransactions(c, a._1) }
           val queryResult = await { db.run(importQuery(transactions)) }
           val status = queryResult.toString
           val balance = await {
@@ -277,6 +257,13 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
         case Failure(e) => Failure(e)
       }
     }}
+
+    result match {
+      case Success(r) => {
+        new ClassifierContoller().classify()
+      }
+      case Failure(e) => Failure(e)
+    }
 
     result match {
       case Success(r) =>

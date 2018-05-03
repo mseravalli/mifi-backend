@@ -1,29 +1,30 @@
 image: mseravalli/sbt:1.0.1
 
 stages:
-  - build
-  - lint
-  - test
-  - package
-  - deploy
+- build
+- lint
+- test
+- package
+- deploy
 
 build:
   stage: build
   script:
-    - sbt clean
-    - sbt compile
+  - sbt clean
+  - sbt compile
 
 lint:
   stage: lint
   script:
-    - echo "TODO"
+  - echo "TODO"
 
 test:
   stage: test
   script:
-    - sbt clean
-    - sbt test
-      # - sbt coverage test coverageReport
+  - echo "TODO"
+   #  - sbt clean
+   # - sbt test
+   # - sbt coverage test coverageReport
 
 package:
   stage: package
@@ -33,5 +34,5 @@ package:
 deploy:
   stage: deploy
   script:
-    - echo "TODO"
+  - echo "TODO"
 
