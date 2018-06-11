@@ -158,7 +158,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
     }
 
     val csvString: Try[String] = a.account.toLowerCase() match {
-      case "number26" => Success( await{ retrieveCSV(a, start, end) } )
+      //case "number26" => Success( await{ retrieveCSV(a, start, end) } )
       case _ => {
         csv match {
           case Some(f) => {
