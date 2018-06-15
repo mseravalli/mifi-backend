@@ -26,16 +26,17 @@ class TransactionController @Inject()(implicit ec: ExecutionContext,
                             endDate: Date,
                             categories: Array[String],
                             subCategories: Array[String],
-                            accounts: Option[Seq[String]] = None) = {
+                            accounts: Option[Seq[Long]] = None) = {
     val accountsTable = Tables.Accounts.filter( a =>
-      accounts.getOrElse(List("%")).foldLeft(a.account =!= a.account)((res, x) => res || (a.account like x))
+      accounts.map(_.foldLeft(a.id =!= a.id)((res, x) => res || (a.id === x)))
+        .getOrElse(a.id === a.id)
     )
     Tables.Transactions
       .filter(t => t.transactionDate > startDate && t.transactionDate < endDate
         && categories.foldLeft(t.category =!= t.category)((res,c)=> res || (t.category like c) )
         && subCategories.foldLeft(t.subCategory =!= t.subCategory)((res,s)=> res || (t.subCategory like s) )
       )
-      .join(accountsTable).on(_.accountNumber === _.account)
+      .join(accountsTable).on(_.accountId === _.id)
       .map(x => x._1)
       .result
   }
@@ -56,7 +57,8 @@ class TransactionController @Inject()(implicit ec: ExecutionContext,
       .map(x => x.split(","))
       .getOrElse(Array[String]("%"))
       .map{x => x match {case "" => "%"; case x => x}}
-    val accounts = request.getQueryString("accounts").map(x => x.split(",").toSeq)
+    val accounts = request.getQueryString("accounts")
+      .map(x => x.split(",").map(_.toLong).toSeq)
 
     val res: Seq[TransactionsRow] = await {
       db.run(readTransactionsQuery(startDate, endDate, categories, subCategories, accounts))

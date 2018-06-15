@@ -28,24 +28,24 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
       status(response) must equalTo(OK)
       contentType(response) must beSome.which(_ == "application/json")
 
-      contentAsString(response) must /("accounts") /# 1 /("account" -> "db")
+      contentAsString(response) must /("accounts") /# 1 /("name" -> "db")
       contentAsString(response) must /("accounts") /# 1 /("color" -> "#0018A8")
       contentAsString(response) must /("accounts") /# 1 /("balance" -> 590.43)
       contentAsString(response) must /("accounts") /# 1 /("currencyPos" -> 17)
       contentAsString(response) must /("accounts") /# 1 /("finalRow" -> "Account balance")
 
-      contentAsString(response) must /("accounts") /# 2 /("account" -> "hvb")
+      contentAsString(response) must /("accounts") /# 2 /("name" -> "hvb")
       contentAsString(response) must /("accounts") /# 2 /("balance" -> 1330.73)
       contentAsString(response) must /("accounts") /# 2 /("currencyPos" -> 7)
     }
 
-    "read balance" in new WithApplication() {
-      val request = FakeRequest(GET, "/accounts/db?endDate=2015-12-31")
+    "read single account details" in new WithApplication() {
+      val request = FakeRequest(GET, "/accounts/1?endDate=2015-12-31")
       val response = route(app, request).get
       status(response) must equalTo(OK)
       contentType(response) must beSome.which(_ == "application/json")
 
-      contentAsString(response) must /("account" -> "db")
+      contentAsString(response) must /("name" -> "db")
       contentAsString(response) must /("balance" -> 590.43)
       contentAsString(response) must /("currencyPos" -> 17)
       contentAsString(response) must /("finalRow" -> "Account balance")
@@ -64,7 +64,7 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
       contentAsString(response) must /("data") /# 0 /# 2 /("db")
       contentAsString(response) must /("data") /# 0 /# 3 /("hvb")
       contentAsString(response) must /("data") /# 0 /# 4 /("kalixa")
-      contentAsString(response) must /("data") /# 0 /# 5 /("number26")
+      contentAsString(response) must /("data") /# 0 /# 5 /("n26")
       contentAsString(response) must /("data") /# 0 /# 6 /("total")
 
       contentAsString(response) must /("data") /# 25 /# 0 /("2016-01")
@@ -77,7 +77,7 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
     }
 
     "retrieve timeseries for single account: db" in new WithApplication {
-      val request = FakeRequest(GET, "/accounts/timeseries?startDate=2014-01-01&endDate=2016-03-31&sumRange=YYYY-MM&accounts=db")
+      val request = FakeRequest(GET, "/accounts/timeseries?startDate=2014-01-01&endDate=2016-03-31&sumRange=YYYY-MM&accounts=1")
       val response = route(app, request).get
       status(response) must equalTo(OK)
       contentType(response) must beSome.which(_ == "application/json")
