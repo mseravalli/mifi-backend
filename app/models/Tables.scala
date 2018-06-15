@@ -14,26 +14,62 @@ trait Tables {
   import slick.jdbc.{GetResult => GR}
 
   /** DDL for all tables. Call .create to execute. */
-  lazy val schema: profile.SchemaDescription = Array(Accounts.schema, Categories.schema, CategoryMatch.schema, SubCategories.schema, Transactions.schema, TransactionsCategorization.schema).reduceLeft(_ ++ _)
+  lazy val schema: profile.SchemaDescription = Array(Accounts.schema, AccountTypes.schema, Categories.schema, CategoryMatch.schema, SubCategories.schema, Transactions.schema, TransactionsClassification.schema).reduceLeft(_ ++ _)
   @deprecated("Use .schema instead of .ddl", "3.0")
   def ddl = schema
 
 
   /** GetResult implicit for fetching AccountsRow objects using plain SQL queries */
-  implicit def GetResultAccountsRow(implicit e0: GR[String], e1: GR[scala.math.BigDecimal], e2: GR[Int], e3: GR[Option[String]]): GR[AccountsRow] = GR{
+  implicit def GetResultAccountsRow(implicit e0: GR[Long], e1: GR[String], e2: GR[scala.math.BigDecimal], e3: GR[Option[String]]): GR[AccountsRow] = GR{
     prs => import prs._
-    AccountsRow.tupled((<<[String], <<[scala.math.BigDecimal], <<[Int], <<[String], <<[String], <<?[String], <<[Int], <<[Int], <<[String], <<[String], <<[Int], <<[Int], <<[Int], <<[String], <<?[String], <<?[String], <<?[String], <<?[String], <<?[String], <<?[String], <<?[String]))
+    AccountsRow.tupled((<<[Long], <<[String], <<[Long], <<[scala.math.BigDecimal], <<?[String], <<?[String]))
   }
   /** Table description of table accounts. Objects of this class serve as prototypes for rows in queries. */
   class Accounts(_tableTag: Tag) extends profile.api.Table[AccountsRow](_tableTag, "accounts") {
-    def * = (account, initialAmount, rowsToSkip, delimiter, dateFormat, finalRow, transactionDatePos, exchangeDatePos, receiverPos, purposePos, amountInPos, amountOutPos, currencyPos, currencyDefault, encoding, apiOauthUrl, apiAuthorization, apiReportUrl, apiUser, apiPass, color) <> (AccountsRow.tupled, AccountsRow.unapply)
+    def * = (id, name, accountType, initialAmount, apiUser, apiPass) <> (AccountsRow.tupled, AccountsRow.unapply)
     /** Maps whole row to an option. Useful for outer joins. */
-    def ? = (Rep.Some(account), Rep.Some(initialAmount), Rep.Some(rowsToSkip), Rep.Some(delimiter), Rep.Some(dateFormat), finalRow, Rep.Some(transactionDatePos), Rep.Some(exchangeDatePos), Rep.Some(receiverPos), Rep.Some(purposePos), Rep.Some(amountInPos), Rep.Some(amountOutPos), Rep.Some(currencyPos), Rep.Some(currencyDefault), encoding, apiOauthUrl, apiAuthorization, apiReportUrl, apiUser, apiPass, color).shaped.<>({r=>import r._; _1.map(_=> AccountsRow.tupled((_1.get, _2.get, _3.get, _4.get, _5.get, _6, _7.get, _8.get, _9.get, _10.get, _11.get, _12.get, _13.get, _14.get, _15, _16, _17, _18, _19, _20, _21)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
+    def ? = (Rep.Some(id), Rep.Some(name), Rep.Some(accountType), Rep.Some(initialAmount), apiUser, apiPass).shaped.<>({r=>import r._; _1.map(_=> AccountsRow.tupled((_1.get, _2.get, _3.get, _4.get, _5, _6)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
 
-    /** Database column account SqlType(varchar), PrimaryKey, Length(32,true) */
-    val account: Rep[String] = column[String]("account", O.PrimaryKey, O.Length(32,varying=true))
+    /** Database column id SqlType(bigserial), AutoInc, PrimaryKey */
+    val id: Rep[Long] = column[Long]("id", O.AutoInc, O.PrimaryKey)
+    /** Database column name SqlType(varchar), Length(32,true) */
+    val name: Rep[String] = column[String]("name", O.Length(32,varying=true))
+    /** Database column account_type SqlType(int8) */
+    val accountType: Rep[Long] = column[Long]("account_type")
     /** Database column initial_amount SqlType(numeric) */
     val initialAmount: Rep[scala.math.BigDecimal] = column[scala.math.BigDecimal]("initial_amount")
+    /** Database column api_user SqlType(varchar), Length(64,true), Default(None) */
+    val apiUser: Rep[Option[String]] = column[Option[String]]("api_user", O.Length(64,varying=true), O.Default(None))
+    /** Database column api_pass SqlType(varchar), Length(64,true), Default(None) */
+    val apiPass: Rep[Option[String]] = column[Option[String]]("api_pass", O.Length(64,varying=true), O.Default(None))
+
+    /** Foreign key referencing AccountTypes (database name accounts_account_type_fkey) */
+    lazy val accountTypesFk1 = foreignKey("accounts_account_type_fkey", accountType, AccountTypes)(r => r.id, onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
+    /** Foreign key referencing AccountTypes (database name accounts_account_type_fkey1) */
+    lazy val accountTypesFk2 = foreignKey("accounts_account_type_fkey1", accountType, AccountTypes)(r => r.id, onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
+
+    /** Uniqueness Index over (name) (database name accounts_name_key) */
+    val index1 = index("accounts_name_key", name, unique=true)
+  }
+  /** Collection-like TableQuery object for table Accounts */
+  lazy val Accounts = new TableQuery(tag => new Accounts(tag))
+
+
+  /** GetResult implicit for fetching AccountTypesRow objects using plain SQL queries */
+  implicit def GetResultAccountTypesRow(implicit e0: GR[Long], e1: GR[Option[String]], e2: GR[Int], e3: GR[String], e4: GR[Option[Int]]): GR[AccountTypesRow] = GR{
+    prs => import prs._
+    AccountTypesRow.tupled((<<[Long], <<?[String], <<[Int], <<[String], <<[String], <<?[String], <<[Int], <<[Int], <<[String], <<[String], <<[Int], <<[Int], <<?[Int], <<[String], <<?[String], <<?[String], <<?[String], <<?[String], <<?[String]))
+  }
+  /** Table description of table account_types. Objects of this class serve as prototypes for rows in queries. */
+  class AccountTypes(_tableTag: Tag) extends profile.api.Table[AccountTypesRow](_tableTag, "account_types") {
+    def * = (id, name, rowsToSkip, delimiter, dateFormat, finalRow, transactionDatePos, exchangeDatePos, receiverPos, purposePos, amountInPos, amountOutPos, currencyPos, currencyDefault, encoding, apiOauthUrl, apiAuthorization, apiReportUrl, color) <> (AccountTypesRow.tupled, AccountTypesRow.unapply)
+    /** Maps whole row to an option. Useful for outer joins. */
+    def ? = (Rep.Some(id), name, Rep.Some(rowsToSkip), Rep.Some(delimiter), Rep.Some(dateFormat), finalRow, Rep.Some(transactionDatePos), Rep.Some(exchangeDatePos), Rep.Some(receiverPos), Rep.Some(purposePos), Rep.Some(amountInPos), Rep.Some(amountOutPos), currencyPos, Rep.Some(currencyDefault), encoding, apiOauthUrl, apiAuthorization, apiReportUrl, color).shaped.<>({r=>import r._; _1.map(_=> AccountTypesRow.tupled((_1.get, _2, _3.get, _4.get, _5.get, _6, _7.get, _8.get, _9.get, _10.get, _11.get, _12.get, _13, _14.get, _15, _16, _17, _18, _19)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
+
+    /** Database column id SqlType(bigserial), AutoInc, PrimaryKey */
+    val id: Rep[Long] = column[Long]("id", O.AutoInc, O.PrimaryKey)
+    /** Database column name SqlType(varchar), Length(32,true), Default(None) */
+    val name: Rep[Option[String]] = column[Option[String]]("name", O.Length(32,varying=true), O.Default(None))
     /** Database column rows_to_skip SqlType(int4) */
     val rowsToSkip: Rep[Int] = column[Int]("rows_to_skip")
     /** Database column delimiter SqlType(varchar), Length(8,true) */
@@ -54,8 +90,8 @@ trait Tables {
     val amountInPos: Rep[Int] = column[Int]("amount_in_pos")
     /** Database column amount_out_pos SqlType(int4) */
     val amountOutPos: Rep[Int] = column[Int]("amount_out_pos")
-    /** Database column currency_pos SqlType(int4) */
-    val currencyPos: Rep[Int] = column[Int]("currency_pos")
+    /** Database column currency_pos SqlType(int4), Default(None) */
+    val currencyPos: Rep[Option[Int]] = column[Option[Int]]("currency_pos", O.Default(None))
     /** Database column currency_default SqlType(varchar), Length(3,true) */
     val currencyDefault: Rep[String] = column[String]("currency_default", O.Length(3,varying=true))
     /** Database column encoding SqlType(varchar), Length(16,true), Default(None) */
@@ -66,15 +102,11 @@ trait Tables {
     val apiAuthorization: Rep[Option[String]] = column[Option[String]]("api_authorization", O.Length(512,varying=true), O.Default(None))
     /** Database column api_report_url SqlType(varchar), Length(512,true), Default(None) */
     val apiReportUrl: Rep[Option[String]] = column[Option[String]]("api_report_url", O.Length(512,varying=true), O.Default(None))
-    /** Database column api_user SqlType(varchar), Length(64,true), Default(None) */
-    val apiUser: Rep[Option[String]] = column[Option[String]]("api_user", O.Length(64,varying=true), O.Default(None))
-    /** Database column api_pass SqlType(varchar), Length(64,true), Default(None) */
-    val apiPass: Rep[Option[String]] = column[Option[String]]("api_pass", O.Length(64,varying=true), O.Default(None))
     /** Database column color SqlType(varchar), Length(8,true), Default(None) */
     val color: Rep[Option[String]] = column[Option[String]]("color", O.Length(8,varying=true), O.Default(None))
   }
-  /** Collection-like TableQuery object for table Accounts */
-  lazy val Accounts = new TableQuery(tag => new Accounts(tag))
+  /** Collection-like TableQuery object for table AccountTypes */
+  lazy val AccountTypes = new TableQuery(tag => new AccountTypes(tag))
 
 
   /** GetResult implicit for fetching CategoriesRow objects using plain SQL queries */
@@ -119,9 +151,13 @@ trait Tables {
     val pk = primaryKey("category_match_pkey", (category, subCategory))
 
     /** Foreign key referencing Categories (database name category_match_category_fkey) */
-    lazy val categoriesFk = foreignKey("category_match_category_fkey", category, Categories)(r => r.category, onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
+    lazy val categoriesFk1 = foreignKey("category_match_category_fkey", category, Categories)(r => r.category, onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
+    /** Foreign key referencing Categories (database name category_match_category_fkey1) */
+    lazy val categoriesFk2 = foreignKey("category_match_category_fkey1", category, Categories)(r => r.category, onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
     /** Foreign key referencing SubCategories (database name category_match_sub_category_fkey) */
-    lazy val subCategoriesFk = foreignKey("category_match_sub_category_fkey", subCategory, SubCategories)(r => r.subCategory, onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
+    lazy val subCategoriesFk3 = foreignKey("category_match_sub_category_fkey", subCategory, SubCategories)(r => r.subCategory, onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
+    /** Foreign key referencing SubCategories (database name category_match_sub_category_fkey1) */
+    lazy val subCategoriesFk4 = foreignKey("category_match_sub_category_fkey1", subCategory, SubCategories)(r => r.subCategory, onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
   }
   /** Collection-like TableQuery object for table CategoryMatch */
   lazy val CategoryMatch = new TableQuery(tag => new CategoryMatch(tag))
@@ -146,20 +182,20 @@ trait Tables {
 
 
   /** GetResult implicit for fetching TransactionsRow objects using plain SQL queries */
-  implicit def GetResultTransactionsRow(implicit e0: GR[Long], e1: GR[Option[String]], e2: GR[Option[java.sql.Date]], e3: GR[Option[scala.math.BigDecimal]], e4: GR[Boolean]): GR[TransactionsRow] = GR{
+  implicit def GetResultTransactionsRow(implicit e0: GR[Long], e1: GR[Option[java.sql.Date]], e2: GR[Option[String]], e3: GR[Option[scala.math.BigDecimal]], e4: GR[Boolean]): GR[TransactionsRow] = GR{
     prs => import prs._
-    TransactionsRow.tupled((<<[Long], <<?[String], <<?[java.sql.Date], <<?[java.sql.Date], <<?[String], <<?[String], <<?[scala.math.BigDecimal], <<?[String], <<?[String], <<?[String], <<?[String], <<[Boolean]))
+    TransactionsRow.tupled((<<[Long], <<[Long], <<?[java.sql.Date], <<?[java.sql.Date], <<?[String], <<?[String], <<?[scala.math.BigDecimal], <<?[String], <<?[String], <<?[String], <<?[String], <<[Boolean]))
   }
   /** Table description of table transactions. Objects of this class serve as prototypes for rows in queries. */
   class Transactions(_tableTag: Tag) extends profile.api.Table[TransactionsRow](_tableTag, "transactions") {
-    def * = (id, accountNumber, transactionDate, exchangeDate, receiver, purpose, amount, currency, category, subCategory, comment, approved) <> (TransactionsRow.tupled, TransactionsRow.unapply)
+    def * = (id, accountId, transactionDate, exchangeDate, receiver, purpose, amount, currency, category, subCategory, comment, approved) <> (TransactionsRow.tupled, TransactionsRow.unapply)
     /** Maps whole row to an option. Useful for outer joins. */
-    def ? = (Rep.Some(id), accountNumber, transactionDate, exchangeDate, receiver, purpose, amount, currency, category, subCategory, comment, Rep.Some(approved)).shaped.<>({r=>import r._; _1.map(_=> TransactionsRow.tupled((_1.get, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12.get)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
+    def ? = (Rep.Some(id), Rep.Some(accountId), transactionDate, exchangeDate, receiver, purpose, amount, currency, category, subCategory, comment, Rep.Some(approved)).shaped.<>({r=>import r._; _1.map(_=> TransactionsRow.tupled((_1.get, _2.get, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12.get)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
 
     /** Database column id SqlType(bigserial), AutoInc, PrimaryKey */
     val id: Rep[Long] = column[Long]("id", O.AutoInc, O.PrimaryKey)
-    /** Database column account_number SqlType(varchar), Length(32,true), Default(None) */
-    val accountNumber: Rep[Option[String]] = column[Option[String]]("account_number", O.Length(32,varying=true), O.Default(None))
+    /** Database column account_id SqlType(int8) */
+    val accountId: Rep[Long] = column[Long]("account_id")
     /** Database column transaction_date SqlType(date), Default(None) */
     val transactionDate: Rep[Option[java.sql.Date]] = column[Option[java.sql.Date]]("transaction_date", O.Default(None))
     /** Database column exchange_date SqlType(date), Default(None) */
@@ -181,8 +217,10 @@ trait Tables {
     /** Database column approved SqlType(bool) */
     val approved: Rep[Boolean] = column[Boolean]("approved")
 
-    /** Foreign key referencing Accounts (database name transactions_account_number_fkey) */
-    lazy val accountsFk = foreignKey("transactions_account_number_fkey", accountNumber, Accounts)(r => Rep.Some(r.account), onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
+    /** Foreign key referencing Accounts (database name transactions_account_id_fkey) */
+    lazy val accountsFk1 = foreignKey("transactions_account_id_fkey", accountId, Accounts)(r => r.id, onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
+    /** Foreign key referencing Accounts (database name transactions_account_id_fkey1) */
+    lazy val accountsFk2 = foreignKey("transactions_account_id_fkey1", accountId, Accounts)(r => r.id, onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
     /** Foreign key referencing Categories (database name transactions_category_fkey) */
     lazy val categoriesFk = foreignKey("transactions_category_fkey", category, Categories)(r => Rep.Some(r.category), onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
     /** Foreign key referencing CategoryMatch (database name transactions_category_fkey1) */
@@ -197,16 +235,16 @@ trait Tables {
   lazy val Transactions = new TableQuery(tag => new Transactions(tag))
 
 
-  /** GetResult implicit for fetching TransactionsCategorizationRow objects using plain SQL queries */
-  implicit def GetResultTransactionsCategorizationRow(implicit e0: GR[String]): GR[TransactionsCategorizationRow] = GR{
+  /** GetResult implicit for fetching TransactionsClassificationRow objects using plain SQL queries */
+  implicit def GetResultTransactionsClassificationRow(implicit e0: GR[String]): GR[TransactionsClassificationRow] = GR{
     prs => import prs._
-    TransactionsCategorizationRow.tupled((<<[String], <<[String], <<[String]))
+    TransactionsClassificationRow.tupled((<<[String], <<[String], <<[String]))
   }
-  /** Table description of table transactions_categorization. Objects of this class serve as prototypes for rows in queries. */
-  class TransactionsCategorization(_tableTag: Tag) extends profile.api.Table[TransactionsCategorizationRow](_tableTag, "transactions_categorization") {
-    def * = (description, category, subCategory) <> (TransactionsCategorizationRow.tupled, TransactionsCategorizationRow.unapply)
+  /** Table description of table transactions_classification. Objects of this class serve as prototypes for rows in queries. */
+  class TransactionsClassification(_tableTag: Tag) extends profile.api.Table[TransactionsClassificationRow](_tableTag, "transactions_classification") {
+    def * = (description, category, subCategory) <> (TransactionsClassificationRow.tupled, TransactionsClassificationRow.unapply)
     /** Maps whole row to an option. Useful for outer joins. */
-    def ? = (Rep.Some(description), Rep.Some(category), Rep.Some(subCategory)).shaped.<>({r=>import r._; _1.map(_=> TransactionsCategorizationRow.tupled((_1.get, _2.get, _3.get)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
+    def ? = (Rep.Some(description), Rep.Some(category), Rep.Some(subCategory)).shaped.<>({r=>import r._; _1.map(_=> TransactionsClassificationRow.tupled((_1.get, _2.get, _3.get)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
 
     /** Database column description SqlType(varchar), PrimaryKey, Length(128,true) */
     val description: Rep[String] = column[String]("description", O.PrimaryKey, O.Length(128,varying=true))
@@ -215,17 +253,26 @@ trait Tables {
     /** Database column sub_category SqlType(varchar), Length(32,true) */
     val subCategory: Rep[String] = column[String]("sub_category", O.Length(32,varying=true))
 
-    /** Foreign key referencing Categories (database name transactions_categorization_category_fkey) */
-    lazy val categoriesFk = foreignKey("transactions_categorization_category_fkey", category, Categories)(r => r.category, onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
-    /** Foreign key referencing SubCategories (database name transactions_categorization_sub_category_fkey) */
-    lazy val subCategoriesFk = foreignKey("transactions_categorization_sub_category_fkey", subCategory, SubCategories)(r => r.subCategory, onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
+    /** Foreign key referencing Categories (database name transactions_classification_category_fkey) */
+    lazy val categoriesFk = foreignKey("transactions_classification_category_fkey", category, Categories)(r => r.category, onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
+    /** Foreign key referencing SubCategories (database name transactions_classification_sub_category_fkey) */
+    lazy val subCategoriesFk = foreignKey("transactions_classification_sub_category_fkey", subCategory, SubCategories)(r => r.subCategory, onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
   }
-  /** Collection-like TableQuery object for table TransactionsCategorization */
-  lazy val TransactionsCategorization = new TableQuery(tag => new TransactionsCategorization(tag))
+  /** Collection-like TableQuery object for table TransactionsClassification */
+  lazy val TransactionsClassification = new TableQuery(tag => new TransactionsClassification(tag))
 }
 /** Entity class storing rows of table Accounts
-   *  @param account Database column account SqlType(varchar), PrimaryKey, Length(32,true)
+   *  @param id Database column id SqlType(bigserial), AutoInc, PrimaryKey
+   *  @param name Database column name SqlType(varchar), Length(32,true)
+   *  @param accountType Database column account_type SqlType(int8)
    *  @param initialAmount Database column initial_amount SqlType(numeric)
+   *  @param apiUser Database column api_user SqlType(varchar), Length(64,true), Default(None)
+   *  @param apiPass Database column api_pass SqlType(varchar), Length(64,true), Default(None) */
+  case class AccountsRow(id: Long, name: String, accountType: Long, initialAmount: scala.math.BigDecimal, apiUser: Option[String] = None, apiPass: Option[String] = None)
+
+  /** Entity class storing rows of table AccountTypes
+   *  @param id Database column id SqlType(bigserial), AutoInc, PrimaryKey
+   *  @param name Database column name SqlType(varchar), Length(32,true), Default(None)
    *  @param rowsToSkip Database column rows_to_skip SqlType(int4)
    *  @param delimiter Database column delimiter SqlType(varchar), Length(8,true)
    *  @param dateFormat Database column date_format SqlType(varchar), Length(32,true)
@@ -236,16 +283,14 @@ trait Tables {
    *  @param purposePos Database column purpose_pos SqlType(_int4), Length(10,false)
    *  @param amountInPos Database column amount_in_pos SqlType(int4)
    *  @param amountOutPos Database column amount_out_pos SqlType(int4)
-   *  @param currencyPos Database column currency_pos SqlType(int4)
+   *  @param currencyPos Database column currency_pos SqlType(int4), Default(None)
    *  @param currencyDefault Database column currency_default SqlType(varchar), Length(3,true)
    *  @param encoding Database column encoding SqlType(varchar), Length(16,true), Default(None)
    *  @param apiOauthUrl Database column api_oauth_url SqlType(varchar), Length(512,true), Default(None)
    *  @param apiAuthorization Database column api_authorization SqlType(varchar), Length(512,true), Default(None)
    *  @param apiReportUrl Database column api_report_url SqlType(varchar), Length(512,true), Default(None)
-   *  @param apiUser Database column api_user SqlType(varchar), Length(64,true), Default(None)
-   *  @param apiPass Database column api_pass SqlType(varchar), Length(64,true), Default(None)
    *  @param color Database column color SqlType(varchar), Length(8,true), Default(None) */
-  case class AccountsRow(account: String, initialAmount: scala.math.BigDecimal, rowsToSkip: Int, delimiter: String, dateFormat: String, finalRow: Option[String] = None, transactionDatePos: Int, exchangeDatePos: Int, receiverPos: String, purposePos: String, amountInPos: Int, amountOutPos: Int, currencyPos: Int, currencyDefault: String, encoding: Option[String] = None, apiOauthUrl: Option[String] = None, apiAuthorization: Option[String] = None, apiReportUrl: Option[String] = None, apiUser: Option[String] = None, apiPass: Option[String] = None, color: Option[String] = None)
+  case class AccountTypesRow(id: Long, name: Option[String] = None, rowsToSkip: Int, delimiter: String, dateFormat: String, finalRow: Option[String] = None, transactionDatePos: Int, exchangeDatePos: Int, receiverPos: String, purposePos: String, amountInPos: Int, amountOutPos: Int, currencyPos: Option[Int] = None, currencyDefault: String, encoding: Option[String] = None, apiOauthUrl: Option[String] = None, apiAuthorization: Option[String] = None, apiReportUrl: Option[String] = None, color: Option[String] = None)
 
   /** Entity class storing rows of table Categories
    *  @param category Database column category SqlType(varchar), PrimaryKey, Length(32,true)
@@ -264,7 +309,7 @@ trait Tables {
 
   /** Entity class storing rows of table Transactions
    *  @param id Database column id SqlType(bigserial), AutoInc, PrimaryKey
-   *  @param accountNumber Database column account_number SqlType(varchar), Length(32,true), Default(None)
+   *  @param accountId Database column account_id SqlType(int8)
    *  @param transactionDate Database column transaction_date SqlType(date), Default(None)
    *  @param exchangeDate Database column exchange_date SqlType(date), Default(None)
    *  @param receiver Database column receiver SqlType(varchar), Length(512,true), Default(None)
@@ -275,10 +320,10 @@ trait Tables {
    *  @param subCategory Database column sub_category SqlType(varchar), Length(32,true), Default(None)
    *  @param comment Database column comment SqlType(varchar), Length(512,true), Default(None)
    *  @param approved Database column approved SqlType(bool) */
-  case class TransactionsRow(id: Long, accountNumber: Option[String] = None, transactionDate: Option[java.sql.Date] = None, exchangeDate: Option[java.sql.Date] = None, receiver: Option[String] = None, purpose: Option[String] = None, amount: Option[scala.math.BigDecimal] = None, currency: Option[String] = None, category: Option[String] = None, subCategory: Option[String] = None, comment: Option[String] = None, approved: Boolean)
+  case class TransactionsRow(id: Long, accountId: Long, transactionDate: Option[java.sql.Date] = None, exchangeDate: Option[java.sql.Date] = None, receiver: Option[String] = None, purpose: Option[String] = None, amount: Option[scala.math.BigDecimal] = None, currency: Option[String] = None, category: Option[String] = None, subCategory: Option[String] = None, comment: Option[String] = None, approved: Boolean)
 
-  /** Entity class storing rows of table TransactionsCategorization
+  /** Entity class storing rows of table TransactionsClassification
    *  @param description Database column description SqlType(varchar), PrimaryKey, Length(128,true)
    *  @param category Database column category SqlType(varchar), Length(32,true)
    *  @param subCategory Database column sub_category SqlType(varchar), Length(32,true) */
-  case class TransactionsCategorizationRow(description: String, category: String, subCategory: String)
+  case class TransactionsClassificationRow(description: String, category: String, subCategory: String)
