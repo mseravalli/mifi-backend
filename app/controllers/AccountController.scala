@@ -98,8 +98,10 @@ class AccountController @Inject() (implicit ec: ExecutionContext,
 
     val jsonRes = res.map { x =>
       Json.toJson(x._1._1)(JsonFormats.accountFmt).as[JsObject]
-        .++(Json.obj("balance" -> Json.toJson(x._2)))
         .++(x._1._2.map(Json.toJson(_)(JsonFormats.accountTypeFmt)).getOrElse(Json.obj()).as[JsObject])
+        .++(Json.obj("balance" -> Json.toJson(x._2)))
+        // necessary due to the overlapping of the property "name"
+        .++(Json.obj("name" -> Json.toJson(x._1._1.name)))
     }
 
     Ok(Json.obj("accounts" -> jsonRes) )
@@ -113,8 +115,10 @@ class AccountController @Inject() (implicit ec: ExecutionContext,
     }
 
     val jsonRes = Json.toJson(res.head._1._1)(JsonFormats.accountFmt).as[JsObject]
-      .++(Json.obj("balance" -> Json.toJson(res.head._2)))
       .++(res.head._1._2.map(Json.toJson(_)(JsonFormats.accountTypeFmt)).getOrElse(Json.obj()).as[JsObject])
+      .++(Json.obj("balance" -> Json.toJson(res.head._2)))
+      // necessary due to the overlapping of the property "name"
+      .++(Json.obj("name" -> Json.toJson(res.head._1._1.name)))
 
     Ok(jsonRes)
   }}
