@@ -92,17 +92,16 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
       }
     }
 
-      val request = FakeRequest(GET, "/transactions?sumRange=yyyy-mm&startDate=2014-01-01&endDate=2016-03-31&categories=house,other,finance,mobility,living,health,free%20time,work%20and%20training&subCategories=")
   "Timeseries" should {
     "read single Transactions" in new WithApplication() {
+      val request = FakeRequest(GET, "/transactions?sumRange=yyyy-mm&startDate=2012-11-11&endDate=2012-11-11&categories=house,other,finance,mobility,living,health,free%20time,work%20and%20training&subCategories=")
       val response = route(app, request).get
       status(response) must equalTo(OK)
       contentType(response) must beSome.which(_ == "application/json")
 
-      contentAsString(response) must /("transactions") /# 0   /("id" -> 57316)
-      contentAsString(response) must /("transactions") /# 200 /("id" -> 54170.0)
-      contentAsString(response) must /("transactions") /# 400 /("id" -> 51024.0)
-      contentAsString(response) must /("transactions") /# 600 /("id" -> 47954.0)
+      contentAsString(response) must /("transactions") /# 0   /("amount" -> -75.87)
+      contentAsString(response) must /("transactions") /# 0   /("category" -> "living")
+      contentAsString(response) must /("transactions") /# 0   /("subCategory" -> "pets")
     }
   }
 
