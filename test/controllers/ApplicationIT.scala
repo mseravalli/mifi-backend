@@ -10,7 +10,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
  * For more information, consult the wiki.
  */
 class ApplicationIT extends PlaySpecification with JsonMatchers {
-  "Health should" should {
+  "Health" should {
     "be healthy" in new WithApplication() {
       val request = FakeRequest(GET, "/health")
       val response = route(app, request).get
@@ -21,7 +21,7 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
     }
   }
 
-  "Accounts should" should {
+  "Accounts" should {
     "read accounts" in new WithApplication() {
       val request = FakeRequest(GET, "/accounts?endDate=2015-12-31")
       val response = route(app, request).get
@@ -52,7 +52,7 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
     }
   }
 
-  "Timeseries should" should {
+  "Timeseries" should {
     "retrieve timeseries for all accounts" in new WithApplication() {
       val request = FakeRequest(GET, "/accounts/timeseries?startDate=2014-01-01&endDate=2016-03-31&sumRange=YYYY-MM")
       val response = route(app, request).get
@@ -92,9 +92,9 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
       }
     }
 
-  "Timeseries should" should {
-    "read Transactions" in new WithApplication() {
       val request = FakeRequest(GET, "/transactions?sumRange=yyyy-mm&startDate=2014-01-01&endDate=2016-03-31&categories=house,other,finance,mobility,living,health,free%20time,work%20and%20training&subCategories=")
+  "Timeseries" should {
+    "read single Transactions" in new WithApplication() {
       val response = route(app, request).get
       status(response) must equalTo(OK)
       contentType(response) must beSome.which(_ == "application/json")
@@ -107,7 +107,7 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
   }
 
     
-  "Categories should" should {
+  "Categories" should {
     "read Categories" in new WithApplication() {
       val request = FakeRequest(GET, "/categories")
       val response = route(app, request).get
@@ -203,7 +203,7 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
     }
   }
 
-  "SubCategories should" should {
+  "SubCategories" should {
     "aggregate SubCategories" in new WithApplication() {
       val request = FakeRequest(GET, "/subcategories/aggregate?sumRange=yyyy-mm&startDate=2014-01-01&endDate=2017-07-31&categories=house&subCategories=electricity,furniture%20and%20accessories,general,internet,phone,rent")
       val response = route(app, request).get
