@@ -1,8 +1,12 @@
 package controllers
 
 import org.specs2.matcher.JsonMatchers
+import play.api.mvc.MultipartFormData
+import play.api.mvc.MultipartFormData.FilePart
 import play.api.test._
 import play.api.test.Helpers._
+import play.api.libs.Files._
+
 import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
@@ -271,6 +275,50 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
       // test the data
       contentAsString(response) must /("data") /#1 /#0 /("training")
       contentAsString(response) must /("data") /#1 /#1 /(2372.45)
+    }
+  }
+
+  "ImportController" should {
+    "import hvb-depot" in new WithApplication() {
+      val accountId = 6
+      val balanceRequest = FakeRequest(GET, s"/accounts/${accountId}?endDate=2100-12-31")
+      val balanceResponse = route(app, balanceRequest).get
+      val balance = (contentAsJson(balanceResponse) \ "balance").get.toString().toDouble
+
+      val file = play.api.libs.Files.SingletonTemporaryFileCreator.create(path = java.nio.file.Paths.get("test/hvb-depot.csv"))
+      val part = FilePart[TemporaryFile](key = "csv", filename = "the.file", contentType = None, ref = file)
+      val formData = MultipartFormData[TemporaryFile](
+        dataParts = Map("importAccountId" -> Seq(accountId.toString)),
+        files = Seq(part),
+        badParts = Seq()
+      )
+      val request = FakeRequest(POST, "/import" )
+        .withMultipartFormDataBody(formData)
+      val response = route(app, request).get
+      status(response) must equalTo(OK)
+      contentAsString(response) must /("account") /("account" -> accountId)
+      contentAsString(response) must /("account") /("balance" -> (balance - 10))
+    }
+
+    "import hvb" in new WithApplication() {
+      val accountId = 3
+      val balanceRequest = FakeRequest(GET, s"/accounts/${accountId}?endDate=2100-12-31")
+      val balanceResponse = route(app, balanceRequest).get
+      val balance = (contentAsJson(balanceResponse) \ "balance").get.toString().toDouble
+
+      val file = play.api.libs.Files.SingletonTemporaryFileCreator.create(path = java.nio.file.Paths.get("test/hvb.csv"))
+      val part = FilePart[TemporaryFile](key = "csv", filename = "the.file", contentType = None, ref = file)
+      val formData = MultipartFormData[TemporaryFile](
+        dataParts = Map("importAccountId" -> Seq(accountId.toString)),
+        files = Seq(part),
+        badParts = Seq()
+      )
+      val request = FakeRequest(POST, "/import" )
+        .withMultipartFormDataBody(formData)
+      val response = route(app, request).get
+      status(response) must equalTo(OK)
+      contentAsString(response) must /("account") /("account" -> accountId)
+      contentAsString(response) must /("account") /("balance" -> (balance - 10))
     }
   }
 }
