@@ -32,7 +32,7 @@ class TransactionController @Inject()(implicit ec: ExecutionContext,
         .getOrElse(a.id === a.id)
     )
     Tables.Transactions
-      .filter(t => t.transactionDate > startDate && t.transactionDate < endDate
+      .filter(t => t.transactionDate >= startDate && t.transactionDate <= endDate
         && categories.foldLeft(t.category =!= t.category)((res,c)=> res || (t.category like c) )
         && subCategories.foldLeft(t.subCategory =!= t.subCategory)((res,s)=> res || (t.subCategory like s) )
       )
