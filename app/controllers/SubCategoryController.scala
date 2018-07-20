@@ -26,16 +26,17 @@ class SubCategoryController @Inject() (implicit ec: ExecutionContext,
                                  endDate: Date,
                                  category: String,
                                  subCategories: Array[String],
-                                 accounts: Option[Seq[String]] = None) = {
+                                 accounts: Option[Seq[Long]] = None) = {
     val accountsTable = Tables.Accounts.filter( a =>
-      accounts.getOrElse(List("%")).foldLeft(a.account =!= a.account)((res, x) => res || (a.account like x))
+      accounts.map(_.foldLeft(a.id =!= a.id)((res, x) => res || (a.id === x)))
+        .getOrElse(a.id === a.id)
     )
 
     Tables.Transactions
       .filter(t => t.transactionDate > startDate && t.transactionDate < endDate
         && subCategories.foldLeft(t.subCategory =!= t.subCategory)((res, sc)=> res || ( (t.category like category) && (t.subCategory like sc) ) )
       )
-      .join(accountsTable).on(_.accountNumber === _.account)
+      .join(accountsTable).on(_.accountId === _.id)
       .map{x => (x._1.transactionDate, x._1.subCategory, x._1.amount)}
       .result
   }
@@ -46,16 +47,17 @@ class SubCategoryController @Inject() (implicit ec: ExecutionContext,
                            flow: String,
                            category: String,
                            subCategories: Array[String],
-                           accounts: Option[Seq[String]] = None) = {
+                           accounts: Option[Seq[Long]] = None) = {
     val accountsTable = Tables.Accounts.filter( a =>
-      accounts.getOrElse(List("%")).foldLeft(a.account =!= a.account)((res, x) => res || (a.account like x))
+      accounts.map(_.foldLeft(a.id =!= a.id)((res, x) => res || (a.id === x)))
+        .getOrElse(a.id === a.id)
     )
 
     Tables.Transactions
       .filter(t => t.transactionDate > startDate && t.transactionDate < endDate
         && subCategories.foldLeft(t.subCategory =!= t.subCategory)((res, sc)=> res || ( (t.category like category) && (t.subCategory like sc) ) )
       )
-      .join(accountsTable).on(_.accountNumber === _.account)
+      .join(accountsTable).on(_.accountId === _.id)
       .groupBy(_._1.subCategory)
       .map(x => (x._1, x._2.map(_._1.amount).sum))
       .filter(x => flow match { case "in" => x._2 > BigDecimal(0) case "out" => x._2 < BigDecimal(0) } )
@@ -74,7 +76,7 @@ class SubCategoryController @Inject() (implicit ec: ExecutionContext,
     val endDate =   Date.valueOf(request.getQueryString("endDate").getOrElse("2100-12-31"))
     val categories = request.getQueryString("categories").getOrElse("").split(",").map(_.trim).sorted
     val subCategories = request.getQueryString("subCategories").getOrElse("").split(",").map(_.trim).sorted
-    val accounts = request.getQueryString("accounts").map(x => x.split(",").toSeq)
+    val accounts = request.getQueryString("accounts").map(x => x.split(",").map(_.toLong).toSeq)
 
     val format = Formatter.normalizeDateFormat(dateFormat)
     val sdf = new SimpleDateFormat(format)
@@ -107,7 +109,7 @@ class SubCategoryController @Inject() (implicit ec: ExecutionContext,
     val endDate =   Date.valueOf(request.getQueryString("endDate").getOrElse("2100-12-31"))
     val categories = request.getQueryString("categories").getOrElse("").split(",").map(_.trim).sorted
     val subCategories = request.getQueryString("subCategories").getOrElse("").split(",").map(_.trim).sorted
-    val accounts = request.getQueryString("accounts").map(x => x.split(",").toSeq)
+    val accounts = request.getQueryString("accounts").map(x => x.split(",").map(_.toLong).toSeq)
 
     val totalFlow = await {
       db.run(totalFlowSubCatQuery(startDate, endDate, flow, categories.head, subCategories, accounts))

@@ -23,6 +23,7 @@ object JsonFormats {
   }
 
   implicit val accountFmt = Json.format[models.AccountsRow]
+  implicit val accountTypeFmt = Json.format[models.AccountTypesRow]
   implicit val categoryFmt = Json.format[Category]
   implicit val transactionFmt = Json.format[models.TransactionsRow]
 }
