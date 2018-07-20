@@ -37,7 +37,6 @@ class TransactionController @Inject()(implicit ec: ExecutionContext,
         && subCategories.foldLeft(t.subCategory =!= t.subCategory)((res,s)=> res || (t.subCategory like s) )
       )
       .join(accountsTable).on(_.accountId === _.id)
-      .map(x => x._1)
       .result
   }
 
@@ -60,11 +59,16 @@ class TransactionController @Inject()(implicit ec: ExecutionContext,
     val accounts = request.getQueryString("accounts")
       .map(x => x.split(",").map(_.toLong).toSeq)
 
-    val res: Seq[TransactionsRow] = await {
+    val res: Seq[(TransactionsRow, AccountsRow)] = await {
       db.run(readTransactionsQuery(startDate, endDate, categories, subCategories, accounts))
     }
 
-    Ok(Json.obj("transactions" -> res.map(x => Json.toJson(x)(JsonFormats.transactionFmt))) )
+    val jsonRes = Json.obj("transactions" -> res.map(
+      x => Json.toJson(x._1)(JsonFormats.transactionFmt).as[JsObject]
+        .++(Json.obj("accountName" -> Json.toJson(x._2.name)))
+    ))
+
+    Ok(jsonRes)
   }}
 
   def updateTransaction(id: String): Action[JsValue] = Action.async(pbp.json){ request => async {

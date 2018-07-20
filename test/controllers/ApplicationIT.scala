@@ -103,6 +103,7 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
       status(response) must equalTo(OK)
       contentType(response) must beSome.which(_ == "application/json")
 
+      contentAsString(response) must /("transactions") /# 0   /("accountName" -> "bcard")
       contentAsString(response) must /("transactions") /# 0   /("amount" -> -75.87)
       contentAsString(response) must /("transactions") /# 0   /("category" -> "living")
       contentAsString(response) must /("transactions") /# 0   /("subCategory" -> "pets")
