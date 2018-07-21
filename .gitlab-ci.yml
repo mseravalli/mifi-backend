@@ -13,11 +13,11 @@ cache:
 
 build:
   stage: build
-  image: mseravalli/sbt:1.0.1
+  image: java:jre-alpine
   script:
-  - sbt clean
-  - sbt compile
-  - sbt dist
+  - ./activator clean
+  - ./activator compile
+  - ./activator dist
 
 lint:
   stage: lint
