@@ -1,5 +1,5 @@
 steps:
 - id: 'compile'
-  name: 'java:jdk-alpine'
-  args: ['clean', 'compile']
+  name: 'mseravalli/sbt:latest'
+  args: ['bash', 'clean', 'compile']
 
