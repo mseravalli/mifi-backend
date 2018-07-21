@@ -1,5 +1,5 @@
 steps:
 - id: 'compile'
   name: 'mseravalli/sbt:latest'
-  args: ['bash', 'clean', 'compile']
+  args: ['bash', 'activator', 'clean', 'compile']
 
