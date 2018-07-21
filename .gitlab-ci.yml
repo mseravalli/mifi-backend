@@ -13,9 +13,8 @@ cache:
 
 build:
   stage: build
-  image: java:jre-alpine
+  image: java:jdk-alpine
   script:
-  - ls -laht
   - apk add --no-cache bash
   - bash activator clean
   - bash activator compile
