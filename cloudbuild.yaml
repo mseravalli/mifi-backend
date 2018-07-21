@@ -1,8 +1,9 @@
 steps:
-- id: 'compile'
+- id: 'build'
   name: 'mseravalli/sbt:latest'
-  args: ['bash', 'activator', 'clean', 'compile']
+  args: ['bash', 'activator', 'clean', 'compile', 'dist']
 
-- name: 'gcr.io/cloud-builders/docker'
+- id: 'release'
+  name: 'gcr.io/cloud-builders/docker'
   args: ['build', '-t', 'mseravalli/mifi-backend:latest', '.']
 
