@@ -16,9 +16,10 @@ build:
   image: java:jre-alpine
   script:
   - ls -laht
-  - sh activator clean
-  - sh activator compile
-  - sh activator dist
+  - apk add --no-cache bash
+  - bash activator clean
+  - bash activator compile
+  - bash activator dist
 
 lint:
   stage: lint
