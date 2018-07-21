@@ -16,9 +16,9 @@ build:
   image: java:jre-alpine
   script:
   - ls -laht
-  - ./activator clean
-  - ./activator compile
-  - ./activator dist
+  - sh activator clean
+  - sh activator compile
+  - sh activator dist
 
 lint:
   stage: lint
