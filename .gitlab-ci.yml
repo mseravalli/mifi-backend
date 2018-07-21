@@ -29,7 +29,7 @@ test:
 package:
   stage: package
   script:
-    - build-image.sh
+    - ./build-image.sh
 
 deploy:
   stage: deploy
