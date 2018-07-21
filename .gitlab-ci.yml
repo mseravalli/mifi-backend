@@ -36,6 +36,8 @@ test:
 
 package:
   stage: package
+  tags:
+  - docker
   image: docker:latest
   script:
     - docker build -t mseravalli/mifi-backend:latest .
