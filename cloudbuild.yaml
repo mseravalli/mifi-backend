@@ -1,0 +1,5 @@
+steps:
+- id: 'compile'
+  name: 'gcr.io/$PROJECT_ID/scala-sbt'
+  args: ['clean', 'compile']
+
