@@ -38,7 +38,7 @@ package:
   stage: package
   image: docker:latest
   script:
-    - docker build -t mseravalli/mifi-backend:latest
+    - docker build -t mseravalli/mifi-backend:latest .
 
 deploy:
   stage: deploy
