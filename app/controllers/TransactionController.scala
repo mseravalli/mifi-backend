@@ -26,17 +26,17 @@ class TransactionController @Inject()(implicit ec: ExecutionContext,
                             endDate: Date,
                             categories: Array[String],
                             subCategories: Array[String],
-                            accounts: Option[Seq[String]] = None) = {
+                            accounts: Option[Seq[Long]] = None) = {
     val accountsTable = Tables.Accounts.filter( a =>
-      accounts.getOrElse(List("%")).foldLeft(a.account =!= a.account)((res, x) => res || (a.account like x))
+      accounts.map(_.foldLeft(a.id =!= a.id)((res, x) => res || (a.id === x)))
+        .getOrElse(a.id === a.id)
     )
     Tables.Transactions
-      .filter(t => t.transactionDate > startDate && t.transactionDate < endDate
+      .filter(t => t.transactionDate >= startDate && t.transactionDate <= endDate
         && categories.foldLeft(t.category =!= t.category)((res,c)=> res || (t.category like c) )
         && subCategories.foldLeft(t.subCategory =!= t.subCategory)((res,s)=> res || (t.subCategory like s) )
       )
-      .join(accountsTable).on(_.accountNumber === _.account)
-      .map(x => x._1)
+      .join(accountsTable).on(_.accountId === _.id)
       .result
   }
 
@@ -56,13 +56,19 @@ class TransactionController @Inject()(implicit ec: ExecutionContext,
       .map(x => x.split(","))
       .getOrElse(Array[String]("%"))
       .map{x => x match {case "" => "%"; case x => x}}
-    val accounts = request.getQueryString("accounts").map(x => x.split(",").toSeq)
+    val accounts = request.getQueryString("accounts")
+      .map(x => x.split(",").map(_.toLong).toSeq)
 
-    val res: Seq[TransactionsRow] = await {
+    val res: Seq[(TransactionsRow, AccountsRow)] = await {
       db.run(readTransactionsQuery(startDate, endDate, categories, subCategories, accounts))
     }
 
-    Ok(Json.obj("transactions" -> res.map(x => Json.toJson(x)(JsonFormats.transactionFmt))) )
+    val jsonRes = Json.obj("transactions" -> res.map(
+      x => Json.toJson(x._1)(JsonFormats.transactionFmt).as[JsObject]
+        .++(Json.obj("accountName" -> Json.toJson(x._2.name)))
+    ))
+
+    Ok(jsonRes)
   }}
 
   def updateTransaction(id: String): Action[JsValue] = Action.async(pbp.json){ request => async {

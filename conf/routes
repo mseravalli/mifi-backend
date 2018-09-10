@@ -9,9 +9,9 @@ POST        /import                         @controllers.ImportController.import
 POST        /approve_import                 @controllers.ImportController.approveImport
 GET         /accounts                       @controllers.AccountController.readAccounts
 GET         /accounts/timeseries            @controllers.AccountController.timeSeries
-GET         /accounts/:account              @controllers.AccountController.readAccount(account)
+GET         /accounts/:accountId            @controllers.AccountController.readAccount(accountId: String)
 
-GET         /classify                       @controllers.ClassifierContoller.classify
+GET         /classify                       @controllers.ClassifierController.classify
 
 GET         /transactions                   @controllers.TransactionController.readTransactions
 PUT         /transaction/:id                @controllers.TransactionController.updateTransaction(id: String)

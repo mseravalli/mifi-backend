@@ -22,7 +22,7 @@ import slick.jdbc.JdbcProfile
 import slick.jdbc.PostgresProfile.api._
 
 @Singleton
-class ClassifierContoller @Inject() (implicit ec: ExecutionContext,
+class ClassifierController @Inject() (implicit ec: ExecutionContext,
                                    protected val dbConfigProvider: DatabaseConfigProvider,
                                    cc: ControllerComponents)
   extends AbstractController(cc) with HasDatabaseConfigProvider[JdbcProfile] {
@@ -33,7 +33,7 @@ class ClassifierContoller @Inject() (implicit ec: ExecutionContext,
     */
   def classify(): Action[AnyContent] =  Action.async { request => async {
     val classes: Map[String, Tuple2[String, String]] = await {
-      db.run(Tables.TransactionsCategorization.result)
+      db.run(Tables.TransactionsClassification.result)
     }.map(x => x.description -> (x.category, x.subCategory)).toMap
 
     val transacions = await {
