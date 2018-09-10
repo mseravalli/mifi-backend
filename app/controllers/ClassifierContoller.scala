@@ -22,7 +22,7 @@ import slick.jdbc.JdbcProfile
 import slick.jdbc.PostgresProfile.api._
 
 @Singleton
-class ClassifierContoller @Inject() (implicit ec: ExecutionContext,
+class ClassifierController @Inject() (implicit ec: ExecutionContext,
                                    protected val dbConfigProvider: DatabaseConfigProvider,
                                    cc: ControllerComponents)
   extends AbstractController(cc) with HasDatabaseConfigProvider[JdbcProfile] {
