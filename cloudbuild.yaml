@@ -17,7 +17,7 @@ steps:
 
 - id: 'docker-push-latest'
   name: 'gcr.io/cloud-builders/docker'
-  args: ['push', 'mseravalli/mifi-backend:latest', '.']
+  args: ['push', 'mseravalli/mifi-backend:latest']
 
 - id: 'docker-tag-version'
   name: 'gcr.io/cloud-builders/docker'
@@ -25,4 +25,4 @@ steps:
 
 - id: 'docker-push-version'
   name: 'gcr.io/cloud-builders/docker'
-  args: ['push', 'mseravalli/mifi-backend:${TAG_NAME}', '.']
+  args: ['push', 'mseravalli/mifi-backend:${TAG_NAME}']
