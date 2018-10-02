@@ -9,7 +9,7 @@ steps:
 
 - id: 'extract'
   name: 'mseravalli/mifi-builder'
-  args: ['bash', 'build-image.sh']
+  args: ['bash', 'extract-dist.sh']
 
 - id: 'docker-build-latest'
   name: 'gcr.io/cloud-builders/docker'
