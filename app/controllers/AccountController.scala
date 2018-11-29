@@ -47,8 +47,6 @@ class AccountController @Inject() (implicit ec: ExecutionContext,
       .result
   }
 
-
-
   def createTimeSeries(startDate: Date,
                        endDate: Date,
                        dateFormat: String,

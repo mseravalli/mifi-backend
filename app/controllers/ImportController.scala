@@ -219,7 +219,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
 
   // TODO improve search of single account
   def importTransactions = Action.async(pbp.multipartFormData) { request => async {
-    val accounts:Try[List[Long]] = request.body.dataParts.get("importAccountId") match {
+    val accounts: Try[List[Long]] = request.body.dataParts.get("importAccountId") match {
       case Some(a) => a match {
         case s: Seq[String] => Success(s.map(_.toLong).toList)
         case _ => Failure(new Exception("Account wrapped in wrong type"))
@@ -227,19 +227,24 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
       case None => Failure(new Exception("Missing account"))
     }
 
-    val account = accounts match {
-      case Success(accountName :: tail) => {
+    val account: Try[((AccountsRow, AccountTypesRow), BigDecimal)] = accounts match {
+      case Success(accountName :: Nil) => {
         val accounts = await {
           db.run(new AccountController().readAccountsQuery(Some(List(accountName))))
         }
-        accounts.length match {
-          case 1 => Success(accounts.last)
-          case _ => Failure(new Exception("Account not present in the database"))
+        accounts match {
+          case x :: Nil => {
+            x match {
+              case ((accountRow, Some(accountTypeRow)), Some(balance)) => Success(((accountRow, accountTypeRow), balance))
+              case _ => Failure(new Exception("No account type or no balance"))
+            }
+          }
+          case x :: xs => Failure(new Exception("Multiple accounts found"))
+          case Nil => Failure(new Exception("Account not present in the database"))
         }
       }
+      case Success(accountName :: accountNames) => Failure(new Exception("Multiple accounts"))
       case Success(Nil) => Failure(new Exception("Missing account"))
-      // useless check just to get rid of the warning
-      case Success(x) => Failure(new Exception("Missing account"))
       case Failure(e) => Failure(e)
     }
 
