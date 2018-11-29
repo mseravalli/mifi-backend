@@ -227,26 +227,28 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
       case None => Failure(new Exception("Missing account"))
     }
 
-    val account: Try[((AccountsRow, AccountTypesRow), BigDecimal)] = accounts match {
-      case Success(accountName :: Nil) => {
-        val accounts = await {
-          db.run(new AccountController().readAccountsQuery(Some(List(accountName))))
-        }
-        accounts match {
-          case x :: Nil => {
-            x match {
-              case ((accountRow, Some(accountTypeRow)), Some(balance)) => Success(((accountRow, accountTypeRow), balance))
-              case _ => Failure(new Exception("No account type or no balance"))
-            }
-          }
-          case x :: xs => Failure(new Exception("Multiple accounts found"))
-          case Nil => Failure(new Exception("Account not present in the database"))
-        }
-      }
+    val accountName: Try[Long] = accounts match {
+      case Success(accountName :: Nil) => Success(accountName)
       case Success(accountName :: accountNames) => Failure(new Exception("Multiple accounts"))
       case Success(Nil) => Failure(new Exception("Missing account"))
       case Failure(e) => Failure(e)
     }
+
+    val account: Try[((AccountsRow, AccountTypesRow), BigDecimal)] = { accountName.flatMap{ name =>
+      val accounts = await {
+        db.run(new AccountController().readAccountsQuery(Some(List(name))))
+      }
+      accounts match {
+        case x :: Nil => {
+          x match {
+            case ((accountRow, Some(accountTypeRow)), Some(balance)) => Success(((accountRow, accountTypeRow), balance))
+            case _ => Failure(new Exception("No account type or no balance"))
+          }
+        }
+        case x :: xs => Failure(new Exception("Multiple accounts found"))
+        case Nil => Failure(new Exception("Account not present in the database"))
+      }
+    }}
 
     val csv = request.body.file("csv")
 
