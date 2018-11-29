@@ -150,7 +150,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
                at: AccountTypesRow,
                startDate: Option[String],
                endDate: Option[String]
-              ): Future[Try[String]] = async {
+              ): Future[String] = {
     implicit object MyFormat extends DefaultCSVFormat {
       override val delimiter = at.delimiter.toCharArray.head
     }
@@ -180,7 +180,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
       }
     }
 
-    csvString
+    Future.fromTry(csvString)
   }
 
   def importQuery(transactions: List[TransactionsRow]) = {
@@ -218,8 +218,8 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
   } }
 
   // TODO improve search of single account
-  def importTransactions = Action.async(pbp.multipartFormData) { request => async {
-    val accounts: Try[List[Long]] = request.body.dataParts.get("importAccountId") match {
+  def importTransactions = Action.async(pbp.multipartFormData) { request => 
+    val accountIds: Try[List[Long]] = request.body.dataParts.get("importAccountId") match {
       case Some(a) => a match {
         case s: Seq[String] => Success(s.map(_.toLong).toList)
         case _ => Failure(new Exception("Account wrapped in wrong type"))
@@ -227,18 +227,17 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
       case None => Failure(new Exception("Missing account"))
     }
 
-    val accountName: Try[Long] = accounts match {
-      case Success(accountName :: Nil) => Success(accountName)
-      case Success(accountName :: accountNames) => Failure(new Exception("Multiple accounts"))
+    val accountId: Try[Long] = accountIds match {
+      case Success(accountId :: Nil) => Success(accountId)
+      case Success(accountId :: accountIds) => Failure(new Exception("Multiple accounts"))
       case Success(Nil) => Failure(new Exception("Missing account"))
       case Failure(e) => Failure(e)
     }
 
-    val account: Try[((AccountsRow, AccountTypesRow), BigDecimal)] = { accountName.flatMap{ name =>
-      val accounts = await {
-        db.run(new AccountController().readAccountsQuery(Some(List(name))))
-      }
-      accounts match {
+    val account: Future[((AccountsRow, AccountTypesRow), BigDecimal)] = Future.fromTry(accountId).flatMap{ id =>
+      val accounts = db.run(new AccountController().readAccountsQuery(Some(List(id))))
+
+      accounts.map {
         case x :: Nil => {
           x match {
             case ((accountRow, Some(accountTypeRow)), Some(balance)) => Success(((accountRow, accountTypeRow), balance))
@@ -248,56 +247,39 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
         case x :: xs => Failure(new Exception("Multiple accounts found"))
         case Nil => Failure(new Exception("Account not present in the database"))
       }
-    }}
+      .flatMap(Future.fromTry(_))
+    }
 
     val csv = request.body.file("csv")
 
-    val result: Try[Future[Try[JsObject]]] = account.map { a =>  {
-      a._1._2.map{ at => async {
-        val startDate = request.body.dataParts.get("startDate").map(_.last)
-        val endDate = request.body.dataParts.get("endDate").map(_.last)
-        val csvString = await {
-          fetchCSV(csv, a._1._1, at, startDate, endDate)
-        }
+    val startDate = request.body.dataParts.get("startDate").map(_.last)
+    val endDate = request.body.dataParts.get("endDate").map(_.last)
 
-        csvString match {
-          case Success(c) => {
-            val transactions = await {
-              transformCSVIntoTransactions(c, a._1._1, at)
-            }
-            val queryResult = await {
-              db.run(importQuery(transactions))
-            }
-            val status = queryResult.toString
-            val balance = await {
-              db.run(new AccountController().readAccountsQuery(Some(List(a._1._1.id))))
-            }.head._2
+    val result:Future[JsObject] = account.flatMap{ a => async {
+      val csvString = await {
+        fetchCSV(csv, a._1._1, a._1._2, startDate, endDate)
+      }
 
-            val res = Json.obj("status" -> status, "account" -> Json.obj("account" -> a._1._1.id, "balance" -> Json.toJson(balance)))
-            Success(res)
-          }
-          case Failure(e) => Failure(e)
-        }
-      }}.getOrElse(Future(Failure(new Exception())))
+      val transactions = await {
+        transformCSVIntoTransactions(csvString, a._1._1, a._1._2)
+      }
+      val queryResult = await {
+        db.run(importQuery(transactions))
+      }
+      val status = queryResult.toString
+      val balance = await {
+        db.run(new AccountController().readAccountsQuery(Some(List(a._1._1.id))))
+      }.head._2
+
+      Json.obj("status" -> status, "account" -> Json.obj("account" -> a._1._1.id, "balance" -> Json.toJson(balance)))
     }}
 
-    result match {
-      case Success(r) => {
-        new ClassifierController().classify()
-      }
-      case Failure(e) => Failure(e)
-    }
+    // new ClassifierController().classify()
 
-    result match {
-      case Success(r) =>
-        val res = await{r}
-        res match {
-          case Success(s) => Ok(s)
-          case Failure(e) => BadRequest(e.getMessage)
-        }
-      case Failure(e) => BadRequest(e.getMessage)
-    }
-
-  }}
+    result.transform[play.api.mvc.Result]{ (x: Try[JsObject]) => x match {
+      case Success(s) => Success(Ok(s))
+      case Failure(e) => Success(BadRequest(e.getMessage))
+    }}
+  }
 }
 
