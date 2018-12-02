@@ -7,6 +7,14 @@ steps:
   name: 'mseravalli/mifi-builder'
   args: ['bash', 'activator', '--info', 'dist']
 
+- id: 'setup integration environment'
+  name: 'docker/compose:1.15.0'
+  args: ['up', '-d']
+
+- id: 'integration test'
+  name: 'mseravalli/mifi-builder'
+  args: ['bash', 'activator', '--info', 'test']
+
 - id: 'extract'
   name: 'mseravalli/mifi-builder'
   args: ['bash', 'extract-dist.sh']
