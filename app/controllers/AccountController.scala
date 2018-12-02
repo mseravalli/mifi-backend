@@ -114,7 +114,7 @@ class AccountController @Inject() (implicit ec: ExecutionContext,
 
     val jsonRes = Json.toJson(res.head._1._1)(JsonFormats.accountFmt).as[JsObject]
       .++(res.head._1._2.map(Json.toJson(_)(JsonFormats.accountTypeFmt)).getOrElse(Json.obj()).as[JsObject])
-      .++(Json.obj("balance" -> Json.toJson(res.head._2)))
+      .++(Json.obj("balance" -> Json.toJson(res.head._2.getOrElse(res.head._1._1.initialAmount))))
       // necessary due to the overlapping of the property "name"
       .++(Json.obj("name" -> Json.toJson(res.head._1._1.name)))
 
