@@ -219,36 +219,9 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
 
   // TODO improve search of single account
   def importTransactions = Action.async(pbp.multipartFormData) { request => 
-    val accountIds: Try[List[Long]] = request.body.dataParts.get("importAccountId") match {
-      case Some(a) => a match {
-        case s: Seq[String] => Success(s.map(_.toLong).toList)
-        case _ => Failure(new Exception("Account wrapped in wrong type"))
-      }
-      case None => Failure(new Exception("Missing account"))
-    }
+    val accountId: Try[Long] = getAccountIdFromRequest(request)
 
-    val accountId: Try[Long] = accountIds match {
-      case Success(accountId :: Nil) => Success(accountId)
-      case Success(accountId :: accountIds) => Failure(new Exception("Multiple accounts"))
-      case Success(Nil) => Failure(new Exception("Missing account"))
-      case Failure(e) => Failure(e)
-    }
-
-    val account: Future[((AccountsRow, AccountTypesRow), BigDecimal)] = Future.fromTry(accountId).flatMap{ id =>
-      val accounts = db.run(new AccountController().readAccountsQuery(Some(List(id))))
-
-      accounts.map {
-        case x :: Nil => {
-          x match {
-            case ((accountRow, Some(accountTypeRow)), Some(balance)) => Success(((accountRow, accountTypeRow), balance))
-            case _ => Failure(new Exception("No account type or no balance"))
-          }
-        }
-        case x :: xs => Failure(new Exception("Multiple accounts found"))
-        case Nil => Failure(new Exception("Account not present in the database"))
-      }
-      .flatMap(Future.fromTry(_))
-    }
+    val account: Future[((AccountsRow, AccountTypesRow), BigDecimal)] = getSingleAccount(accountId)
 
     val csv = request.body.file("csv")
 
@@ -276,10 +249,51 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
 
     // new ClassifierController().classify()
 
-    result.transform[play.api.mvc.Result]{ (x: Try[JsObject]) => x match {
+    result.transform[Result]{ (x: Try[JsObject]) => x match {
       case Success(s) => Success(Ok(s))
-      case Failure(e) => Success(BadRequest(e.getMessage))
+      case Failure(e) => {
+        val status = s"${e.toString}: ${e.getMessage}"
+        Success(BadRequest(Json.obj("status" -> JsString(status))))
+      }
     }}
+  }
+
+  private def getSingleAccount(accountId: Try[Long]) = {
+    val account: Future[((AccountsRow, AccountTypesRow), BigDecimal)] = Future.fromTry(accountId).flatMap { id =>
+      val accounts = db.run(new AccountController().readAccountsQuery(Some(List(id)))).map(_.toList)
+
+      val result: Future[Try[((AccountsRow, AccountTypesRow), BigDecimal)]] = accounts.map {
+        case x :: Nil => {
+          x match {
+            case ((accountRow, Some(accountTypeRow)), Some(balance)) => Success(((accountRow, accountTypeRow), balance))
+            case _ => Failure(new Exception("No account type or no balance"))
+          }
+        }
+        case x :: xs => Failure(new Exception("Multiple accounts found"))
+        case Nil => Failure(new Exception("Account not present in the database"))
+      }
+
+      result.flatMap(Future.fromTry(_))
+    }
+    account
+  }
+
+  private def getAccountIdFromRequest(request: Request[MultipartFormData[TemporaryFile]]): Try[Long] = {
+    val accountIds: Try[List[Long]] = request.body.dataParts.get("importAccountId") match {
+      case Some(a) => a match {
+        case s: Seq[String] => Success(s.map(_.toLong).toList)
+        case _ => Failure(new Exception("Account wrapped in wrong type"))
+      }
+      case None => Failure(new Exception("Missing account"))
+    }
+
+    val accountId: Try[Long] = accountIds match {
+      case Success(accountId :: Nil) => Success(accountId)
+      case Success(accountId :: accountIds) => Failure(new Exception("Multiple accounts"))
+      case Success(Nil) => Failure(new Exception("Missing account"))
+      case Failure(e) => Failure(e)
+    }
+    accountId
   }
 }
 
