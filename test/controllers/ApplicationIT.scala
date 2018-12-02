@@ -43,7 +43,7 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
       contentAsString(response) must /("accounts") /# 2 /("currencyPos" -> 7)
     }
 
-    "read single account details" in new WithApplication() {
+    "read single account details db" in new WithApplication() {
       val request = FakeRequest(GET, "/accounts/1?endDate=2015-12-31")
       val response = route(app, request).get
       status(response) must equalTo(OK)
@@ -53,6 +53,17 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
       contentAsString(response) must /("balance" -> 590.43)
       contentAsString(response) must /("currencyPos" -> 17)
       contentAsString(response) must /("finalRow" -> "Account balance")
+    }
+
+    "read single account details hvb-depot" in new WithApplication() {
+      val request = FakeRequest(GET, "/accounts/6?endDate=2015-12-31")
+      val response = route(app, request).get
+      status(response) must equalTo(OK)
+      contentType(response) must beSome.which(_ == "application/json")
+
+      contentAsString(response) must /("name" -> "hvb-depot")
+      contentAsString(response) must /("balance" -> 0)
+      contentAsString(response) must /("currencyPos" -> -1)
     }
   }
 
