@@ -276,7 +276,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
 
     result match {
       case Success(r) => {
-        new ClassifierContoller().classify()
+        new ClassifierController().classify()
       }
       case Failure(e) => Failure(e)
     }
