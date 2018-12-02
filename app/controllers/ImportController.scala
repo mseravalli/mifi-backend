@@ -150,7 +150,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
                at: AccountTypesRow,
                startDate: Option[String],
                endDate: Option[String]
-              ): Future[Try[String]] = async {
+              ): Future[String] = {
     implicit object MyFormat extends DefaultCSVFormat {
       override val delimiter = at.delimiter.toCharArray.head
     }
@@ -180,7 +180,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
       }
     }
 
-    csvString
+    Future.fromTry(csvString)
   }
 
   def importQuery(transactions: List[TransactionsRow]) = {
@@ -218,8 +218,68 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
   } }
 
   // TODO improve search of single account
-  def importTransactions = Action.async(pbp.multipartFormData) { request => async {
-    val accounts:Try[List[Long]] = request.body.dataParts.get("importAccountId") match {
+  def importTransactions = Action.async(pbp.multipartFormData) { request => 
+    val accountId: Try[Long] = getAccountIdFromRequest(request)
+
+    val account: Future[((AccountsRow, AccountTypesRow), BigDecimal)] = getSingleAccount(accountId)
+
+    val csv = request.body.file("csv")
+
+    val startDate = request.body.dataParts.get("startDate").map(_.last)
+    val endDate = request.body.dataParts.get("endDate").map(_.last)
+
+    val result:Future[JsObject] = account.flatMap{ a => async {
+      val csvString = await {
+        fetchCSV(csv, a._1._1, a._1._2, startDate, endDate)
+      }
+
+      val transactions = await {
+        transformCSVIntoTransactions(csvString, a._1._1, a._1._2)
+      }
+      val queryResult = await {
+        db.run(importQuery(transactions))
+      }
+      val status = queryResult.toString
+      val balance = await {
+        db.run(new AccountController().readAccountsQuery(Some(List(a._1._1.id))))
+      }.head._2
+
+      Json.obj("status" -> status, "account" -> Json.obj("account" -> a._1._1.id, "balance" -> Json.toJson(balance)))
+    }}
+
+    // new ClassifierController().classify()
+
+    result.transform[Result]{ (x: Try[JsObject]) => x match {
+      case Success(s) => Success(Ok(s))
+      case Failure(e) => {
+        val status = s"${e.toString}: ${e.getMessage}"
+        Success(BadRequest(Json.obj("status" -> JsString(status))))
+      }
+    }}
+  }
+
+  private def getSingleAccount(accountId: Try[Long]) = {
+    val account: Future[((AccountsRow, AccountTypesRow), BigDecimal)] = Future.fromTry(accountId).flatMap { id =>
+      val accounts = db.run(new AccountController().readAccountsQuery(Some(List(id)))).map(_.toList)
+
+      val result: Future[Try[((AccountsRow, AccountTypesRow), BigDecimal)]] = accounts.map {
+        case x :: Nil => {
+          x match {
+            case ((accountRow, Some(accountTypeRow)), Some(balance)) => Success(((accountRow, accountTypeRow), balance))
+            case _ => Failure(new Exception("No account type or no balance"))
+          }
+        }
+        case x :: xs => Failure(new Exception("Multiple accounts found"))
+        case Nil => Failure(new Exception("Account not present in the database"))
+      }
+
+      result.flatMap(Future.fromTry(_))
+    }
+    account
+  }
+
+  private def getAccountIdFromRequest(request: Request[MultipartFormData[TemporaryFile]]): Try[Long] = {
+    val accountIds: Try[List[Long]] = request.body.dataParts.get("importAccountId") match {
       case Some(a) => a match {
         case s: Seq[String] => Success(s.map(_.toLong).toList)
         case _ => Failure(new Exception("Account wrapped in wrong type"))
@@ -227,70 +287,13 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
       case None => Failure(new Exception("Missing account"))
     }
 
-    val account = accounts match {
-      case Success(accountName :: tail) => {
-        val accounts = await {
-          db.run(new AccountController().readAccountsQuery(Some(List(accountName))))
-        }
-        accounts.length match {
-          case 1 => Success(accounts.last)
-          case _ => Failure(new Exception("Account not present in the database"))
-        }
-      }
+    val accountId: Try[Long] = accountIds match {
+      case Success(accountId :: Nil) => Success(accountId)
+      case Success(accountId :: accountIds) => Failure(new Exception("Multiple accounts"))
       case Success(Nil) => Failure(new Exception("Missing account"))
-      // useless check just to get rid of the warning
-      case Success(x) => Failure(new Exception("Missing account"))
       case Failure(e) => Failure(e)
     }
-
-    val csv = request.body.file("csv")
-
-    val result: Try[Future[Try[JsObject]]] = account.map { a =>  {
-      a._1._2.map{ at => async {
-        val startDate = request.body.dataParts.get("startDate").map(_.last)
-        val endDate = request.body.dataParts.get("endDate").map(_.last)
-        val csvString = await {
-          fetchCSV(csv, a._1._1, at, startDate, endDate)
-        }
-
-        csvString match {
-          case Success(c) => {
-            val transactions = await {
-              transformCSVIntoTransactions(c, a._1._1, at)
-            }
-            val queryResult = await {
-              db.run(importQuery(transactions))
-            }
-            val status = queryResult.toString
-            val balance = await {
-              db.run(new AccountController().readAccountsQuery(Some(List(a._1._1.id))))
-            }.head._2
-
-            val res = Json.obj("status" -> status, "account" -> Json.obj("account" -> a._1._1.id, "balance" -> Json.toJson(balance)))
-            Success(res)
-          }
-          case Failure(e) => Failure(e)
-        }
-      }}.getOrElse(Future(Failure(new Exception())))
-    }}
-
-    result match {
-      case Success(r) => {
-        new ClassifierController().classify()
-      }
-      case Failure(e) => Failure(e)
-    }
-
-    result match {
-      case Success(r) =>
-        val res = await{r}
-        res match {
-          case Success(s) => Ok(s)
-          case Failure(e) => BadRequest(e.getMessage)
-        }
-      case Failure(e) => BadRequest(e.getMessage)
-    }
-
-  }}
+    accountId
+  }
 }
 
