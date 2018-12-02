@@ -1,0 +1,11 @@
+version: '3'
+services:
+  sql:
+    image: "mseravalli/sql:latest"
+    ports:
+     - "5432:5432"
+
+networks:
+  default:
+    external:
+      name: cloudbuild

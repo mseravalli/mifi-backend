@@ -1,9 +1,36 @@
 steps:
-- id: 'build'
-  name: 'mseravalli/sbt:latest'
-  args: ['bash', 'activator', 'clean', 'compile', 'dist']
+- id: 'clean'
+  name: 'mseravalli/mifi-builder'
+  args: ['bash', 'activator', '--info', 'clean']
 
-- id: 'release'
+- id: 'build'
+  name: 'mseravalli/mifi-builder'
+  args: ['bash', 'activator', '--info', 'dist']
+
+- id: 'setup integration environment'
+  name: 'docker/compose:1.15.0'
+  args: ['up', '-d']
+
+- id: 'integration test'
+  name: 'mseravalli/mifi-builder'
+  args: ['bash', 'activator', '--info', 'test']
+
+- id: 'extract'
+  name: 'mseravalli/mifi-builder'
+  args: ['bash', 'extract-dist.sh']
+
+- id: 'docker-build-latest'
   name: 'gcr.io/cloud-builders/docker'
   args: ['build', '-t', 'mseravalli/mifi-backend:latest', '.']
 
+- id: 'docker-push-latest'
+  name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'mseravalli/mifi-backend:latest']
+
+- id: 'docker-tag-version'
+  name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'mseravalli/mifi-backend:${TAG_NAME}', '.']
+
+- id: 'docker-push-version'
+  name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'mseravalli/mifi-backend:${TAG_NAME}']
