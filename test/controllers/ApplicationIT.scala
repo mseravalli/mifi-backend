@@ -293,27 +293,6 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
   }
 
   "ImportController" should {
-    // "import hvb-depot" in new WithApplication() {
-    //   val accountId = 6
-    //   val balanceRequest = FakeRequest(GET, s"/accounts/${accountId}?endDate=2100-12-31")
-    //   val balanceResponse = route(app, balanceRequest).get
-    //   val balance = (contentAsJson(balanceResponse) \ "balance").get.toString().toDouble
-
-    //   val file = play.api.libs.Files.SingletonTemporaryFileCreator.create(path = java.nio.file.Paths.get("test/hvb-depot.csv"))
-    //   val part = FilePart[TemporaryFile](key = "csv", filename = "the.file", contentType = None, ref = file)
-    //   val formData = MultipartFormData[TemporaryFile](
-    //     dataParts = Map("importAccountId" -> Seq(accountId.toString)),
-    //     files = Seq(part),
-    //     badParts = Seq()
-    //   )
-    //   val request = FakeRequest(POST, "/import" )
-    //     .withMultipartFormDataBody(formData)
-    //   val response = route(app, request).get
-    //   status(response) must equalTo(OK)
-    //   contentAsString(response) must /("account") /("account" -> accountId)
-    //   contentAsString(response) must /("account") /("balance" -> (balance - 10))
-    // }
-
     "import db" in new WithApplication() {
       val accountId = 1
       val filePath = "test/db.csv"
