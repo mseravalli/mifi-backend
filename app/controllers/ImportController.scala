@@ -266,6 +266,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
         case x :: Nil => {
           x match {
             case ((accountRow, Some(accountTypeRow)), Some(balance)) => Success(((accountRow, accountTypeRow), balance))
+            case ((accountRow, Some(accountTypeRow)), None) => Success(((accountRow, accountTypeRow), accountRow.initialAmount))
             case _ => Failure(new Exception("No account type or no balance"))
           }
         }
