@@ -117,7 +117,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
   }
 
   // if username of password are not present a null value will be passed
-  def retrieveCSV(account: models.AccountsRow, startDate: String, endDate: String): Future[String] = async {
+//  def retrieveCSV(account: models.AccountsRow, startDate: String, endDate: String): Future[String] = async {
 //    val oauthTokenUrl = account.apiOauthUrl.getOrElse("")
 //    val oauthTokenData: Map[String, Seq[String]] = Map(
 //      "username" -> Seq(account.apiUser.getOrElse("")),
@@ -142,8 +142,8 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
 //        .get
 //    }
 //    reportResp.body
-    ""
-  }
+//    ""
+//  }
 
   def fetchCSV(csv: Option[FilePart[TemporaryFile]],
                a: AccountsRow,
