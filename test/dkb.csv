@@ -1,0 +1,9 @@
+"Kontonummer:";"DE59120300001064039116 / Girokonto";
+
+"Von:";"01.01.2017";
+"Bis:";"21.01.2017";
+"Kontostand vom 01.01.2019:";"100,00 EUR";
+
+"Buchungstag";"Wertstellung";"Buchungstext";"Auftraggeber / Beg�nstigter";"Verwendungszweck";"Kontonummer";"BLZ";"Betrag (EUR)";"Gl�ubiger-ID";"Mandatsreferenz";"Kundenreferenz";
+"01.01.2019";"";"";"";"Tagessaldo";"";"";"100,00";
+"01.01.2019";"01.01.2017";"Gutschrift";"who";"description";"AA00000000000000000000";"AAAAAAAAAAA";"-10,00";"";"";"000000000000";
