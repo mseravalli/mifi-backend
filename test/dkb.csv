@@ -6,4 +6,4 @@
 
 "Buchungstag";"Wertstellung";"Buchungstext";"Auftraggeber / Beg�nstigter";"Verwendungszweck";"Kontonummer";"BLZ";"Betrag (EUR)";"Gl�ubiger-ID";"Mandatsreferenz";"Kundenreferenz";
 "01.01.2019";"";"";"";"Tagessaldo";"";"";"100,00";
-"01.01.2019";"01.01.2017";"Gutschrift";"who";"description";"AA00000000000000000000";"AAAAAAAAAAA";"-10,10";"";"";"000000000000";
+"01.01.2019";"01.01.2017";"Gutschrift";"who";"description";"AA00000000000000000000";"AAAAAAAAAAA";"-20,20";"";"";"000000000000";

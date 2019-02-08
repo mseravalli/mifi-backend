@@ -20,15 +20,15 @@ trait Tables {
 
 
   /** GetResult implicit for fetching AccountsRow objects using plain SQL queries */
-  implicit def GetResultAccountsRow(implicit e0: GR[Long], e1: GR[String], e2: GR[scala.math.BigDecimal], e3: GR[Option[String]]): GR[AccountsRow] = GR{
+  implicit def GetResultAccountsRow(implicit e0: GR[Long], e1: GR[String], e2: GR[scala.math.BigDecimal], e3: GR[Option[String]], e4: GR[Option[scala.math.BigDecimal]]): GR[AccountsRow] = GR{
     prs => import prs._
-    AccountsRow.tupled((<<[Long], <<[String], <<[Long], <<[scala.math.BigDecimal], <<?[String], <<?[String]))
+    AccountsRow.tupled((<<[Long], <<[String], <<[Long], <<[scala.math.BigDecimal], <<?[String], <<?[String], <<?[scala.math.BigDecimal]))
   }
   /** Table description of table accounts. Objects of this class serve as prototypes for rows in queries. */
   class Accounts(_tableTag: Tag) extends profile.api.Table[AccountsRow](_tableTag, "accounts") {
-    def * = (id, name, accountType, initialAmount, apiUser, apiPass) <> (AccountsRow.tupled, AccountsRow.unapply)
+    def * = (id, name, accountType, initialAmount, apiUser, apiPass, sharingRatio) <> (AccountsRow.tupled, AccountsRow.unapply)
     /** Maps whole row to an option. Useful for outer joins. */
-    def ? = (Rep.Some(id), Rep.Some(name), Rep.Some(accountType), Rep.Some(initialAmount), apiUser, apiPass).shaped.<>({r=>import r._; _1.map(_=> AccountsRow.tupled((_1.get, _2.get, _3.get, _4.get, _5, _6)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
+    def ? = (Rep.Some(id), Rep.Some(name), Rep.Some(accountType), Rep.Some(initialAmount), apiUser, apiPass, sharingRatio).shaped.<>({r=>import r._; _1.map(_=> AccountsRow.tupled((_1.get, _2.get, _3.get, _4.get, _5, _6, _7)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
 
     /** Database column id SqlType(bigserial), AutoInc, PrimaryKey */
     val id: Rep[Long] = column[Long]("id", O.AutoInc, O.PrimaryKey)
@@ -42,6 +42,8 @@ trait Tables {
     val apiUser: Rep[Option[String]] = column[Option[String]]("api_user", O.Length(64,varying=true), O.Default(None))
     /** Database column api_pass SqlType(varchar), Length(64,true), Default(None) */
     val apiPass: Rep[Option[String]] = column[Option[String]]("api_pass", O.Length(64,varying=true), O.Default(None))
+    /** Database column sharing_ratio SqlType(numeric), Default(Some(0.00)) */
+    val sharingRatio: Rep[Option[scala.math.BigDecimal]] = column[Option[scala.math.BigDecimal]]("sharing_ratio", O.Default(Some(scala.math.BigDecimal("0.00"))))
 
     /** Foreign key referencing AccountTypes (database name accounts_account_type_fkey) */
     lazy val accountTypesFk1 = foreignKey("accounts_account_type_fkey", accountType, AccountTypes)(r => r.id, onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
@@ -267,8 +269,9 @@ trait Tables {
    *  @param accountType Database column account_type SqlType(int8)
    *  @param initialAmount Database column initial_amount SqlType(numeric)
    *  @param apiUser Database column api_user SqlType(varchar), Length(64,true), Default(None)
-   *  @param apiPass Database column api_pass SqlType(varchar), Length(64,true), Default(None) */
-  case class AccountsRow(id: Long, name: String, accountType: Long, initialAmount: scala.math.BigDecimal, apiUser: Option[String] = None, apiPass: Option[String] = None)
+   *  @param apiPass Database column api_pass SqlType(varchar), Length(64,true), Default(None)
+   *  @param sharingRatio Database column sharing_ratio SqlType(numeric), Default(Some(0.00)) */
+  case class AccountsRow(id: Long, name: String, accountType: Long, initialAmount: scala.math.BigDecimal, apiUser: Option[String] = None, apiPass: Option[String] = None, sharingRatio: Option[scala.math.BigDecimal] = Some(scala.math.BigDecimal("0.00")))
 
   /** Entity class storing rows of table AccountTypes
    *  @param id Database column id SqlType(bigserial), AutoInc, PrimaryKey

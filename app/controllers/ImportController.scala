@@ -31,14 +31,15 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
                                   pbp:PlayBodyParsers) 
     extends AbstractController(cc) with HasDatabaseConfigProvider[JdbcProfile] {
 
-  def getAmount(x: List[String], at: AccountTypesRow): BigDecimal = {
+  def getAmount(x: List[String], a: AccountsRow, at: AccountTypesRow): BigDecimal = {
+    val incomeFactor = (BigDecimal(1) - a.sharingRatio.getOrElse(BigDecimal(0)))
     val in = BigDecimal.apply(x.lift(at.amountInPos).map{ amount => Formatter.formatAmount(amount)}.filter(!_.equals("")).getOrElse("0.00"))
     val out = BigDecimal.apply(Formatter.formatAmount(x.lift(at.amountOutPos).filter(!_.equals("")).getOrElse("0.00")).replace("-", ""))
     if (in.abs == out.abs) {
-      in
+      in * incomeFactor
     }
     else {
-      in - out
+      (in - out) * incomeFactor
     }
   }
 
@@ -106,7 +107,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
       exchangeDate = Some(new Date(exchangeDate.getTime)),
       receiver = Some(receiver),
       purpose = Some(purpose),
-      amount = Some(getAmount(x, at)),
+      amount = Some(getAmount(x, a, at)),
       // currency = Some(x.lift(at.currencyPos).getOrElse(at.currencyDefault)),
       currency = Some(at.currencyDefault),
       category = Some("other"),
