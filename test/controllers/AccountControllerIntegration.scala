@@ -8,7 +8,7 @@ import play.api.libs.Files._
 
 class AccountControllerIntegration extends PlaySpecification with JsonMatchers {
 
-  "AccountController" should {
+  "Accounts" should {
     "read accounts" in new WithApplication() {
       val request = FakeRequest(GET, "/accounts?endDate=2015-12-31")
       val response = route(app, request).get
@@ -21,9 +21,9 @@ class AccountControllerIntegration extends PlaySpecification with JsonMatchers {
       contentAsString(response) must /("accounts") /# 1 /("currencyPos" -> 17)
       contentAsString(response) must /("accounts") /# 1 /("finalRow" -> "Account balance")
 
-      contentAsString(response) must /("accounts") /# 2 /("name" -> "hvb")
-      contentAsString(response) must /("accounts") /# 2 /("balance" -> 1330.73)
-      contentAsString(response) must /("accounts") /# 2 /("currencyPos" -> 7)
+      contentAsString(response) must /("accounts") /# 3 /("name" -> "hvb")
+      contentAsString(response) must /("accounts") /# 3 /("balance" -> 1330.73)
+      contentAsString(response) must /("accounts") /# 3 /("currencyPos" -> 7)
     }
 
     "fail when reading non existing account" in new WithApplication() {
@@ -53,6 +53,17 @@ class AccountControllerIntegration extends PlaySpecification with JsonMatchers {
 
       contentAsString(response) must /("name" -> "hvb-depot")
       contentAsString(response) must /("balance" -> 0)
+      contentAsString(response) must /("currencyPos" -> -1)
+    }
+
+    "read single account details dkb" in new WithApplication() {
+      val request = FakeRequest(GET, "/accounts/7?endDate=2015-12-31")
+      val response = route(app, request).get
+      status(response) must equalTo(OK)
+      contentType(response) must beSome.which(_ == "application/json")
+
+      contentAsString(response) must /("name" -> "dkb")
+      contentAsString(response) must /("balance" -> 0.0)
       contentAsString(response) must /("currencyPos" -> -1)
     }
   }
