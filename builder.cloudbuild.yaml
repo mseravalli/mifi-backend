@@ -1,6 +1,7 @@
 substitutions:
   _IMAGE_NAME: eu.gcr.io/devar-p/mifi-backend-builder # default value
 
+steps:
 - id: 'docker-build-latest'
   name: 'gcr.io/cloud-builders/docker'
   args: ['build', '-t', '${_IMAGE_NAME}:latest', '-f', 'builder.Dockerfile', '.']
