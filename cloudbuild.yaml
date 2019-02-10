@@ -1,11 +1,14 @@
+substitutions:
+    _IMAGE_NAME: eu.gcr.io/devar-p/mifi-backend # default value
+
 steps:
 - id: 'clean'
-  name: 'mseravalli/mifi-builder'
+  name: 'mseravalli/mifi-backend-builder'
   args: ['bash', 'activator', '--info', 'clean']
 
 - id: 'build'
-  name: 'mseravalli/mifi-builder'
-  args: ['bash', 'activator', '--info', 'dist']
+  name: 'mseravalli/mifi-backend-builder'
+  args: ['bash', 'activator', '--info', 'compile']
 
 - id: 'setup integration environment'
   name: 'docker/compose:1.15.0'
@@ -15,8 +18,12 @@ steps:
   name: 'mseravalli/mifi-builder'
   args: ['bash', 'activator', '--info', 'test']
 
-- id: 'extract'
+- id: 'package'
   name: 'mseravalli/mifi-builder'
+  args: ['bash', 'activator', '--info', 'dist']
+
+- id: 'extract'
+  name: 'mseravalli/mifi-backend-builder'
   args: ['bash', 'extract-dist.sh']
 
 - id: 'docker-build-latest'
@@ -27,13 +34,14 @@ steps:
   name: 'gcr.io/cloud-builders/docker'
   args: ['push', '${_IMAGE_NAME}:latest']
 
-- id: 'docker-tag-version'
-  name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', '${_IMAGE_NAME}:${TAG_NAME}', '.']
+# - id: 'docker-tag-version'
+#   name: 'gcr.io/cloud-builders/docker'
+#   args: ['build', '-t', '${_IMAGE_NAME}:${TAG_NAME}', '.']
 
-- id: 'docker-push-version'
-  name: 'gcr.io/cloud-builders/docker'
-  args: ['push', '${_IMAGE_NAME}:${TAG_NAME}']
+# - id: 'docker-push-version'
+#   name: 'gcr.io/cloud-builders/docker'
+#   args: ['push', '${_IMAGE_NAME}:${TAG_NAME}']
 
-substitutions:
-    _IMAGE_NAME: eu.gcr.io/devar-p/mifi-backend # default value
+images: [
+    '${_IMAGE_NAME}:latest'
+]
