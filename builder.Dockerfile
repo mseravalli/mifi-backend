@@ -5,8 +5,8 @@ COPY ./* /opt/
 
 WORKDIR /opt/
 
-RUN apt update
-RUN apt install -y zip
+RUN apt-get update
+RUN apt-get install -y zip
 RUN bash activator clean
 RUN bash activator update
 RUN rm -rf /opt/*
