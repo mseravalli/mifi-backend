@@ -1,6 +1,6 @@
 substitutions:
   _IMAGE_NAME: eu.gcr.io/devar-p/mifi-backend # default value
-  _BUILDER_IMAGE: mseravalli/mifi-backend-builder:new # default value
+  _BUILDER_IMAGE: eu.gcr.io/devar-p/mifi-backend-builder # default value
 
 steps:
 - id: 'clean'
@@ -31,18 +31,15 @@ steps:
   name: 'gcr.io/cloud-builders/docker'
   args: ['build', '-t', '${_IMAGE_NAME}:latest', '.']
 
-# - id: 'docker-push-latest'
-#   name: 'gcr.io/cloud-builders/docker'
-#   args: ['push', '${_IMAGE_NAME}:latest']
+- id: 'docker-tag-version'
+  name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', '${_IMAGE_NAME}:${TAG_NAME}', '.']
 
-# - id: 'docker-tag-version'
-#   name: 'gcr.io/cloud-builders/docker'
-#   args: ['build', '-t', '${_IMAGE_NAME}:${TAG_NAME}', '.']
-
-# - id: 'docker-push-version'
-#   name: 'gcr.io/cloud-builders/docker'
-#   args: ['push', '${_IMAGE_NAME}:${TAG_NAME}']
+- id: 'docker-push-version'
+  name: 'gcr.io/cloud-builders/docker'
+  args: ['push', '${_IMAGE_NAME}:${TAG_NAME}']
 
 images: [
-  '${_IMAGE_NAME}:latest'
+  '${_IMAGE_NAME}:latest',
+  '${_IMAGE_NAME}:${TAG_NAME}'
 ]
