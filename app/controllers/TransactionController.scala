@@ -56,7 +56,7 @@ class TransactionController @Inject()(implicit ec: ExecutionContext,
       .map(x => x.split(","))
       .getOrElse(Array[String]("%"))
       .map{x => x match {case "" => "%"; case x => x}}
-    val accounts = request.getQueryString("accounts")
+    val accounts = request.getQueryString("accounts").filter(! _.isEmpty)
       .map(x => x.split(",").map(_.toLong).toSeq)
 
     val res: Seq[(TransactionsRow, AccountsRow)] = await {
