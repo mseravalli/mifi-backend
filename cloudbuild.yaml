@@ -50,6 +50,7 @@ steps:
   args: ['tag', '${_PRIVATE_IMAGE_NAME}:latest', '${_PUBLIC_IMAGE_NAME}:${TAG_NAME}']
 
 - id: 'docker-login-to-docker-hub'
+  name: 'gcr.io/cloud-builders/docker'
   entrypoint: 'bash'
   args: ['-c', 'docker login --username=mseravalli --password=$$PASSWORD']
   secretEnv: ['PASSWORD']
