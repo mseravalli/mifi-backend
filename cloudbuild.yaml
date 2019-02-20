@@ -2,11 +2,12 @@ substitutions:
   _PRIVATE_IMAGE_NAME: eu.gcr.io/devar-p/mifi-backend # default value
   _PUBLIC_IMAGE_NAME: mseravalli/mifi-backend # default value
   _BUILDER_IMAGE: eu.gcr.io/devar-p/mifi-backend-builder # default value
+  _PASS: "void"
 
 secrets:
 - kmsKeyName: projects/devar-p/locations/europe-west4/keyRings/mifi/cryptoKeys/docker-hub-key
   secretEnv:
-    PASSWORD: "CiQAkkk1xx9Ua7vAR3YzzrPuh7LMn3XUnePqeoWGyINgnGJGAVQSOwA/OojspSGazX5yA87UQ9GsdCJYe9LnHru+RrLzjnCTgZq+LsgL5+Ba1x5py4tefYj9BGksGU8fmumS"
+    PASSWORD: ${_PASS}
 
 steps:
 # - id: 'clean'
