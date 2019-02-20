@@ -1,29 +1,9 @@
 package controllers
 
 import org.specs2.matcher.JsonMatchers
-import play.api.mvc.MultipartFormData
-import play.api.mvc.MultipartFormData.FilePart
 import play.api.test._
-import play.api.libs.Files._
 
-import scala.concurrent.ExecutionContext.Implicits.global
-
-/**
- * You can mock out a whole application including requests, plugins etc.
- * For more information, consult the wiki.
- */
-class ApplicationIT extends PlaySpecification with JsonMatchers {
-  "Health" should {
-    "be healthy" in new WithApplication() {
-      val request = FakeRequest(GET, "/healthz")
-      val response = route(app, request).get
-      status(response) must equalTo(OK)
-      contentType(response) must beSome.which(_ == "text/plain")
-
-      contentAsString(response) must equalTo("OK")
-    }
-  }
-
+class SubCategoryControllerIT extends PlaySpecification with JsonMatchers {
 
   "SubCategories" should {
     "aggregate SubCategories" in new WithApplication() {
@@ -96,4 +76,5 @@ class ApplicationIT extends PlaySpecification with JsonMatchers {
       contentAsString(response) must /("data") /#1 /#1 /(2372.45)
     }
   }
+
 }
