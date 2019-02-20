@@ -10,7 +10,7 @@ import play.api.test.Helpers._
  * integration test might offer a more useful test if there is not given that you are then testing that the
  * route is configured properly.
  */
-class ApplicationUnitTest extends PlaySpecification {
+class ApplicationUT extends PlaySpecification {
 
   "Application" should {
 
