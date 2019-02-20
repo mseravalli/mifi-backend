@@ -3,6 +3,11 @@ substitutions:
   _PUBLIC_IMAGE_NAME: mseravalli/mifi-backend # default value
   _BUILDER_IMAGE: eu.gcr.io/devar-p/mifi-backend-builder # default value
 
+secrets:
+- kmsKeyName: projects/devar-p/locations/global/keyRings/mifi/cryptoKeys/docker-hub-key
+  secretEnv:
+    PASSWORD: CiQAkkk1xx9Ua7vAR3YzzrPuh7LMn3XUnePqeoWGyINgnGJGAVQSOwA/OojspSGazX5yA87UQ9GsdCJYe9LnHru+RrLzjnCTgZq+LsgL5+Ba1x5py4tefYj9BGksGU8fmumS
+
 steps:
 - id: 'clean'
   name: '${_BUILDER_IMAGE}'
@@ -44,10 +49,20 @@ steps:
   name: 'gcr.io/cloud-builders/docker'
   args: ['tag', '${_PRIVATE_IMAGE_NAME}:latest', '${_PUBLIC_IMAGE_NAME}:${TAG_NAME}']
 
+- id: 'docker-login-to-docker-hub'
+  entrypoint: 'bash'
+  args: ['-c', 'docker login --username=mseravalli --password=$$PASSWORD']
+  secretEnv: ['PASSWORD']
+
+- id: 'docker-push-public-latest'
+  name: 'gcr.io/cloud-builders/docker'
+  args: ['push', '${_PUBLIC_IMAGE_NAME}:latest']
+
+- id: 'docker-push-public-version'
+  name: 'gcr.io/cloud-builders/docker'
+  args: ['push', '${_PUBLIC_IMAGE_NAME}:${TAG_NAME}']
 
 images: [
   '${_PRIVATE_IMAGE_NAME}:latest',
   '${_PRIVATE_IMAGE_NAME}:${TAG_NAME}',
-  '${_PUBLIC_IMAGE_NAME}:latest',
-  '${_PUBLIC_IMAGE_NAME}:${TAG_NAME}'
 ]
