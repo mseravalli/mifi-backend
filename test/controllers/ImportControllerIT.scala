@@ -6,7 +6,7 @@ import play.api.mvc.MultipartFormData.FilePart
 import play.api.test._
 import play.api.libs.Files._
 
-class ImportControllerIntegration extends PlaySpecification with JsonMatchers {
+class ImportControllerIT extends PlaySpecification with JsonMatchers {
   "ImportController" should {
     "import db" in new WithApplication() {
       val accountId = 1

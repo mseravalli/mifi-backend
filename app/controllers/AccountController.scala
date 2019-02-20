@@ -128,7 +128,7 @@ class AccountController @Inject() (implicit ec: ExecutionContext,
     val dateFormat = Formatter.normalizeDateFormat(request.getQueryString("sumRange").getOrElse(""))
     val startDate = Date.valueOf(request.getQueryString("startDate").getOrElse("1900-01-01"))
     val endDate = Date.valueOf(request.getQueryString("endDate").getOrElse("2100-12-31"))
-    val accounts = request.getQueryString("accounts")
+    val accounts = request.getQueryString("accounts").filter(! _.isEmpty)
       .map(x => x.split(",").map(_.toLong).toSeq)
 
     val res = await{createTimeSeries(startDate, endDate, dateFormat, accounts)}
