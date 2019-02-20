@@ -4,7 +4,7 @@ substitutions:
   _BUILDER_IMAGE: eu.gcr.io/devar-p/mifi-backend-builder # default value
 
 secrets:
-- kmsKeyName: projects/devar-p/locations/global/keyRings/mifi/cryptoKeys/docker-hub-key
+- kmsKeyName: projects/devar-p/locations/europe-west4/keyRings/mifi/cryptoKeys/docker-hub-key
   secretEnv:
     PASSWORD: CiQAkkk1xx9Ua7vAR3YzzrPuh7LMn3XUnePqeoWGyINgnGJGAVQSOwA/OojspSGazX5yA87UQ9GsdCJYe9LnHru+RrLzjnCTgZq+LsgL5+Ba1x5py4tefYj9BGksGU8fmumS
 
