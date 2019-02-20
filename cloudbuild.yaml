@@ -1,5 +1,6 @@
 substitutions:
-  _IMAGE_NAME: eu.gcr.io/devar-p/mifi-backend # default value
+  _PRIVATE_IMAGE_NAME: eu.gcr.io/devar-p/mifi-backend # default value
+  _PUBLIC_IMAGE_NAME: mseravalli/mifi-backend # default value
   _BUILDER_IMAGE: eu.gcr.io/devar-p/mifi-backend-builder # default value
 
 steps:
@@ -29,17 +30,24 @@ steps:
 
 - id: 'docker-build-latest'
   name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', '${_IMAGE_NAME}:latest', '.']
+  args: ['build', '-t', '${_PRIVATE_IMAGE_NAME}:latest', '.']
 
-- id: 'docker-tag-version'
+- id: 'docker-tag-private-version'
   name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', '${_IMAGE_NAME}:${TAG_NAME}', '.']
+  args: ['tag', '${_PRIVATE_IMAGE_NAME}:latest', '${_PRIVATE_IMAGE_NAME}:${TAG_NAME}']
 
-- id: 'docker-push-version'
+- id: 'docker-tag-public-latest'
   name: 'gcr.io/cloud-builders/docker'
-  args: ['push', '${_IMAGE_NAME}:${TAG_NAME}']
+  args: ['tag', '${_PRIVATE_IMAGE_NAME}:latest', '${_PUBLIC_IMAGE_NAME}:latest']
+
+- id: 'docker-tag-public-version'
+  name: 'gcr.io/cloud-builders/docker'
+  args: ['tag', '${_PRIVATE_IMAGE_NAME}:latest', '${_PUBLIC_IMAGE_NAME}:${TAG_NAME}']
+
 
 images: [
-  '${_IMAGE_NAME}:latest',
-  '${_IMAGE_NAME}:${TAG_NAME}'
+  '${_PRIVATE_IMAGE_NAME}:latest',
+  '${_PRIVATE_IMAGE_NAME}:${TAG_NAME}',
+  '${_PUBLIC_IMAGE_NAME}:latest',
+  '${_PUBLIC_IMAGE_NAME}:${TAG_NAME}'
 ]
