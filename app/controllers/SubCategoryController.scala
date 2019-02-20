@@ -76,7 +76,7 @@ class SubCategoryController @Inject() (implicit ec: ExecutionContext,
     val endDate =   Date.valueOf(request.getQueryString("endDate").getOrElse("2100-12-31"))
     val categories = request.getQueryString("categories").getOrElse("").split(",").map(_.trim).sorted
     val subCategories = request.getQueryString("subCategories").getOrElse("").split(",").map(_.trim).sorted
-    val accounts = request.getQueryString("accounts").map(x => x.split(",").map(_.toLong).toSeq)
+    val accounts = request.getQueryString("accounts").filter(!_.isEmpty).map(x => x.split(",").map(_.toLong).toSeq)
 
     val format = Formatter.normalizeDateFormat(dateFormat)
     val sdf = new SimpleDateFormat(format)
@@ -109,7 +109,7 @@ class SubCategoryController @Inject() (implicit ec: ExecutionContext,
     val endDate =   Date.valueOf(request.getQueryString("endDate").getOrElse("2100-12-31"))
     val categories = request.getQueryString("categories").getOrElse("").split(",").map(_.trim).sorted
     val subCategories = request.getQueryString("subCategories").getOrElse("").split(",").map(_.trim).sorted
-    val accounts = request.getQueryString("accounts").map(x => x.split(",").map(_.toLong).toSeq)
+    val accounts = request.getQueryString("accounts").filter(!_.isEmpty).map(x => x.split(",").map(_.toLong).toSeq)
 
     val totalFlow = await {
       db.run(totalFlowSubCatQuery(startDate, endDate, flow, categories.head, subCategories, accounts))

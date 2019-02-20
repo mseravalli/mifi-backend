@@ -1,12 +1,9 @@
 package controllers
 
 import org.specs2.matcher.JsonMatchers
-import play.api.mvc.MultipartFormData
-import play.api.mvc.MultipartFormData.FilePart
 import play.api.test._
-import play.api.libs.Files._
 
-class CategoryControllerIntegration extends PlaySpecification with JsonMatchers {
+class CategoryControllerIT extends PlaySpecification with JsonMatchers {
   "Categories" should {
     "read Categories" in new WithApplication() {
       val request = FakeRequest(GET, "/categories")
