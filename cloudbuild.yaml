@@ -6,8 +6,7 @@ substitutions:
 secrets:
 - kmsKeyName: projects/devar-p/locations/europe-west4/keyRings/mifi/cryptoKeys/docker-hub-key
   secretEnv:
-    PASSWORD: CiQAkkk1x/uclE2wSrU+bidm/0QcnzXzueDnz6Cj5Wfv+8GGtzsSQgA/Oojs5xBcTbJELa4GeAzbaBO/O1PvwSYpB8ixsf/7/kipHdhvkYbpZU3VWajTieiPWQsWfUILYDfWyrYD7wMcyw==
-
+    PASSWORD: CiQAkkk1x1+Xb9Mrb0GetD0rRX6yvjVWQi0o7M8UBYV+uNKV8UQSQgA/Oojspp/3ojM5L/aA1RTezmE7ZFugJ5oyxqIoy3pgA1VgXK8wgj+JqrynkZ6s60Jlibd9SjOXEa3m1+dIU1j7XQ==
 steps:
 - id: 'clean'
   name: '${_BUILDER_IMAGE}'
