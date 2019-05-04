@@ -1,36 +1,78 @@
+substitutions:
+  _PRIVATE_IMAGE_NAME: eu.gcr.io/devar-p/mifi-backend # default value
+  _PUBLIC_IMAGE_NAME: mseravalli/mifi-backend # default value
+  _BUILDER_IMAGE: eu.gcr.io/devar-p/mifi-backend-builder # default value
+
+secrets:
+- kmsKeyName: projects/devar-p/locations/europe-west4/keyRings/mifi/cryptoKeys/docker-hub-key
+  secretEnv:
+    PASSWORD: CiQAkkk1x/uclE2wSrU+bidm/0QcnzXzueDnz6Cj5Wfv+8GGtzsSQgA/Oojs5xBcTbJELa4GeAzbaBO/O1PvwSYpB8ixsf/7/kipHdhvkYbpZU3VWajTieiPWQsWfUILYDfWyrYD7wMcyw==
+
 steps:
 - id: 'clean'
-  name: 'mseravalli/mifi-builder'
+  name: '${_BUILDER_IMAGE}'
   args: ['bash', 'activator', '--info', 'clean']
 
 - id: 'build'
-  name: 'mseravalli/mifi-builder'
-  args: ['bash', 'activator', '--info', 'dist']
+  name: '${_BUILDER_IMAGE}'
+  args: ['bash', 'activator', '--info', 'compile']
 
 - id: 'setup integration environment'
   name: 'docker/compose:1.15.0'
   args: ['up', '-d']
 
 - id: 'integration test'
-  name: 'mseravalli/mifi-builder'
+  name: '${_BUILDER_IMAGE}'
   args: ['bash', 'activator', '--info', 'test']
 
+- id: 'package'
+  name: '${_BUILDER_IMAGE}'
+  args: ['bash', 'activator', '--info', 'dist']
+
 - id: 'extract'
-  name: 'mseravalli/mifi-builder'
+  name: '${_BUILDER_IMAGE}'
   args: ['bash', 'extract-dist.sh']
 
 - id: 'docker-build-latest'
   name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'mseravalli/mifi-backend:latest', '.']
+  args: ['build', '-t', '${_PRIVATE_IMAGE_NAME}:latest', '.']
 
-- id: 'docker-push-latest'
+- id: 'docker-tag-private-version'
   name: 'gcr.io/cloud-builders/docker'
-  args: ['push', 'mseravalli/mifi-backend:latest']
+  args: ['tag', '${_PRIVATE_IMAGE_NAME}:latest', '${_PRIVATE_IMAGE_NAME}:${TAG_NAME}']
 
-- id: 'docker-tag-version'
+- id: 'docker-tag-public-latest'
   name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'mseravalli/mifi-backend:${TAG_NAME}', '.']
+  args: ['tag', '${_PRIVATE_IMAGE_NAME}:latest', '${_PUBLIC_IMAGE_NAME}:latest']
 
-- id: 'docker-push-version'
+- id: 'docker-tag-public-version'
   name: 'gcr.io/cloud-builders/docker'
-  args: ['push', 'mseravalli/mifi-backend:${TAG_NAME}']
+  args: ['tag', '${_PRIVATE_IMAGE_NAME}:latest', '${_PUBLIC_IMAGE_NAME}:${TAG_NAME}']
+
+- id: 'check-password'
+  name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', 'echo $$PASSWORD']
+  secretEnv: ['PASSWORD']
+
+- id: 'docker-login-to-docker-hub'
+  name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', 'docker login --username=mseravalli --password=$$PASSWORD']
+  secretEnv: ['PASSWORD']
+
+- id: 'docker-push-public-latest'
+  name: 'gcr.io/cloud-builders/docker'
+  args: ['push', '${_PUBLIC_IMAGE_NAME}:latest']
+
+- id: 'docker-push-public-version'
+  name: 'gcr.io/cloud-builders/docker'
+  args: ['push', '${_PUBLIC_IMAGE_NAME}:${TAG_NAME}']
+
+images: [
+  '${_PRIVATE_IMAGE_NAME}:latest',
+  '${_PRIVATE_IMAGE_NAME}:${TAG_NAME}',
+]
+
+
+

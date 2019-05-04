@@ -112,20 +112,23 @@ class AccountController @Inject() (implicit ec: ExecutionContext,
       db.run(readAccountsQuery(Some(List(accountId.toLong)), endDate))
     }
 
-    val jsonRes = Json.toJson(res.head._1._1)(JsonFormats.accountFmt).as[JsObject]
-      .++(res.head._1._2.map(Json.toJson(_)(JsonFormats.accountTypeFmt)).getOrElse(Json.obj()).as[JsObject])
-      .++(Json.obj("balance" -> Json.toJson(res.head._2.getOrElse(res.head._1._1.initialAmount))))
-      // necessary due to the overlapping of the property "name"
-      .++(Json.obj("name" -> Json.toJson(res.head._1._1.name)))
+    res.toList match {
+      case x::Nil => Ok(Json.toJson(x._1._1)(JsonFormats.accountFmt).as[JsObject]
+        .++(x._1._2.map(Json.toJson(_)(JsonFormats.accountTypeFmt)).getOrElse(Json.obj()).as[JsObject])
+        .++(Json.obj("balance" -> Json.toJson(x._2.getOrElse(x._1._1.initialAmount))))
+          // necessary due to the overlapping of the property "name"
+        .++(Json.obj("name" -> Json.toJson(x._1._1.name))) )
+      case Nil => NotFound(JsString("Account not Found"))
+      case _ => InternalServerError
+    }
 
-    Ok(jsonRes)
   }}
 
   def timeSeries(): Action[AnyContent] =  Action.async { request => async {
     val dateFormat = Formatter.normalizeDateFormat(request.getQueryString("sumRange").getOrElse(""))
     val startDate = Date.valueOf(request.getQueryString("startDate").getOrElse("1900-01-01"))
     val endDate = Date.valueOf(request.getQueryString("endDate").getOrElse("2100-12-31"))
-    val accounts = request.getQueryString("accounts")
+    val accounts = request.getQueryString("accounts").filter(! _.isEmpty)
       .map(x => x.split(",").map(_.toLong).toSeq)
 
     val res = await{createTimeSeries(startDate, endDate, dateFormat, accounts)}

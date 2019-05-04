@@ -1,0 +1,9 @@
+Transactions persönliches Konto (00);;;Customer number: 000 000
+01/23/2017 - 01/28/2017
+Old balance:;;;;1,020.10;EUR
+Transactions pending are not included in this report.
+Booking date;Value date;Transaction Type;Beneficiary / Originator;Payment Details;IBAN;BIC;Customer Reference;Mandate Reference;Creditor ID;Compensation amount;Original Amount;Ultimate creditor;Number of transactions;Number of cheques;Debit;Credit;Currency
+01/23/2019;01/23/2019;;;something interesting;;;;;;;;;;;-10.10;;EUR
+01/25/2019;01/25/2019;"transaction type 1";Originator;detail 1;iban;bic1;;;;;;;;;;1,000.00;EUR
+01/28/2019;01/28/2019;"transaction type 2";Beneficiary;detail 2;iban;bic2;;;;;;;;;-1,000.00;;EUR
+Account balance;01/28/2017;;;1,010.10;EUR

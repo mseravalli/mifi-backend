@@ -1,27 +1,26 @@
 package controllers
 
 import java.io.StringReader
-
-import models._
-import helpers._
-import com.github.tototoshi.csv._
 import java.sql.Date
-import java.sql.Timestamp
-import javax.inject._
 
+import com.github.tototoshi.csv._
+import helpers._
+import javax.inject._
+import models._
 import org.joda.time.format.{DateTimeFormat, DateTimeFormatter}
+import org.slf4j.{Logger, LoggerFactory}
 import play.api.db.slick._
-import play.api.mvc._
-import play.api.mvc.MultipartFormData.FilePart
 import play.api.libs.Files.TemporaryFile
 import play.api.libs.json._
 import play.api.libs.ws._
-
-import scala.async.Async.{async, await}
-import scala.concurrent.{Future, ExecutionContext}
-import scala.util.{Failure, Success, Try}
+import play.api.mvc.MultipartFormData.FilePart
+import play.api.mvc._
 import slick.jdbc.JdbcProfile
 import slick.jdbc.PostgresProfile.api._
+
+import scala.async.Async.{async, await}
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class ImportController @Inject() (implicit ec: ExecutionContext,
@@ -31,21 +30,19 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
                                   pbp:PlayBodyParsers) 
     extends AbstractController(cc) with HasDatabaseConfigProvider[JdbcProfile] {
 
-  def getAmount(x: List[String], at: AccountTypesRow): BigDecimal = {
+  private final val logger: Logger = LoggerFactory.getLogger(classOf[ImportController])
+
+  def getAmount(x: List[String], a: AccountsRow, at: AccountTypesRow): BigDecimal = {
+    val incomeFactor = (BigDecimal(1) - a.sharingRatio.getOrElse(BigDecimal(0)))
     val in = BigDecimal.apply(x.lift(at.amountInPos).map{ amount => Formatter.formatAmount(amount)}.filter(!_.equals("")).getOrElse("0.00"))
     val out = BigDecimal.apply(Formatter.formatAmount(x.lift(at.amountOutPos).filter(!_.equals("")).getOrElse("0.00")).replace("-", ""))
     if (in.abs == out.abs) {
-      in
+      in * incomeFactor
     }
     else {
-      in - out
+      (in - out) * incomeFactor
     }
   }
-
-  def mergeStrings(x: List[String], positions: Seq[Int]): String = {
-    positions.map{i => x.lift(i).getOrElse("")}.reduce((a, b) => a +", "+b)
-  }
-
 
   def transformCSVIntoTransactions(csvString: String,
                                    a: AccountsRow,
@@ -91,6 +88,21 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
     loadValues(reader, List())
   }
 
+  def mergeStrings(x: List[String], positions: Seq[Int]): String = {
+    val s = positions.map{i => x.lift(i).getOrElse("")}.reduce((a, b) => a +", "+b).replaceAll("\\s+", " ")
+    trimOverflowingString(s, 512)
+  }
+
+  def trimOverflowingString(s: String, l: Integer): String = {
+    s match {
+      case x if (s.size > l) => {
+        logger.warn(s"Purpose needed to be shortened to ${l} chars. Original: ${s}")
+        s.substring(0, l)
+      }
+      case _ => s
+    }
+  }
+
   def readCSVRow(a: AccountsRow,
                  at: AccountTypesRow,
                  format: DateTimeFormatter,
@@ -106,7 +118,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
       exchangeDate = Some(new Date(exchangeDate.getTime)),
       receiver = Some(receiver),
       purpose = Some(purpose),
-      amount = Some(getAmount(x, at)),
+      amount = Some(getAmount(x, a, at)),
       // currency = Some(x.lift(at.currencyPos).getOrElse(at.currencyDefault)),
       currency = Some(at.currencyDefault),
       category = Some("other"),
@@ -117,7 +129,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
   }
 
   // if username of password are not present a null value will be passed
-  def retrieveCSV(account: models.AccountsRow, startDate: String, endDate: String): Future[String] = async {
+//  def retrieveCSV(account: models.AccountsRow, startDate: String, endDate: String): Future[String] = async {
 //    val oauthTokenUrl = account.apiOauthUrl.getOrElse("")
 //    val oauthTokenData: Map[String, Seq[String]] = Map(
 //      "username" -> Seq(account.apiUser.getOrElse("")),
@@ -142,8 +154,8 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
 //        .get
 //    }
 //    reportResp.body
-    ""
-  }
+//    ""
+//  }
 
   def fetchCSV(csv: Option[FilePart[TemporaryFile]],
                a: AccountsRow,
@@ -253,7 +265,8 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
       case Success(s) => Success(Ok(s))
       case Failure(e) => {
         val status = s"${e.toString}: ${e.getMessage}"
-        Success(BadRequest(Json.obj("status" -> JsString(status))))
+        logger.error(status)
+        Success(InternalServerError(Json.obj("status" -> JsString(status))))
       }
     }}
   }
@@ -266,6 +279,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
         case x :: Nil => {
           x match {
             case ((accountRow, Some(accountTypeRow)), Some(balance)) => Success(((accountRow, accountTypeRow), balance))
+            case ((accountRow, Some(accountTypeRow)), None) => Success(((accountRow, accountTypeRow), accountRow.initialAmount))
             case _ => Failure(new Exception("No account type or no balance"))
           }
         }
@@ -275,6 +289,12 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
 
       result.flatMap(Future.fromTry(_))
     }
+
+    account.onComplete{ x => x match {
+      case Success(s) => logger.info(s.toString)
+      case Failure(e) => logger.error(s"${e.toString}: ${e.getMessage}")
+    }}
+
     account
   }
 
