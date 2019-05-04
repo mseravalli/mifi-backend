@@ -1,27 +1,26 @@
 package controllers
 
 import java.io.StringReader
-
-import models._
-import helpers._
-import com.github.tototoshi.csv._
 import java.sql.Date
-import java.sql.Timestamp
-import javax.inject._
 
+import com.github.tototoshi.csv._
+import helpers._
+import javax.inject._
+import models._
 import org.joda.time.format.{DateTimeFormat, DateTimeFormatter}
+import org.slf4j.{Logger, LoggerFactory}
 import play.api.db.slick._
-import play.api.mvc._
-import play.api.mvc.MultipartFormData.FilePart
 import play.api.libs.Files.TemporaryFile
 import play.api.libs.json._
 import play.api.libs.ws._
-
-import scala.async.Async.{async, await}
-import scala.concurrent.{Future, ExecutionContext}
-import scala.util.{Failure, Success, Try}
+import play.api.mvc.MultipartFormData.FilePart
+import play.api.mvc._
 import slick.jdbc.JdbcProfile
 import slick.jdbc.PostgresProfile.api._
+
+import scala.async.Async.{async, await}
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 @Singleton
 class ImportController @Inject() (implicit ec: ExecutionContext,
@@ -30,6 +29,8 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
                                   ws: WSClient,
                                   pbp:PlayBodyParsers) 
     extends AbstractController(cc) with HasDatabaseConfigProvider[JdbcProfile] {
+
+  private final val logger: Logger = LoggerFactory.getLogger(classOf[ImportController])
 
   def getAmount(x: List[String], a: AccountsRow, at: AccountTypesRow): BigDecimal = {
     val incomeFactor = (BigDecimal(1) - a.sharingRatio.getOrElse(BigDecimal(0)))
@@ -42,11 +43,6 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
       (in - out) * incomeFactor
     }
   }
-
-  def mergeStrings(x: List[String], positions: Seq[Int]): String = {
-    positions.map{i => x.lift(i).getOrElse("")}.reduce((a, b) => a +", "+b)
-  }
-
 
   def transformCSVIntoTransactions(csvString: String,
                                    a: AccountsRow,
@@ -90,6 +86,21 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
     }
 
     loadValues(reader, List())
+  }
+
+  def mergeStrings(x: List[String], positions: Seq[Int]): String = {
+    val s = positions.map{i => x.lift(i).getOrElse("")}.reduce((a, b) => a +", "+b).replaceAll("\\s+", " ")
+    trimOverflowingString(s, 512)
+  }
+
+  def trimOverflowingString(s: String, l: Integer): String = {
+    s match {
+      case x if (s.size > l) => {
+        logger.warn(s"Purpose needed to be shortened to ${l} chars. Original: ${s}")
+        s.substring(0, l)
+      }
+      case _ => s
+    }
   }
 
   def readCSVRow(a: AccountsRow,
@@ -254,7 +265,8 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
       case Success(s) => Success(Ok(s))
       case Failure(e) => {
         val status = s"${e.toString}: ${e.getMessage}"
-        Success(BadRequest(Json.obj("status" -> JsString(status))))
+        logger.error(status)
+        Success(InternalServerError(Json.obj("status" -> JsString(status))))
       }
     }}
   }
@@ -277,6 +289,12 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
 
       result.flatMap(Future.fromTry(_))
     }
+
+    account.onComplete{ x => x match {
+      case Success(s) => logger.info(s.toString)
+      case Failure(e) => logger.error(s"${e.toString}: ${e.getMessage}")
+    }}
+
     account
   }
 
