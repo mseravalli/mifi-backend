@@ -82,6 +82,33 @@ class ImportControllerIT extends PlaySpecification with JsonMatchers {
       val finalBalanceAsString = (balance - amountDeleted).toString
       contentAsString(response) must /("account") / ("balance" -> (finalBalanceAsString))
     }
-  }
 
+    "import unclassified" in new WithApplication() {
+      // uses the DKB account
+      val accountId = 7
+      val filePath = "test/dkb.csv"
+
+      val amountDeleted = BigDecimal(10.10)
+      val balanceRequest = FakeRequest(GET, s"/accounts/${accountId}?endDate=2100-12-31")
+      val balanceResponse = route(app, balanceRequest).get
+      val balance = BigDecimal((contentAsJson(balanceResponse) \ "balance").get.toString())
+
+      val file = play.api.libs.Files.SingletonTemporaryFileCreator.create(path = java.nio.file.Paths.get(filePath))
+      val part = FilePart[TemporaryFile](key = "csv", filename = "the.file", contentType = None, ref = file)
+      val formData = MultipartFormData[TemporaryFile](
+        dataParts = Map("importAccountId" -> Seq(accountId.toString)),
+        files = Seq(part),
+        badParts = Seq()
+      )
+      val request = FakeRequest(POST, "/import")
+        .withMultipartFormDataBody(formData)
+      val response = route(app, request).get
+      status(response) must equalTo(OK)
+      contentAsString(response) must /("account") / ("account" -> accountId)
+      val finalBalanceAsString = (balance - amountDeleted).toString
+      contentAsString(response) must /("account") / ("balance" -> (finalBalanceAsString))
+
+
+    }
+  }
 }
