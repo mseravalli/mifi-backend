@@ -17,6 +17,7 @@ import play.api.libs.ws._
 
 import scala.async.Async.{async, await}
 import scala.concurrent.{Future, ExecutionContext}
+import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 import slick.jdbc.JdbcProfile
 import slick.jdbc.PostgresProfile.api._
@@ -31,7 +32,13 @@ class ClassifierController @Inject() (implicit ec: ExecutionContext,
     * Returns for the provided fields the categories associated otherwise "other" "to categorize"
     * @return
     */
-  def classify(): Action[AnyContent] =  Action.async { request => async {
+  def classifyTransactions(): Action[AnyContent] =  Action.async { request => async {
+    val res: Seq[Int] = await{classify}
+
+    Ok(Json.obj("total" -> JsNumber(res.size), "successful" -> JsNumber(res.sum)))
+  }}
+
+  def classify: Future[Seq[Int]] = async {
     val classes: Map[String, Tuple2[String, String]] = await {
       db.run(Tables.TransactionsClassification.result)
     }.map(x => x.description -> (x.category, x.subCategory)).toMap
@@ -42,25 +49,36 @@ class ClassifierController @Inject() (implicit ec: ExecutionContext,
         .result)
     }
 
-    val classifiedTransactions = transacions.map{ t =>
-      val classification: Tuple2[String, String] = classes.find{ c =>
-        val fields = List(t.purpose, t.receiver)
-        fields.map{o =>
-          o.map{ x => x.toLowerCase.contains(c._1.toLowerCase)}.getOrElse(false)
-        }.reduce(_ || _)
-      }.map(_._2).getOrElse(("other", "to categorize"))
+    // take only the first match
+    val classifiedTransactions = transacions.map { t => {
+      val classification: Tuple2[String, String] = classes.map { c => {
+        val numberPattern: Regex = ("(?i)(" + c._1 + ")").r
+        val fields = t.receiver.getOrElse("") + " " + t.purpose.getOrElse("")
+
+        numberPattern.findFirstMatchIn(fields) match {
+          case Some(_) => Some(c._2)
+          case None => None
+        }
+      }}
+      .toList.flatten match {
+        case x :: xs => x
+        case Nil => ("other", "to categorize")
+      }
+
       (t.id -> classification)
     }
+    }
 
-    val updateTransactionQueries = classifiedTransactions.map {ct =>
+    val updateTransactionQueries = classifiedTransactions.map { ct =>
       Tables.Transactions.filter(_.id === ct._1)
         .map(t => (t.category, t.subCategory))
         .update(Some(ct._2._1), Some(ct._2._2))
     }
 
-    val res = await { Future.sequence(updateTransactionQueries.map { q => db.run(q) }) }
-
-    Ok(Json.obj("total" -> JsNumber(res.size), "successful" -> JsNumber(res.sum)))
-  }}
+    val res = await {
+      Future.sequence(updateTransactionQueries.map { q => db.run(q) })
+    }
+    res
+  }
 }
 

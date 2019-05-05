@@ -259,9 +259,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
       Json.obj("status" -> status, "account" -> Json.obj("account" -> a._1._1.id, "balance" -> Json.toJson(balance)))
     }}
 
-    // new ClassifierController().classify()
-
-    result.transform[Result]{ (x: Try[JsObject]) => x match {
+    val response = result.transform[Result]{ (x: Try[JsObject]) => x match {
       case Success(s) => Success(Ok(s))
       case Failure(e) => {
         val status = s"${e.toString}: ${e.getMessage}"
@@ -269,6 +267,13 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
         Success(InternalServerError(Json.obj("status" -> JsString(status))))
       }
     }}
+
+    result.onComplete{ x => x match {
+      case Success(s) => new ClassifierController().classify
+      case Failure(e) => Failure(e)
+    }}
+
+    response
   }
 
   private def getSingleAccount(accountId: Try[Long]) = {
@@ -313,6 +318,12 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
       case Success(Nil) => Failure(new Exception("Missing account"))
       case Failure(e) => Failure(e)
     }
+
+    accountId match {
+      case Success(s) => logger.info(s.toString)
+      case Failure(e) => logger.error(s"${e.toString}: ${e.getMessage}")
+    }
+
     accountId
   }
 }
