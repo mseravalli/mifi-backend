@@ -83,10 +83,9 @@ class ImportControllerIT extends PlaySpecification with JsonMatchers {
       contentAsString(response) must /("account") / ("balance" -> (finalBalanceAsString))
     }
 
-    "import unclassified" in new WithApplication() {
-      // uses the DKB account
-      val accountId = 7
-      val filePath = "test/dkb.csv"
+    "import dkb-cc" in new WithApplication() {
+      val accountId = 8
+      val filePath = "test/dkb-cc.csv"
 
       val amountDeleted = BigDecimal(10.10)
       val balanceRequest = FakeRequest(GET, s"/accounts/${accountId}?endDate=2100-12-31")
@@ -107,8 +106,6 @@ class ImportControllerIT extends PlaySpecification with JsonMatchers {
       contentAsString(response) must /("account") / ("account" -> accountId)
       val finalBalanceAsString = (balance - amountDeleted).toString
       contentAsString(response) must /("account") / ("balance" -> (finalBalanceAsString))
-
-
     }
   }
 }

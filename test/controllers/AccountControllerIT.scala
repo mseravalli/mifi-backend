@@ -20,10 +20,9 @@ class AccountControllerIT extends PlaySpecification with JsonMatchers {
       contentAsString(response) must /("accounts") /# 1 /("balance" -> 590.43)
       contentAsString(response) must /("accounts") /# 1 /("currencyPos" -> 17)
       contentAsString(response) must /("accounts") /# 1 /("finalRow" -> "Account balance")
-
-      contentAsString(response) must /("accounts") /# 3 /("name" -> "hvb")
-      contentAsString(response) must /("accounts") /# 3 /("balance" -> 1330.73)
-      contentAsString(response) must /("accounts") /# 3 /("currencyPos" -> 7)
+      contentAsString(response) must /("accounts") /# 5 /("name" -> "hvb")
+      contentAsString(response) must /("accounts") /# 5 /("balance" -> 1330.73)
+      contentAsString(response) must /("accounts") /# 5 /("currencyPos" -> 7)
     }
 
     "fail when reading non existing account" in new WithApplication() {
@@ -78,21 +77,25 @@ class AccountControllerIT extends PlaySpecification with JsonMatchers {
         contentAsString(response) must /("data") /# 0 /# 1 /("bcard")
         contentAsString(response) must /("data") /# 0 /# 2 /("db")
         contentAsString(response) must /("data") /# 0 /# 3 /("dkb")
-        contentAsString(response) must /("data") /# 0 /# 4 /("hvb")
-        contentAsString(response) must /("data") /# 0 /# 5 /("hvb-depot")
-        contentAsString(response) must /("data") /# 0 /# 6 /("kalixa")
-        contentAsString(response) must /("data") /# 0 /# 7 /("n26")
-        contentAsString(response) must /("data") /# 0 /# 8 /("total")
+        contentAsString(response) must /("data") /# 0 /# 4 /("dkb-cc-one")
+        contentAsString(response) must /("data") /# 0 /# 5 /("dkb-cc-two")
+        contentAsString(response) must /("data") /# 0 /# 6 /("hvb")
+        contentAsString(response) must /("data") /# 0 /# 7 /("hvb-depot")
+        contentAsString(response) must /("data") /# 0 /# 8 /("kalixa")
+        contentAsString(response) must /("data") /# 0 /# 9 /("n26")
+        contentAsString(response) must /("data") /# 0 /# 10 /("total")
 
         contentAsString(response) must /("data") /# 25 /# 0 /("2016-01")
         contentAsString(response) must /("data") /# 25 /# 1 /(543.87)
         contentAsString(response) must /("data") /# 25 /# 2 /(627.95)
         contentAsString(response) must /("data") /# 25 /# 3 /(0)
-        contentAsString(response) must /("data") /# 25 /# 4 /(1359.73)
+        contentAsString(response) must /("data") /# 25 /# 4 /(0)
         contentAsString(response) must /("data") /# 25 /# 5 /(0)
-        contentAsString(response) must /("data") /# 25 /# 6 /(-221.03)
-        contentAsString(response) must /("data") /# 25 /# 7 /(4414.14)
-        contentAsString(response) must /("data") /# 25 /# 8 /(6724.66)
+        contentAsString(response) must /("data") /# 25 /# 6 /(1359.73)
+        contentAsString(response) must /("data") /# 25 /# 7 /(0)
+        contentAsString(response) must /("data") /# 25 /# 8 /(-221.03)
+        contentAsString(response) must /("data") /# 25 /# 9 /(4414.14)
+        contentAsString(response) must /("data") /# 25 /# 10 /(6724.66)
       }
 
       "retrieve timeseries for single account: db" in new WithApplication {
