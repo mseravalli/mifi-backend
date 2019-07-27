@@ -98,8 +98,9 @@ class AccountController @Inject() (implicit ec: ExecutionContext,
       Json.toJson(x._1._1)(JsonFormats.accountFmt).as[JsObject]
         .++(x._1._2.map(Json.toJson(_)(JsonFormats.accountTypeFmt)).getOrElse(Json.obj()).as[JsObject])
         .++(Json.obj("balance" -> Json.toJson(x._2)))
-        // necessary due to the overlapping of the property "name"
+        // necessary due to the overlapping of the property "name" and "id"
         .++(Json.obj("name" -> Json.toJson(x._1._1.name)))
+        .++(Json.obj("id" -> Json.toJson(x._1._1.id)))
     }
 
     Ok(Json.obj("accounts" -> jsonRes) )
@@ -116,8 +117,10 @@ class AccountController @Inject() (implicit ec: ExecutionContext,
       case x::Nil => Ok(Json.toJson(x._1._1)(JsonFormats.accountFmt).as[JsObject]
         .++(x._1._2.map(Json.toJson(_)(JsonFormats.accountTypeFmt)).getOrElse(Json.obj()).as[JsObject])
         .++(Json.obj("balance" -> Json.toJson(x._2.getOrElse(x._1._1.initialAmount))))
-          // necessary due to the overlapping of the property "name"
-        .++(Json.obj("name" -> Json.toJson(x._1._1.name))) )
+          // necessary due to the overlapping of the property "name" and "id"
+        .++(Json.obj("name" -> Json.toJson(x._1._1.name)))
+        .++(Json.obj("id" -> Json.toJson(x._1._1.id)))
+      )
       case Nil => NotFound(JsString("Account not Found"))
       case _ => InternalServerError
     }
