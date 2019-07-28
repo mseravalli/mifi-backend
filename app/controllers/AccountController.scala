@@ -22,7 +22,8 @@ class AccountController @Inject() (implicit ec: ExecutionContext,
     extends AbstractController(cc) with HasDatabaseConfigProvider[JdbcProfile] {
 
   // return a map with the accounts and their balance
-  def readAccountsQuery(accounts: Option[Seq[Long]] = None,
+  def readAccountsQuery(sharingRatioFactor: BigDecimal,
+                        accounts: Option[Seq[Long]] = None,
                         endDate: Date = Date.valueOf("2100-12-31")) = {
     (for {
       (a, t) <- Tables.Accounts.filter(a =>
@@ -31,13 +32,25 @@ class AccountController @Inject() (implicit ec: ExecutionContext,
         )
         .joinLeft(Tables.AccountTypes).on(_.accountType === _.id)
         .joinLeft(Tables.Transactions.filter(_.transactionDate < endDate)).on(_._1.id === _.accountId)
-    } yield (a, t.map(a._1.sharingRatio * _.amount)))
-      .groupBy(_._1)
-      .map{ x =>
+    } yield (
+        a,
+        t.map{
+          if (sharingRatioFactor == BigDecimal(1))
+            a._1.sharingRatio * _.amount
+          else
+            _.amount
+        }
+      )
+    )
+    .groupBy(_._1)
+    .map{ x =>
+      if (sharingRatioFactor == BigDecimal(1))
         (x._1 , x._2.map(_._2.flatten).sum + (x._1._1.sharingRatio * x._1._1.initialAmount))
-      }
-      .sortBy(_._1._1.name)
-      .result
+      else
+        (x._1 , x._2.map(_._2.flatten).sum + x._1._1.initialAmount)
+    }
+    .sortBy(_._1._1.name)
+    .result
   }
 
   def timeSeriesQuery(startDate: Date, endDate: Date) = {
@@ -51,13 +64,17 @@ class AccountController @Inject() (implicit ec: ExecutionContext,
   def createTimeSeries(startDate: Date,
                        endDate: Date,
                        dateFormat: String,
-                       requestedAccounts: Option[Seq[Long]]) = async {
+                       requestedAccounts: Option[Seq[Long]],
+                       sharingRatioFactor: BigDecimal) = async {
     val accounts = await {
-      db.run(readAccountsQuery(requestedAccounts, startDate))
+      db.run(readAccountsQuery(sharingRatioFactor, requestedAccounts, startDate))
     }
 
     val accountBalances: Seq[(models.AccountsRow, scala.math.BigDecimal)] =
-      accounts.map{ x => (x._1._1, x._2.getOrElse( x._1._1.sharingRatio.getOrElse(BigDecimal(1)) * x._1._1.initialAmount )) }
+      accounts.map{ x => (
+        x._1._1,
+        x._2.getOrElse( (sharingRatioFactor * x._1._1.sharingRatio.getOrElse(BigDecimal(1)) ) * x._1._1.initialAmount )
+      )}
 
     val transactions = await {
       db.run(timeSeriesQuery(startDate, endDate))
@@ -66,7 +83,11 @@ class AccountController @Inject() (implicit ec: ExecutionContext,
     // group transactions per time unit (day, month, year) and per account
     val groupedTransactions = transactions
       .groupBy( x => (x._1.transactionDate.map(_.toLocalDate.format(DateTimeFormatter.ofPattern(dateFormat))), x._1.accountId ))
-      .map(x => (x._1 -> x._2.map(y => y._2.flatMap(_.sharingRatio).getOrElse(BigDecimal(1)) * y._1.amount.getOrElse(BigDecimal(0))).sum ))
+      .map{x => (
+        x._1 -> x._2.map{
+          y => (sharingRatioFactor * y._2.flatMap(_.sharingRatio).getOrElse(BigDecimal(1))) * y._1.amount.getOrElse(BigDecimal(0))
+        }.sum
+      )}
       .withDefaultValue(BigDecimal(0))
 
     var previousBalance = accountBalances.map(_._2)
@@ -90,9 +111,10 @@ class AccountController @Inject() (implicit ec: ExecutionContext,
 
   def readAccounts(): Action[AnyContent] =  Action.async { request => async {
     val endDate = Date.valueOf(request.getQueryString("endDate") .getOrElse("2100-12-31"))
+    val sharingRatioFactor = if (request.getQueryString("isSharingRatioEnabled").map(_.toBoolean).getOrElse(true)) BigDecimal(1) else BigDecimal(0)
 
     val res = await {
-      db.run(readAccountsQuery(endDate = endDate))
+      db.run(readAccountsQuery(sharingRatioFactor, endDate = endDate))
     }
 
     val jsonRes = res.map { x =>
@@ -109,15 +131,16 @@ class AccountController @Inject() (implicit ec: ExecutionContext,
 
   def readAccount(accountId: String): Action[AnyContent] =  Action.async { request => async {
     val endDate = Date.valueOf(request.getQueryString("endDate") .getOrElse("2100-12-31"))
+    val sharingRatioFactor = if (request.getQueryString("isSharingRatioEnabled").map(_.toBoolean).getOrElse(true)) BigDecimal(1) else BigDecimal(0)
 
     val res = await {
-      db.run(readAccountsQuery(Some(List(accountId.toLong)), endDate))
+      db.run(readAccountsQuery(sharingRatioFactor=sharingRatioFactor, Some(List(accountId.toLong)), endDate))
     }
 
     res.toList match {
       case x::Nil => Ok(Json.toJson(x._1._1)(JsonFormats.accountFmt).as[JsObject]
         .++(x._1._2.map(Json.toJson(_)(JsonFormats.accountTypeFmt)).getOrElse(Json.obj()).as[JsObject])
-        .++(Json.obj("balance" -> Json.toJson(x._2.getOrElse(x._1._1.sharingRatio.getOrElse(BigDecimal(1)) * x._1._1.initialAmount))))
+        .++(Json.obj("balance" -> Json.toJson(x._2.getOrElse(sharingRatioFactor * x._1._1.sharingRatio.getOrElse(BigDecimal(1)) * x._1._1.initialAmount))))
           // necessary due to the overlapping of the property "name" and "id"
         .++(Json.obj("name" -> Json.toJson(x._1._1.name)))
         .++(Json.obj("id" -> Json.toJson(x._1._1.id)))
@@ -132,10 +155,12 @@ class AccountController @Inject() (implicit ec: ExecutionContext,
     val dateFormat = Formatter.normalizeDateFormat(request.getQueryString("sumRange").getOrElse(""))
     val startDate = Date.valueOf(request.getQueryString("startDate").getOrElse("1900-01-01"))
     val endDate = Date.valueOf(request.getQueryString("endDate").getOrElse("2100-12-31"))
+    val sharingRatioFactor = if (request.getQueryString("isSharingRatioEnabled").map(_.toBoolean).getOrElse(true)) BigDecimal(1) else BigDecimal(0)
+    
     val accounts = request.getQueryString("accounts").filter(! _.isEmpty)
       .map(x => x.split(",").map(_.toLong).toSeq)
 
-    val res = await{createTimeSeries(startDate, endDate, dateFormat, accounts)}
+    val res = await{createTimeSeries(startDate, endDate, dateFormat, accounts, sharingRatioFactor)}
     val jsonRes = res.map{ x => x.map {
       case b:BigDecimal => JsNumber(b)
       case s:String => JsString(s)
