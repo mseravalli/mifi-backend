@@ -30,8 +30,41 @@ class CategoryControllerIT extends PlaySpecification with JsonMatchers {
       contentAsString(response) must /("categories") /# 0 /("subCategories") */("name" -> "furniture and accessories")
     }
 
-    "aggregate Categories" in new WithApplication() {
+    "aggregate Categories sharing enabled" in new WithApplication() {
       val request = FakeRequest(GET, "/categories/aggregate?sumRange=yyyy-mm&startDate=2014-01-01&endDate=2016-03-31&categories=house,other,finance,mobility,living,health,free time&accounts=")
+      val response = route(app, request).get
+      status(response) must equalTo(OK)
+      contentType(response) must beSome.which(_ == "application/json")
+
+      // test the headers
+      contentAsString(response) must /("data") /#0 /#0 /("date")
+      contentAsString(response) must /("data") /#0 /#1 /("total")
+      contentAsString(response) must /("data") /#0 /#2 /("min")
+      contentAsString(response) must /("data") /#0 /#3 /("max")
+      contentAsString(response) must /("data") /#0 /#4 /("finance")
+      contentAsString(response) must /("data") /#0 /#5 /("free time")
+      contentAsString(response) must /("data") /#0 /#6 /("health")
+
+      // test the data
+      contentAsString(response) must /("data") /#1 /#0 /("2014-01")
+      contentAsString(response) must /("data") /#1 /#1 /(-1187.975)
+      contentAsString(response) must /("data") /#1 /#2 /(-1187.975)
+      contentAsString(response) must /("data") /#1 /#3 /(0.0)
+      contentAsString(response) must /("data") /#1 /#4 /(-242.41)
+      contentAsString(response) must /("data") /#1 /#5 /(-163.095)
+      contentAsString(response) must /("data") /#1 /#6 /(-140.55)
+
+      contentAsString(response) must /("data") /#2 /#0 /("2014-02")
+      contentAsString(response) must /("data") /#2 /#1 /(-970.85)
+      contentAsString(response) must /("data") /#2 /#2 /(-970.85)
+      contentAsString(response) must /("data") /#2 /#3 /(0)
+      contentAsString(response) must /("data") /#2 /#4 /(-167.42)
+      contentAsString(response) must /("data") /#2 /#5 /(-131.93)
+      contentAsString(response) must /("data") /#2 /#6 /(-116.76)
+    }
+
+    "aggregate Categories sharing disabled" in new WithApplication() {
+      val request = FakeRequest(GET, "/categories/aggregate?isSharingRatioEnabled=False&sumRange=yyyy-mm&startDate=2014-01-01&endDate=2016-03-31&categories=house,other,finance,mobility,living,health,free time&accounts=")
       val response = route(app, request).get
       status(response) must equalTo(OK)
       contentType(response) must beSome.which(_ == "application/json")
@@ -63,8 +96,8 @@ class CategoryControllerIT extends PlaySpecification with JsonMatchers {
       contentAsString(response) must /("data") /#2 /#6 /(-116.76)
     }
 
-    "compute total incoming flow per Category" in new WithApplication() {
-      val request = FakeRequest(GET, "/categories/in?sumRange=yyyy-mm&startDate=2014-01-01&endDate=2016-03-31&categories=house,other,finance,mobility,living,health,free%20time,work%20and%20training&subCategories=")
+    "compute total incoming flow per Category sharing enabled" in new WithApplication() {
+      val request = FakeRequest(GET, "/categories/in?isSharingRatioEnabled=True&sumRange=yyyy-mm&startDate=2014-01-01&endDate=2016-03-31&categories=house,other,finance,mobility,living,health,free%20time,work%20and%20training&subCategories=")
       val response = route(app, request).get
       status(response) must equalTo(OK)
       contentType(response) must beSome.which(_ == "application/json")
@@ -78,8 +111,44 @@ class CategoryControllerIT extends PlaySpecification with JsonMatchers {
       contentAsString(response) must /("data") /#1 /#1 /(34663.13)
     }
 
-    "compute total outgoing flow per Category" in new WithApplication() {
-      val request = FakeRequest(GET, "/categories/out?sumRange=yyyy-mm&startDate=2014-01-01&endDate=2016-03-31&categories=house,other,finance,mobility,living,health,free%20time,work%20and%20training&subCategories=")
+    "compute total incoming flow per Category sharing disabled" in new WithApplication() {
+      val request = FakeRequest(GET, "/categories/in?isSharingRatioEnabled=False&sumRange=yyyy-mm&startDate=2014-01-01&endDate=2016-03-31&categories=house,other,finance,mobility,living,health,free%20time,work%20and%20training&subCategories=")
+      val response = route(app, request).get
+      status(response) must equalTo(OK)
+      contentType(response) must beSome.which(_ == "application/json")
+
+      // test the headers
+      contentAsString(response) must /("data") /#0 /#0 /("category")
+      contentAsString(response) must /("data") /#0 /#1 /("amount")
+
+      // test the data
+      contentAsString(response) must /("data") /#1 /#0 /("work and training")
+      contentAsString(response) must /("data") /#1 /#1 /(34663.13)
+    }
+
+    "compute total outgoing flow per Category sharing enabled" in new WithApplication() {
+      val request = FakeRequest(GET, "/categories/out?isSharingRatioEnabled=True&sumRange=yyyy-mm&startDate=2014-01-01&endDate=2016-03-31&categories=house,other,finance,mobility,living,health,free%20time,work%20and%20training&subCategories=")
+      val response = route(app, request).get
+      status(response) must equalTo(OK)
+      contentType(response) must beSome.which(_ == "application/json")
+
+      // test the headers
+      contentAsString(response) must /("data") /#0 /#0 /("category")
+      contentAsString(response) must /("data") /#0 /#1 /("amount")
+
+      // test the data
+      contentAsString(response) must /("data") /#1 /#0 /("finance")
+      contentAsString(response) must /("data") /#1 /#1 /(5412.44)
+
+      contentAsString(response) must /("data") /#3 /#0 /("health")
+      contentAsString(response) must /("data") /#3 /#1 /(2675.62)
+
+      contentAsString(response) must /("data") /#6 /#0 /("mobility")
+      contentAsString(response) must /("data") /#6 /#1 /(2428.10)
+    }
+
+    "compute total outgoing flow per Category sharing disabled" in new WithApplication() {
+      val request = FakeRequest(GET, "/categories/out?isSharingRatioEnabled=False&sumRange=yyyy-mm&startDate=2014-01-01&endDate=2016-03-31&categories=house,other,finance,mobility,living,health,free%20time,work%20and%20training&subCategories=")
       val response = route(app, request).get
       status(response) must equalTo(OK)
       contentType(response) must beSome.which(_ == "application/json")
