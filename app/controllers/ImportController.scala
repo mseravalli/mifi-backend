@@ -33,7 +33,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
   private final val logger: Logger = LoggerFactory.getLogger(classOf[ImportController])
 
   def getAmount(x: List[String], a: AccountsRow, at: AccountTypesRow): BigDecimal = {
-    val incomeFactor = (BigDecimal(1) - a.sharingRatio.getOrElse(BigDecimal(0)))
+    val incomeFactor = BigDecimal(1)
     val in = BigDecimal.apply(x.lift(at.amountInPos).map{ amount => Formatter.formatAmount(amount)}.filter(!_.equals("")).getOrElse("0.00"))
     val out = BigDecimal.apply(Formatter.formatAmount(x.lift(at.amountOutPos).filter(!_.equals("")).getOrElse("0.00")).replace("-", ""))
     if (in.abs == out.abs) {

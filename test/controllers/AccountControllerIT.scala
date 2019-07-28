@@ -62,7 +62,7 @@ class AccountControllerIT extends PlaySpecification with JsonMatchers {
       contentType(response) must beSome.which(_ == "application/json")
 
       contentAsString(response) must /("name" -> "dkb")
-      contentAsString(response) must /("balance" -> 0.0)
+      contentAsString(response) must /("balance" -> -146.995)
       contentAsString(response) must /("currencyPos" -> -1)
     }
 
@@ -88,14 +88,14 @@ class AccountControllerIT extends PlaySpecification with JsonMatchers {
         contentAsString(response) must /("data") /# 25 /# 0 /("2016-01")
         contentAsString(response) must /("data") /# 25 /# 1 /(543.87)
         contentAsString(response) must /("data") /# 25 /# 2 /(627.95)
-        contentAsString(response) must /("data") /# 25 /# 3 /(0)
+        contentAsString(response) must /("data") /# 25 /# 3 /(-110.515)
         contentAsString(response) must /("data") /# 25 /# 4 /(0)
         contentAsString(response) must /("data") /# 25 /# 5 /(0)
         contentAsString(response) must /("data") /# 25 /# 6 /(1359.73)
         contentAsString(response) must /("data") /# 25 /# 7 /(0)
-        contentAsString(response) must /("data") /# 25 /# 8 /(-221.03)
+        contentAsString(response) must /("data") /# 25 /# 8 /(0)
         contentAsString(response) must /("data") /# 25 /# 9 /(4414.14)
-        contentAsString(response) must /("data") /# 25 /# 10 /(6724.66)
+        contentAsString(response) must /("data") /# 25 /# 10 /(6835.175)
       }
 
       "retrieve timeseries for single account: db" in new WithApplication {

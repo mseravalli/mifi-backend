@@ -31,10 +31,10 @@ class AccountController @Inject() (implicit ec: ExecutionContext,
         )
         .joinLeft(Tables.AccountTypes).on(_.accountType === _.id)
         .joinLeft(Tables.Transactions.filter(_.transactionDate < endDate)).on(_._1.id === _.accountId)
-    } yield (a, t.map(_.amount)))
+    } yield (a, t.map(a._1.sharingRatio * _.amount)))
       .groupBy(_._1)
       .map{ x =>
-        (x._1 , x._2.map(_._2.flatten).sum + x._1._1.initialAmount)
+        (x._1 , x._2.map(_._2.flatten).sum + (x._1._1.sharingRatio * x._1._1.initialAmount))
       }
       .sortBy(_._1._1.name)
       .result
@@ -43,7 +43,8 @@ class AccountController @Inject() (implicit ec: ExecutionContext,
   def timeSeriesQuery(startDate: Date, endDate: Date) = {
     Tables.Transactions
       .filter(x => x.transactionDate >= startDate && x.transactionDate < endDate)
-      .sortBy(_.transactionDate)
+      .joinLeft(Tables.Accounts).on(_.accountId === _.id)
+      .sortBy(_._1.transactionDate)
       .result
   }
 
@@ -56,7 +57,7 @@ class AccountController @Inject() (implicit ec: ExecutionContext,
     }
 
     val accountBalances: Seq[(models.AccountsRow, scala.math.BigDecimal)] =
-      accounts.map{ x => (x._1._1, x._2.getOrElse( x._1._1.initialAmount )) }
+      accounts.map{ x => (x._1._1, x._2.getOrElse( x._1._1.sharingRatio.getOrElse(BigDecimal(1)) * x._1._1.initialAmount )) }
 
     val transactions = await {
       db.run(timeSeriesQuery(startDate, endDate))
@@ -64,8 +65,8 @@ class AccountController @Inject() (implicit ec: ExecutionContext,
 
     // group transactions per time unit (day, month, year) and per account
     val groupedTransactions = transactions
-      .groupBy( x => (x.transactionDate.map(_.toLocalDate.format(DateTimeFormatter.ofPattern(dateFormat))), x.accountId ))
-      .map(x => (x._1 -> x._2.map(_.amount.getOrElse(BigDecimal(0))).sum ))
+      .groupBy( x => (x._1.transactionDate.map(_.toLocalDate.format(DateTimeFormatter.ofPattern(dateFormat))), x._1.accountId ))
+      .map(x => (x._1 -> x._2.map(y => y._2.flatMap(_.sharingRatio).getOrElse(BigDecimal(1)) * y._1.amount.getOrElse(BigDecimal(0))).sum ))
       .withDefaultValue(BigDecimal(0))
 
     var previousBalance = accountBalances.map(_._2)
@@ -116,7 +117,7 @@ class AccountController @Inject() (implicit ec: ExecutionContext,
     res.toList match {
       case x::Nil => Ok(Json.toJson(x._1._1)(JsonFormats.accountFmt).as[JsObject]
         .++(x._1._2.map(Json.toJson(_)(JsonFormats.accountTypeFmt)).getOrElse(Json.obj()).as[JsObject])
-        .++(Json.obj("balance" -> Json.toJson(x._2.getOrElse(x._1._1.initialAmount))))
+        .++(Json.obj("balance" -> Json.toJson(x._2.getOrElse(x._1._1.sharingRatio.getOrElse(BigDecimal(1)) * x._1._1.initialAmount))))
           // necessary due to the overlapping of the property "name" and "id"
         .++(Json.obj("name" -> Json.toJson(x._1._1.name)))
         .++(Json.obj("id" -> Json.toJson(x._1._1.id)))
