@@ -22,7 +22,8 @@ class SubCategoryController @Inject() (implicit ec: ExecutionContext,
                                        protected val dbConfigProvider: DatabaseConfigProvider,
                                        cc: ControllerComponents)
     extends AbstractController(cc) with HasDatabaseConfigProvider[JdbcProfile] {
-  def getSubCategoryTransactions(startDate: Date,
+  def getSubCategoryTransactions(sharingRatioFactor: BigDecimal,
+                                 startDate: Date,
                                  endDate: Date,
                                  category: String,
                                  subCategories: Array[String],
@@ -37,12 +38,20 @@ class SubCategoryController @Inject() (implicit ec: ExecutionContext,
         && subCategories.foldLeft(t.subCategory =!= t.subCategory)((res, sc)=> res || ( (t.category like category) && (t.subCategory like sc) ) )
       )
       .join(accountsTable).on(_.accountId === _.id)
-      .map{x => (x._1.transactionDate, x._1.subCategory, x._1.amount)}
+      .map{x => (
+        x._1.transactionDate,
+        x._1.subCategory,
+        if (sharingRatioFactor == BigDecimal(1))
+          x._2.sharingRatio * x._1.amount
+        else
+          x._1.amount
+      )}
       .result
   }
 
   // the flow can be either in or out
-  def totalFlowSubCatQuery(startDate: Date,
+  def totalFlowSubCatQuery(sharingRatioFactor: BigDecimal,
+                           startDate: Date,
                            endDate: Date,
                            flow: String,
                            category: String,
@@ -59,7 +68,15 @@ class SubCategoryController @Inject() (implicit ec: ExecutionContext,
       )
       .join(accountsTable).on(_.accountId === _.id)
       .groupBy(_._1.subCategory)
-      .map(x => (x._1, x._2.map(_._1.amount).sum))
+      .map{x => (
+        x._1,
+        x._2.map{y =>
+          if (sharingRatioFactor == BigDecimal(1))
+            y._2.sharingRatio * y._1.amount
+          else
+            y._1.amount
+        }.sum
+      )}
       .filter(x => flow match { case "in" => x._2 > BigDecimal(0) case "out" => x._2 < BigDecimal(0) } )
       .sortBy(_._1.asc)
       .result
@@ -74,6 +91,7 @@ class SubCategoryController @Inject() (implicit ec: ExecutionContext,
     val dateFormat = Formatter.normalizeDateFormat(request.getQueryString("sumRange").getOrElse(""))
     val startDate = Date.valueOf(request.getQueryString("startDate").getOrElse("1900-01-01"))
     val endDate =   Date.valueOf(request.getQueryString("endDate").getOrElse("2100-12-31"))
+    val sharingRatioFactor = if (request.getQueryString("isSharingRatioEnabled").map(_.toBoolean).getOrElse(true)) BigDecimal(1) else BigDecimal(0)
     val categories = request.getQueryString("categories").getOrElse("").split(",").map(_.trim).sorted
     val subCategories = request.getQueryString("subCategories").getOrElse("").split(",").map(_.trim).sorted
     val accounts = request.getQueryString("accounts").filter(!_.isEmpty).map(x => x.split(",").map(_.toLong).toSeq)
@@ -82,7 +100,7 @@ class SubCategoryController @Inject() (implicit ec: ExecutionContext,
     val sdf = new SimpleDateFormat(format)
 
     val raw = await {
-      db.run(getSubCategoryTransactions(startDate, endDate, categories.head, subCategories, accounts))
+      db.run(getSubCategoryTransactions(sharingRatioFactor, startDate, endDate, categories.head, subCategories, accounts))
     }
 
     val totalFlow = raw
@@ -107,12 +125,13 @@ class SubCategoryController @Inject() (implicit ec: ExecutionContext,
     val dateFormat = Formatter.normalizeDateFormat(request.getQueryString("sumRange").getOrElse(""))
     val startDate = Date.valueOf(request.getQueryString("startDate").getOrElse("1900-01-01"))
     val endDate =   Date.valueOf(request.getQueryString("endDate").getOrElse("2100-12-31"))
+    val sharingRatioFactor = if (request.getQueryString("isSharingRatioEnabled").map(_.toBoolean).getOrElse(true)) BigDecimal(1) else BigDecimal(0)
     val categories = request.getQueryString("categories").getOrElse("").split(",").map(_.trim).sorted
     val subCategories = request.getQueryString("subCategories").getOrElse("").split(",").map(_.trim).sorted
     val accounts = request.getQueryString("accounts").filter(!_.isEmpty).map(x => x.split(",").map(_.toLong).toSeq)
 
     val totalFlow = await {
-      db.run(totalFlowSubCatQuery(startDate, endDate, flow, categories.head, subCategories, accounts))
+      db.run(totalFlowSubCatQuery(sharingRatioFactor, startDate, endDate, flow, categories.head, subCategories, accounts))
     }
 
     val cols = Json.arr("subCategory", "amount")
