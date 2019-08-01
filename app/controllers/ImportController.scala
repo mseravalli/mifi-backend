@@ -253,7 +253,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
       }
       val status = queryResult.toString
       val balance = await {
-        db.run(new AccountController().readAccountsQuery(BigDecimal(1), Some(List(a._1._1.id))))
+        db.run(new AccountController().readAccountsQuery(false, Some(List(a._1._1.id))))
       }.head._2
 
       Json.obj("status" -> status, "account" -> Json.obj("account" -> a._1._1.id, "balance" -> Json.toJson(balance)))
@@ -278,7 +278,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
 
   private def getSingleAccount(accountId: Try[Long]) = {
     val account: Future[((AccountsRow, AccountTypesRow), BigDecimal)] = Future.fromTry(accountId).flatMap { id =>
-      val accounts = db.run(new AccountController().readAccountsQuery(BigDecimal(1), Some(List(id)))).map(_.toList)
+      val accounts = db.run(new AccountController().readAccountsQuery(false, Some(List(id)))).map(_.toList)
 
       val result: Future[Try[((AccountsRow, AccountTypesRow), BigDecimal)]] = accounts.map {
         case x :: Nil => {
