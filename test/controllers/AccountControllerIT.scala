@@ -44,7 +44,7 @@ class AccountControllerIT extends PlaySpecification with JsonMatchers {
       contentAsString(response) must /("finalRow" -> "Account balance")
     }
 
-    "read single account details hvb-depot" in new WithApplication() {
+    "read single account details hvb-depot sharing enabled" in new WithApplication() {
       val request = FakeRequest(GET, "/accounts/6?endDate=2015-12-31")
       val response = route(app, request).get
       status(response) must equalTo(OK)
@@ -55,7 +55,18 @@ class AccountControllerIT extends PlaySpecification with JsonMatchers {
       contentAsString(response) must /("currencyPos" -> -1)
     }
 
-    "read single account details dkb" in new WithApplication() {
+    "read single account details hvb-depot sharing disabled" in new WithApplication() {
+      val request = FakeRequest(GET, "/accounts/6?isSharingRatioEnabled=False&endDate=2015-12-31")
+      val response = route(app, request).get
+      status(response) must equalTo(OK)
+      contentType(response) must beSome.which(_ == "application/json")
+
+      contentAsString(response) must /("name" -> "hvb-depot")
+      contentAsString(response) must /("balance" -> 0)
+      contentAsString(response) must /("currencyPos" -> -1)
+    }
+
+    "read single account details dkb sharing enabled" in new WithApplication() {
       val request = FakeRequest(GET, "/accounts/7?endDate=2015-12-31")
       val response = route(app, request).get
       status(response) must equalTo(OK)
@@ -66,8 +77,19 @@ class AccountControllerIT extends PlaySpecification with JsonMatchers {
       contentAsString(response) must /("currencyPos" -> -1)
     }
 
+    "read single account details dkb sharing disabled" in new WithApplication() {
+      val request = FakeRequest(GET, "/accounts/7?isSharingRatioEnabled=False&endDate=2015-12-31")
+      val response = route(app, request).get
+      status(response) must equalTo(OK)
+      contentType(response) must beSome.which(_ == "application/json")
+
+      contentAsString(response) must /("name" -> "dkb")
+      contentAsString(response) must /("balance" -> -293.99)
+      contentAsString(response) must /("currencyPos" -> -1)
+    }
+
     "Timeseries" should {
-      "retrieve timeseries for all accounts" in new WithApplication() {
+      "retrieve timeseries for all accounts sharing enabled" in new WithApplication() {
         val request = FakeRequest(GET, "/accounts/timeseries?startDate=2014-01-01&endDate=2016-03-31&sumRange=YYYY-MM&accounts=")
         val response = route(app, request).get
         status(response) must equalTo(OK)
@@ -98,6 +120,37 @@ class AccountControllerIT extends PlaySpecification with JsonMatchers {
         contentAsString(response) must /("data") /# 25 /# 10 /(6835.175)
       }
 
+      "retrieve timeseries for all accounts sharing disabled" in new WithApplication() {
+        val request = FakeRequest(GET, "/accounts/timeseries?isSharingRatioEnabled=False&startDate=2014-01-01&endDate=2016-03-31&sumRange=YYYY-MM&accounts=")
+        val response = route(app, request).get
+        status(response) must equalTo(OK)
+        contentType(response) must beSome.which(_ == "application/json")
+
+        contentAsString(response) must /("data") /# 0 /# 0 /("date")
+        contentAsString(response) must /("data") /# 0 /# 1 /("bcard")
+        contentAsString(response) must /("data") /# 0 /# 2 /("db")
+        contentAsString(response) must /("data") /# 0 /# 3 /("dkb")
+        contentAsString(response) must /("data") /# 0 /# 4 /("dkb-cc-one")
+        contentAsString(response) must /("data") /# 0 /# 5 /("dkb-cc-two")
+        contentAsString(response) must /("data") /# 0 /# 6 /("hvb")
+        contentAsString(response) must /("data") /# 0 /# 7 /("hvb-depot")
+        contentAsString(response) must /("data") /# 0 /# 8 /("kalixa")
+        contentAsString(response) must /("data") /# 0 /# 9 /("n26")
+        contentAsString(response) must /("data") /# 0 /# 10 /("total")
+
+        contentAsString(response) must /("data") /# 25 /# 0 /("2016-01")
+        contentAsString(response) must /("data") /# 25 /# 1 /(543.87)
+        contentAsString(response) must /("data") /# 25 /# 2 /(627.95)
+        contentAsString(response) must /("data") /# 25 /# 3 /(-221.03)
+        contentAsString(response) must /("data") /# 25 /# 4 /(0)
+        contentAsString(response) must /("data") /# 25 /# 5 /(0)
+        contentAsString(response) must /("data") /# 25 /# 6 /(1359.73)
+        contentAsString(response) must /("data") /# 25 /# 7 /(0)
+        contentAsString(response) must /("data") /# 25 /# 8 /(0)
+        contentAsString(response) must /("data") /# 25 /# 9 /(4414.14)
+        contentAsString(response) must /("data") /# 25 /# 10 /(6724.66)
+      }
+
       "retrieve timeseries for single account: db" in new WithApplication {
         val request = FakeRequest(GET, "/accounts/timeseries?startDate=2014-01-01&endDate=2016-03-31&sumRange=YYYY-MM&accounts=1")
         val response = route(app, request).get
@@ -111,6 +164,36 @@ class AccountControllerIT extends PlaySpecification with JsonMatchers {
         contentAsString(response) must /("data") /# 25 /# 0 /("2016-01")
         contentAsString(response) must /("data") /# 25 /# 1 /(627.95)
         contentAsString(response) must /("data") /# 25 /# 2 /(627.95)
+      }
+
+      "retrieve timeseries for single account sharing enabled: dkb" in new WithApplication {
+        val request = FakeRequest(GET, "/accounts/timeseries?startDate=2014-01-01&endDate=2016-03-31&sumRange=YYYY-MM&accounts=7")
+        val response = route(app, request).get
+        status(response) must equalTo(OK)
+        contentType(response) must beSome.which(_ == "application/json")
+
+        contentAsString(response) must /("data") /# 0 /# 0 /("date")
+        contentAsString(response) must /("data") /# 0 /# 1 /("dkb")
+        contentAsString(response) must /("data") /# 0 /# 2 /("total")
+
+        contentAsString(response) must /("data") /# 25 /# 0 /("2016-01")
+        contentAsString(response) must /("data") /# 25 /# 1 /(-110.515)
+        contentAsString(response) must /("data") /# 25 /# 2 /(-110.515)
+      }
+
+      "retrieve timeseries for single account sharing disabled: dkb" in new WithApplication {
+        val request = FakeRequest(GET, "/accounts/timeseries?isSharingRatioEnabled=False&startDate=2014-01-01&endDate=2016-03-31&sumRange=YYYY-MM&accounts=7")
+        val response = route(app, request).get
+        status(response) must equalTo(OK)
+        contentType(response) must beSome.which(_ == "application/json")
+
+        contentAsString(response) must /("data") /# 0 /# 0 /("date")
+        contentAsString(response) must /("data") /# 0 /# 1 /("dkb")
+        contentAsString(response) must /("data") /# 0 /# 2 /("total")
+
+        contentAsString(response) must /("data") /# 25 /# 0 /("2016-01")
+        contentAsString(response) must /("data") /# 25 /# 1 /(-221.03)
+        contentAsString(response) must /("data") /# 25 /# 2 /(-221.03)
       }
     }
 

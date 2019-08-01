@@ -62,8 +62,8 @@ class ImportControllerIT extends PlaySpecification with JsonMatchers {
       val accountId = 7
       val filePath = "test/dkb.csv"
 
-      val amountDeleted = BigDecimal(10.10)
-      val balanceRequest = FakeRequest(GET, s"/accounts/${accountId}?endDate=2100-12-31")
+      val amountDeleted = BigDecimal(20.20)
+      val balanceRequest = FakeRequest(GET, s"/accounts/${accountId}?isSharingRatioEnabled=False&endDate=2100-12-31")
       val balanceResponse = route(app, balanceRequest).get
       val balance = BigDecimal((contentAsJson(balanceResponse) \ "balance").get.toString())
 
@@ -87,8 +87,8 @@ class ImportControllerIT extends PlaySpecification with JsonMatchers {
       val accountId = 8
       val filePath = "test/dkb-cc.csv"
 
-      val amountDeleted = BigDecimal(10.10)
-      val balanceRequest = FakeRequest(GET, s"/accounts/${accountId}?endDate=2100-12-31")
+      val amountDeleted = BigDecimal(20.20)
+      val balanceRequest = FakeRequest(GET, s"/accounts/${accountId}?isSharingRatioEnabled=False&endDate=2100-12-31")
       val balanceResponse = route(app, balanceRequest).get
       val balance = BigDecimal((contentAsJson(balanceResponse) \ "balance").get.toString())
 
