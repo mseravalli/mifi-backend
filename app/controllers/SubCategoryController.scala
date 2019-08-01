@@ -22,7 +22,7 @@ class SubCategoryController @Inject() (implicit ec: ExecutionContext,
                                        protected val dbConfigProvider: DatabaseConfigProvider,
                                        cc: ControllerComponents)
     extends AbstractController(cc) with HasDatabaseConfigProvider[JdbcProfile] {
-  def getSubCategoryTransactions(sharingRatioFactor: BigDecimal,
+  def getSubCategoryTransactions(isSharingRatioEnabled: Boolean,
                                  startDate: Date,
                                  endDate: Date,
                                  category: String,
@@ -41,7 +41,7 @@ class SubCategoryController @Inject() (implicit ec: ExecutionContext,
       .map{x => (
         x._1.transactionDate,
         x._1.subCategory,
-        if (sharingRatioFactor == BigDecimal(1))
+        if (isSharingRatioEnabled)
           x._2.sharingRatio * x._1.amount
         else
           x._1.amount
@@ -50,7 +50,7 @@ class SubCategoryController @Inject() (implicit ec: ExecutionContext,
   }
 
   // the flow can be either in or out
-  def totalFlowSubCatQuery(sharingRatioFactor: BigDecimal,
+  def totalFlowSubCatQuery(isSharingRatioEnabled: Boolean,
                            startDate: Date,
                            endDate: Date,
                            flow: String,
@@ -71,7 +71,7 @@ class SubCategoryController @Inject() (implicit ec: ExecutionContext,
       .map{x => (
         x._1,
         x._2.map{y =>
-          if (sharingRatioFactor == BigDecimal(1))
+          if (isSharingRatioEnabled)
             y._2.sharingRatio * y._1.amount
           else
             y._1.amount
@@ -91,7 +91,7 @@ class SubCategoryController @Inject() (implicit ec: ExecutionContext,
     val dateFormat = Formatter.normalizeDateFormat(request.getQueryString("sumRange").getOrElse(""))
     val startDate = Date.valueOf(request.getQueryString("startDate").getOrElse("1900-01-01"))
     val endDate =   Date.valueOf(request.getQueryString("endDate").getOrElse("2100-12-31"))
-    val sharingRatioFactor = if (request.getQueryString("isSharingRatioEnabled").map(_.toBoolean).getOrElse(true)) BigDecimal(1) else BigDecimal(0)
+    val isSharingRatioEnabled = request.getQueryString("isSharingRatioEnabled").map(_.toBoolean).getOrElse(true)
     val categories = request.getQueryString("categories").getOrElse("").split(",").map(_.trim).sorted
     val subCategories = request.getQueryString("subCategories").getOrElse("").split(",").map(_.trim).sorted
     val accounts = request.getQueryString("accounts").filter(!_.isEmpty).map(x => x.split(",").map(_.toLong).toSeq)
@@ -100,7 +100,7 @@ class SubCategoryController @Inject() (implicit ec: ExecutionContext,
     val sdf = new SimpleDateFormat(format)
 
     val raw = await {
-      db.run(getSubCategoryTransactions(sharingRatioFactor, startDate, endDate, categories.head, subCategories, accounts))
+      db.run(getSubCategoryTransactions(isSharingRatioEnabled, startDate, endDate, categories.head, subCategories, accounts))
     }
 
     val totalFlow = raw
@@ -125,13 +125,13 @@ class SubCategoryController @Inject() (implicit ec: ExecutionContext,
     val dateFormat = Formatter.normalizeDateFormat(request.getQueryString("sumRange").getOrElse(""))
     val startDate = Date.valueOf(request.getQueryString("startDate").getOrElse("1900-01-01"))
     val endDate =   Date.valueOf(request.getQueryString("endDate").getOrElse("2100-12-31"))
-    val sharingRatioFactor = if (request.getQueryString("isSharingRatioEnabled").map(_.toBoolean).getOrElse(true)) BigDecimal(1) else BigDecimal(0)
+    val isSharingRatioEnabled = request.getQueryString("isSharingRatioEnabled").map(_.toBoolean).getOrElse(true)
     val categories = request.getQueryString("categories").getOrElse("").split(",").map(_.trim).sorted
     val subCategories = request.getQueryString("subCategories").getOrElse("").split(",").map(_.trim).sorted
     val accounts = request.getQueryString("accounts").filter(!_.isEmpty).map(x => x.split(",").map(_.toLong).toSeq)
 
     val totalFlow = await {
-      db.run(totalFlowSubCatQuery(sharingRatioFactor, startDate, endDate, flow, categories.head, subCategories, accounts))
+      db.run(totalFlowSubCatQuery(isSharingRatioEnabled, startDate, endDate, flow, categories.head, subCategories, accounts))
     }
 
     val cols = Json.arr("subCategory", "amount")
