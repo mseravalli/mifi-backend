@@ -6,7 +6,6 @@ import models._
 import java.sql.Date
 import java.time.format.DateTimeFormatter
 import javax.inject._
-import org.slf4j.{LoggerFactory, Logger}
 import play.api.db.slick._
 import play.api.mvc._
 import play.api.libs.json._
@@ -115,8 +114,6 @@ class AccountController @Inject() (implicit ec: ExecutionContext,
 
     header +: timeSeries
   }
-
-  private final val logger: Logger = LoggerFactory.getLogger(classOf[AccountController])
 
   def readAccounts(): Action[AnyContent] =  Action.async { request => async {
     val endDate = Date.valueOf(request.getQueryString("endDate") .getOrElse("2100-12-31"))

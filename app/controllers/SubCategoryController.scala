@@ -7,7 +7,6 @@ import helpers.Formatter
 import models.{Category, JsonFormats, Tables}
 import javax.inject._
 
-import org.slf4j.{Logger, LoggerFactory}
 import play.api.db.slick._
 import play.api.mvc._
 import play.api.libs.json._
@@ -81,8 +80,6 @@ class SubCategoryController @Inject() (implicit ec: ExecutionContext,
       .sortBy(_._1.asc)
       .result
   }
-
-  private final val logger: Logger = LoggerFactory.getLogger(classOf[SubCategoryController])
 
   /**
    * Request example:
