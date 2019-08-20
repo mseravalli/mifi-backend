@@ -6,7 +6,6 @@ import models.{Category, JsonFormats, Tables}
 import java.sql.Date
 import java.text.SimpleDateFormat
 import javax.inject._
-import org.slf4j.{Logger, LoggerFactory}
 
 import play.api.db.slick._
 import play.api.mvc._
@@ -86,8 +85,6 @@ class CategoryController @Inject() (implicit ec: ExecutionContext,
       )}
       .result
   }
-
-  private final val logger: Logger = LoggerFactory.getLogger(classOf[CategoryController])
 
   def readCategories(): Action[AnyContent] = Action.async { async {
     val categories = await {

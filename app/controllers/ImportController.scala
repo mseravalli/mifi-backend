@@ -8,9 +8,9 @@ import helpers._
 import javax.inject._
 import models._
 import org.joda.time.format.{DateTimeFormat, DateTimeFormatter}
-import org.slf4j.{Logger, LoggerFactory}
 import play.api.db.slick._
 import play.api.libs.Files.TemporaryFile
+import play.api.Logging
 import play.api.libs.json._
 import play.api.libs.ws._
 import play.api.mvc.MultipartFormData.FilePart
@@ -28,9 +28,7 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
                                   cc: ControllerComponents,
                                   ws: WSClient,
                                   pbp:PlayBodyParsers) 
-    extends AbstractController(cc) with HasDatabaseConfigProvider[JdbcProfile] {
-
-  private final val logger: Logger = LoggerFactory.getLogger(classOf[ImportController])
+    extends AbstractController(cc) with HasDatabaseConfigProvider[JdbcProfile] with Logging {
 
   def getAmount(x: List[String], a: AccountsRow, at: AccountTypesRow): BigDecimal = {
     val incomeFactor = BigDecimal(1)

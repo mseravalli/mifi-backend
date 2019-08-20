@@ -18,10 +18,9 @@ import slick.jdbc.PostgresProfile.api._
 
 @Singleton
 class HealthController @Inject()(implicit ec: ExecutionContext,
-                                      protected val dbConfigProvider: DatabaseConfigProvider,
                                       cc: ControllerComponents,
                                       pbp:PlayBodyParsers)
-    extends AbstractController(cc) with HasDatabaseConfigProvider[JdbcProfile] {
+    extends AbstractController(cc) {
   def getHealth(): Action[AnyContent] = Action.async { request => async {
     Ok("OK")
   }}
