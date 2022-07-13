@@ -14,8 +14,7 @@ Run all the necessary containers:
 
 ```bash
 docker container run -d -p 5432:5432 mseravalli/postgres:latest
-docker container run -d -p 4200:4200
-mseravalli/mifi-frontend:latest`
+docker container run -d -p 4200:4200 mseravalli/mifi-frontend:latest
 ```
 
 Clone this repo
