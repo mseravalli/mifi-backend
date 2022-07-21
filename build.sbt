@@ -2,7 +2,7 @@ name := "mi-fi"
 
 version := "4.5.0"
 
-scalaVersion := "2.12.4"
+scalaVersion := "2.12.11"
 
 lazy val root = (project in file(".")).enablePlugins(PlayScala)
 

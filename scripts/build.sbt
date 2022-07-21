@@ -2,7 +2,7 @@ name := "SlickGenerator"
 
 version := "2.0.0"
 
-scalaVersion := "2.12.2"
+scalaVersion := "2.12.15"
 
 libraryDependencies += "com.typesafe.slick" %% "slick-codegen" % "3.2.2"
 

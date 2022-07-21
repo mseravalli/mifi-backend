@@ -10,6 +10,7 @@ import javax.inject._
 import play.api.db.slick._
 import play.api.mvc._
 import play.api.libs.json._
+import play.api.Logging
 
 import scala.async.Async.{async, await}
 import scala.concurrent.{Future, ExecutionContext}
@@ -20,7 +21,7 @@ import slick.jdbc.PostgresProfile.api._
 class CategoryController @Inject() (implicit ec: ExecutionContext,
                                     protected val dbConfigProvider: DatabaseConfigProvider,
                                     cc: ControllerComponents)
-    extends AbstractController(cc) with HasDatabaseConfigProvider[JdbcProfile] {
+    extends AbstractController(cc) with HasDatabaseConfigProvider[JdbcProfile] with Logging {
   def getCategoriesQuery = {
     Tables.Categories
       .join(Tables.CategoryMatch)
@@ -122,19 +123,29 @@ class CategoryController @Inject() (implicit ec: ExecutionContext,
     }
 
     val totalFlow = raw
-      .map(x => (sdf.format(x._1.getOrElse("")), x._2.getOrElse(""), x._3.getOrElse(BigDecimal(0.0))))
+      .map(x => (sdf.format(x._1.getOrElse("")), x._2.getOrElse(""), x._3.getOrElse(BigDecimal(0.0)))) 
+      // from now on operating with (date, category, amount)
       .groupBy(x => x._1)
       .map{ x =>
         (
-          x._1,
-          x._2.groupBy(_._2).map(y => (y._1 -> y._2.map(_._3).sum))
+          x._1, 
+          x._2.groupBy(_._2).map(y => (y._1 + " in" -> y._2.map(_._3).filter(_ >= 0).sum))
+              ++ x._2.groupBy(_._2).map(y => (y._1 + " out" -> y._2.map(_._3).filter(_ < 0).sum))
             + ("total" -> x._2.map(_._3).sum)
-            + ("max" -> x._2.groupBy(_._2).map(y => y._2.map(_._3).sum).filter(_ > 0).sum)
-            + ("min" -> x._2.groupBy(_._2).map(y => y._2.map(_._3).sum).filter(_ < 0).sum)
+            // + ("max" -> x._2.groupBy(_._2).map(y => y._2.map(_._3).sum).filter(_ > 0).sum)
+            // + ("min" -> x._2.groupBy(_._2).map(y => y._2.map(_._3).sum).filter(_ < 0).sum)
+            + ("max" -> x._2.groupBy(_._2).map(y => y._2.map(_._3).filter(_ >= 0).sum).sum)
+            + ("min" -> x._2.groupBy(_._2).map(y => y._2.map(_._3).filter(_ < 0).sum).sum)
         )
       }
+      
+    logger.debug(totalFlow.toString)
 
-    val series = Formatter.formatSeries(totalFlow, startDate, endDate, categories, dateFormat)
+    val inOutCategories = categories
+      .filter(x => !("total".equals(x) || "min".equals(x) || "max".equals(x)))
+      .map(x =>  List(x + " in", x + " out")).flatten
+
+    val series = Formatter.formatSeries(totalFlow, startDate, endDate, inOutCategories, dateFormat)
 
     Ok( series )
   }}
