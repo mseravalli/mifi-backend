@@ -9,8 +9,8 @@ For possible problems encountered during the setup please refer to the [HELP.md]
 
 Run all the necessary containers.
 ```
-$ docker container run -d -p 5432:5432 mseravalli/postgres:2.2.2
-$ docker container run -d -p 4200:4200 mseravalli/mifi-frontend:1.0.1
+docker container run -d -p 5432:5432 mseravalli/mifi-sql
+docker container run -d -p 4200:4200 mseravalli/mifi-frontend
 ```
 
 Clone the repo.
