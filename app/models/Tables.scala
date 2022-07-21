@@ -42,8 +42,8 @@ trait Tables {
     val apiUser: Rep[Option[String]] = column[Option[String]]("api_user", O.Length(64,varying=true), O.Default(None))
     /** Database column api_pass SqlType(varchar), Length(64,true), Default(None) */
     val apiPass: Rep[Option[String]] = column[Option[String]]("api_pass", O.Length(64,varying=true), O.Default(None))
-    /** Database column sharing_ratio SqlType(numeric), Default(Some(0.00)) */
-    val sharingRatio: Rep[Option[scala.math.BigDecimal]] = column[Option[scala.math.BigDecimal]]("sharing_ratio", O.Default(Some(scala.math.BigDecimal("0.00"))))
+    /** Database column sharing_ratio SqlType(numeric), Default(Some(1.00)) */
+    val sharingRatio: Rep[Option[scala.math.BigDecimal]] = column[Option[scala.math.BigDecimal]]("sharing_ratio", O.Default(Some(scala.math.BigDecimal("1.00"))))
 
     /** Foreign key referencing AccountTypes (database name accounts_account_type_fkey) */
     lazy val accountTypesFk1 = foreignKey("accounts_account_type_fkey", accountType, AccountTypes)(r => r.id, onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
@@ -270,8 +270,8 @@ trait Tables {
    *  @param initialAmount Database column initial_amount SqlType(numeric)
    *  @param apiUser Database column api_user SqlType(varchar), Length(64,true), Default(None)
    *  @param apiPass Database column api_pass SqlType(varchar), Length(64,true), Default(None)
-   *  @param sharingRatio Database column sharing_ratio SqlType(numeric), Default(Some(0.00)) */
-  case class AccountsRow(id: Long, name: String, accountType: Long, initialAmount: scala.math.BigDecimal, apiUser: Option[String] = None, apiPass: Option[String] = None, sharingRatio: Option[scala.math.BigDecimal] = Some(scala.math.BigDecimal("0.00")))
+   *  @param sharingRatio Database column sharing_ratio SqlType(numeric), Default(Some(1.00)) */
+  case class AccountsRow(id: Long, name: String, accountType: Long, initialAmount: scala.math.BigDecimal, apiUser: Option[String] = None, apiPass: Option[String] = None, sharingRatio: Option[scala.math.BigDecimal] = Some(scala.math.BigDecimal("1.00")))
 
   /** Entity class storing rows of table AccountTypes
    *  @param id Database column id SqlType(bigserial), AutoInc, PrimaryKey
