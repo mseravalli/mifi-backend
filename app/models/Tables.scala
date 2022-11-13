@@ -14,7 +14,7 @@ trait Tables {
   import slick.jdbc.{GetResult => GR}
 
   /** DDL for all tables. Call .create to execute. */
-  lazy val schema: profile.SchemaDescription = Array(Accounts.schema, AccountTypes.schema, Categories.schema, CategoryMatch.schema, SubCategories.schema, Transactions.schema, TransactionsClassification.schema).reduceLeft(_ ++ _)
+  lazy val schema: profile.SchemaDescription = Array(Accounts.schema, AccountTypes.schema, Categories.schema, CategoryMatch.schema, SubCategories.schema, TaggedClassification.schema, TaggedTransactions.schema, Tags.schema, Transactions.schema, TransactionsClassification.schema).reduceLeft(_ ++ _)
   @deprecated("Use .schema instead of .ddl", "3.0")
   def ddl = schema
 
@@ -183,6 +183,88 @@ trait Tables {
   lazy val SubCategories = new TableQuery(tag => new SubCategories(tag))
 
 
+  /** GetResult implicit for fetching TaggedClassificationRow objects using plain SQL queries */
+  implicit def GetResultTaggedClassificationRow(implicit e0: GR[String]): GR[TaggedClassificationRow] = GR{
+    prs => import prs._
+    TaggedClassificationRow.tupled((<<[String], <<[String], <<[String], <<[String]))
+  }
+  /** Table description of table tagged_classification. Objects of this class serve as prototypes for rows in queries. */
+  class TaggedClassification(_tableTag: Tag) extends profile.api.Table[TaggedClassificationRow](_tableTag, "tagged_classification") {
+    def * = (description, category, subCategory, tag) <> (TaggedClassificationRow.tupled, TaggedClassificationRow.unapply)
+    /** Maps whole row to an option. Useful for outer joins. */
+    def ? = (Rep.Some(description), Rep.Some(category), Rep.Some(subCategory), Rep.Some(tag)).shaped.<>({r=>import r._; _1.map(_=> TaggedClassificationRow.tupled((_1.get, _2.get, _3.get, _4.get)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
+
+    /** Database column description SqlType(varchar), Length(128,true) */
+    val description: Rep[String] = column[String]("description", O.Length(128,varying=true))
+    /** Database column category SqlType(varchar), Length(32,true) */
+    val category: Rep[String] = column[String]("category", O.Length(32,varying=true))
+    /** Database column sub_category SqlType(varchar), Length(32,true) */
+    val subCategory: Rep[String] = column[String]("sub_category", O.Length(32,varying=true))
+    /** Database column tag SqlType(varchar), Length(32,true) */
+    val tag: Rep[String] = column[String]("tag", O.Length(32,varying=true))
+
+    /** Primary key of TaggedClassification (database name tagged_classification_pkey) */
+    val pk = primaryKey("tagged_classification_pkey", (description, category, subCategory, tag))
+
+    /** Foreign key referencing Tags (database name tagged_classification_tag_fkey) */
+    lazy val tagsFk = foreignKey("tagged_classification_tag_fkey", tag, Tags)(r => r.tag, onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
+    /** Foreign key referencing TransactionsClassification (database name tagged_classification_description_category_sub_category_fkey) */
+    lazy val transactionsClassificationFk = foreignKey("tagged_classification_description_category_sub_category_fkey", (description, category, subCategory), TransactionsClassification)(r => (r.description, r.category, r.subCategory), onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
+  }
+  /** Collection-like TableQuery object for table TaggedClassification */
+  lazy val TaggedClassification = new TableQuery(tag => new TaggedClassification(tag))
+
+
+  /** GetResult implicit for fetching TaggedTransactionsRow objects using plain SQL queries */
+  implicit def GetResultTaggedTransactionsRow(implicit e0: GR[Long], e1: GR[String]): GR[TaggedTransactionsRow] = GR{
+    prs => import prs._
+    TaggedTransactionsRow.tupled((<<[Long], <<[String]))
+  }
+  /** Table description of table tagged_transactions. Objects of this class serve as prototypes for rows in queries. */
+  class TaggedTransactions(_tableTag: Tag) extends profile.api.Table[TaggedTransactionsRow](_tableTag, "tagged_transactions") {
+    def * = (transactionId, tag) <> (TaggedTransactionsRow.tupled, TaggedTransactionsRow.unapply)
+    /** Maps whole row to an option. Useful for outer joins. */
+    def ? = (Rep.Some(transactionId), Rep.Some(tag)).shaped.<>({r=>import r._; _1.map(_=> TaggedTransactionsRow.tupled((_1.get, _2.get)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
+
+    /** Database column transaction_id SqlType(int8) */
+    val transactionId: Rep[Long] = column[Long]("transaction_id")
+    /** Database column tag SqlType(varchar), Length(32,true) */
+    val tag: Rep[String] = column[String]("tag", O.Length(32,varying=true))
+
+    /** Primary key of TaggedTransactions (database name tagged_transactions_pkey) */
+    val pk = primaryKey("tagged_transactions_pkey", (transactionId, tag))
+
+    /** Foreign key referencing Tags (database name tagged_transactions_tag_fkey) */
+    lazy val tagsFk1 = foreignKey("tagged_transactions_tag_fkey", tag, Tags)(r => r.tag, onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
+    /** Foreign key referencing Tags (database name tagged_transactions_tag_fkey1) */
+    lazy val tagsFk2 = foreignKey("tagged_transactions_tag_fkey1", tag, Tags)(r => r.tag, onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
+    /** Foreign key referencing Transactions (database name tagged_transactions_transaction_id_fkey) */
+    lazy val transactionsFk3 = foreignKey("tagged_transactions_transaction_id_fkey", transactionId, Transactions)(r => r.id, onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
+    /** Foreign key referencing Transactions (database name tagged_transactions_transaction_id_fkey1) */
+    lazy val transactionsFk4 = foreignKey("tagged_transactions_transaction_id_fkey1", transactionId, Transactions)(r => r.id, onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
+  }
+  /** Collection-like TableQuery object for table TaggedTransactions */
+  lazy val TaggedTransactions = new TableQuery(tag => new TaggedTransactions(tag))
+
+
+  /** GetResult implicit for fetching TagsRow objects using plain SQL queries */
+  implicit def GetResultTagsRow(implicit e0: GR[String]): GR[TagsRow] = GR{
+    prs => import prs._
+    TagsRow(<<[String])
+  }
+  /** Table description of table tags. Objects of this class serve as prototypes for rows in queries. */
+  class Tags(_tableTag: Tag) extends profile.api.Table[TagsRow](_tableTag, "tags") {
+    def * = tag <> (TagsRow, TagsRow.unapply)
+    /** Maps whole row to an option. Useful for outer joins. */
+    def ? = Rep.Some(tag).shaped.<>(r => r.map(_=> TagsRow(r.get)), (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
+
+    /** Database column tag SqlType(varchar), PrimaryKey, Length(32,true) */
+    val tag: Rep[String] = column[String]("tag", O.PrimaryKey, O.Length(32,varying=true))
+  }
+  /** Collection-like TableQuery object for table Tags */
+  lazy val Tags = new TableQuery(tag => new Tags(tag))
+
+
   /** GetResult implicit for fetching TransactionsRow objects using plain SQL queries */
   implicit def GetResultTransactionsRow(implicit e0: GR[Long], e1: GR[Option[java.sql.Date]], e2: GR[Option[String]], e3: GR[Option[scala.math.BigDecimal]], e4: GR[Boolean]): GR[TransactionsRow] = GR{
     prs => import prs._
@@ -225,8 +307,8 @@ trait Tables {
     lazy val accountsFk2 = foreignKey("transactions_account_id_fkey1", accountId, Accounts)(r => r.id, onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
     /** Foreign key referencing Categories (database name transactions_category_fkey) */
     lazy val categoriesFk = foreignKey("transactions_category_fkey", category, Categories)(r => Rep.Some(r.category), onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
-    /** Foreign key referencing CategoryMatch (database name transactions_category_fkey1) */
-    lazy val categoryMatchFk = foreignKey("transactions_category_fkey1", (category, subCategory), CategoryMatch)(r => (Rep.Some(r.category), Rep.Some(r.subCategory)), onUpdate=ForeignKeyAction.NoAction, onDelete=ForeignKeyAction.NoAction)
+    /** Foreign key referencing CategoryMatch (database name transactions_category_sub_category_fkey) */
+    lazy val categoryMatchFk = foreignKey("transactions_category_sub_category_fkey", (category, subCategory), CategoryMatch)(r => (Rep.Some(r.category), Rep.Some(r.subCategory)), onUpdate=ForeignKeyAction.NoAction, onDelete=ForeignKeyAction.NoAction)
     /** Foreign key referencing SubCategories (database name transactions_sub_category_fkey) */
     lazy val subCategoriesFk = foreignKey("transactions_sub_category_fkey", subCategory, SubCategories)(r => Rep.Some(r.subCategory), onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
 
@@ -248,15 +330,20 @@ trait Tables {
     /** Maps whole row to an option. Useful for outer joins. */
     def ? = (Rep.Some(description), Rep.Some(category), Rep.Some(subCategory)).shaped.<>({r=>import r._; _1.map(_=> TransactionsClassificationRow.tupled((_1.get, _2.get, _3.get)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
 
-    /** Database column description SqlType(varchar), PrimaryKey, Length(128,true) */
-    val description: Rep[String] = column[String]("description", O.PrimaryKey, O.Length(128,varying=true))
+    /** Database column description SqlType(varchar), Length(128,true) */
+    val description: Rep[String] = column[String]("description", O.Length(128,varying=true))
     /** Database column category SqlType(varchar), Length(32,true) */
     val category: Rep[String] = column[String]("category", O.Length(32,varying=true))
     /** Database column sub_category SqlType(varchar), Length(32,true) */
     val subCategory: Rep[String] = column[String]("sub_category", O.Length(32,varying=true))
 
+    /** Primary key of TransactionsClassification (database name transactions_classification_pkey) */
+    val pk = primaryKey("transactions_classification_pkey", (description, category, subCategory))
+
     /** Foreign key referencing Categories (database name transactions_classification_category_fkey) */
     lazy val categoriesFk = foreignKey("transactions_classification_category_fkey", category, Categories)(r => r.category, onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
+    /** Foreign key referencing CategoryMatch (database name transactions_classification_category_sub_category_fkey) */
+    lazy val categoryMatchFk = foreignKey("transactions_classification_category_sub_category_fkey", (category, subCategory), CategoryMatch)(r => (r.category, r.subCategory), onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
     /** Foreign key referencing SubCategories (database name transactions_classification_sub_category_fkey) */
     lazy val subCategoriesFk = foreignKey("transactions_classification_sub_category_fkey", subCategory, SubCategories)(r => r.subCategory, onUpdate=ForeignKeyAction.Cascade, onDelete=ForeignKeyAction.NoAction)
   }
@@ -310,6 +397,22 @@ trait Tables {
    *  @param subCategory Database column sub_category SqlType(varchar), PrimaryKey, Length(32,true) */
   case class SubCategoriesRow(subCategory: String)
 
+  /** Entity class storing rows of table TaggedClassification
+   *  @param description Database column description SqlType(varchar), Length(128,true)
+   *  @param category Database column category SqlType(varchar), Length(32,true)
+   *  @param subCategory Database column sub_category SqlType(varchar), Length(32,true)
+   *  @param tag Database column tag SqlType(varchar), Length(32,true) */
+  case class TaggedClassificationRow(description: String, category: String, subCategory: String, tag: String)
+
+  /** Entity class storing rows of table TaggedTransactions
+   *  @param transactionId Database column transaction_id SqlType(int8)
+   *  @param tag Database column tag SqlType(varchar), Length(32,true) */
+  case class TaggedTransactionsRow(transactionId: Long, tag: String)
+
+  /** Entity class storing rows of table Tags
+   *  @param tag Database column tag SqlType(varchar), PrimaryKey, Length(32,true) */
+  case class TagsRow(tag: String)
+
   /** Entity class storing rows of table Transactions
    *  @param id Database column id SqlType(bigserial), AutoInc, PrimaryKey
    *  @param accountId Database column account_id SqlType(int8)
@@ -326,7 +429,7 @@ trait Tables {
   case class TransactionsRow(id: Long, accountId: Long, transactionDate: Option[java.sql.Date] = None, exchangeDate: Option[java.sql.Date] = None, receiver: Option[String] = None, purpose: Option[String] = None, amount: Option[scala.math.BigDecimal] = None, currency: Option[String] = None, category: Option[String] = None, subCategory: Option[String] = None, comment: Option[String] = None, approved: Boolean)
 
   /** Entity class storing rows of table TransactionsClassification
-   *  @param description Database column description SqlType(varchar), PrimaryKey, Length(128,true)
+   *  @param description Database column description SqlType(varchar), Length(128,true)
    *  @param category Database column category SqlType(varchar), Length(32,true)
    *  @param subCategory Database column sub_category SqlType(varchar), Length(32,true) */
   case class TransactionsClassificationRow(description: String, category: String, subCategory: String)

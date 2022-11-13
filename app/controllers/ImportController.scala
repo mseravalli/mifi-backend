@@ -254,6 +254,9 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
         db.run(new AccountController().readAccountsQuery(false, Some(List(a._1._1.id))))
       }.head._2
 
+      var classificationRes = await {new ClassifierController().classify}
+      logger.debug(classificationRes.toString)
+
       Json.obj("status" -> status, "account" -> Json.obj("account" -> a._1._1.id, "balance" -> Json.toJson(balance)))
     }}
 
@@ -264,11 +267,6 @@ class ImportController @Inject() (implicit ec: ExecutionContext,
         logger.error(status)
         Success(InternalServerError(Json.obj("status" -> JsString(status))))
       }
-    }}
-
-    result.onComplete{ x => x match {
-      case Success(s) => new ClassifierController().classify
-      case Failure(e) => Failure(e)
     }}
 
     response
