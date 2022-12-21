@@ -17,7 +17,7 @@ import slick.jdbc.JdbcProfile
 import slick.jdbc.PostgresProfile.api._
 
 @Singleton
-class TransactionController @Inject()(implicit ec: ExecutionContext,
+class RecurringController @Inject()(implicit ec: ExecutionContext,
                                       protected val dbConfigProvider: DatabaseConfigProvider,
                                       cc: ControllerComponents,
                                       pbp:PlayBodyParsers)
@@ -90,7 +90,7 @@ class TransactionController @Inject()(implicit ec: ExecutionContext,
     Ok(jsonRes)
   }}
 
-  def readTaggedTransactions(): Action[AnyContent] = Action.async { request => async {
+  def readRecurring(): Action[AnyContent] = Action.async { request => async {
     val startDate = Date.valueOf(request.getQueryString("startDate").getOrElse("1900-01-01"))
     val endDate = Date.valueOf(request.getQueryString("endDate").getOrElse("2100-12-31"))
     val categories: Array[String] = request.getQueryString("categories")
@@ -103,26 +103,39 @@ class TransactionController @Inject()(implicit ec: ExecutionContext,
     val accounts = request.getQueryString("accounts").filter(! _.isEmpty)
       .map(x => x.split(",").map(_.toLong).toSeq)
 
-    val res: Seq[(TransactionsRow, AccountsRow)] = await {
-      db.run(readTransactionsQuery(startDate, endDate, categories, subCategories, accounts))
-    }
 
-    val jsonRes = Json.obj("transactions" -> res.map(
-      x => Json.toJson(x._1)(JsonFormats.transactionFmt).as[JsObject]
-        .++(Json.obj("accountName" -> Json.toJson(x._2.name)))
-    ))
-
+    // static raw_data = {
+    //   "monthly": {
+    //     "finance-other": [
+    //       [   "date",   "total",      "min",    "max",         "in",        "out"],
+    //       ["2020-12",   5806.03,   -4972.35, 10778.38,      6729.59,     -3611.25],
+    //       ["2021-01",  13907.27,  -23596.42, 37503.69,     20524.85,    -20291.58],
+    //       ["2021-02",   3082.36, -169010.18,172092.54,    166491.16,   -166195.15],
+    //     ],
+    //     "house-other": [
+    //       [   "date",   "total",      "min",    "max",         "in",        "out"],
+    //       ["2020-12",   5806.03,   -4972.35, 10778.38,      6729.59,     -3611.25],
+    //       ["2021-01",  13907.27,  -23596.42, 37503.69,     20524.85,    -20291.58],
+    //       ["2021-02",   3082.36, -169010.18,172092.54,    166491.16,   -166195.15],
+    //     ],
+    //   },
+    //   "yearly": {
+    //     "living-other": [
+    //       [   "date",   "total",      "min",    "max",         "in",        "out"],
+    //       ["2020-12",   5806.03,   -4972.35, 10778.38,      6729.59,     -3611.25],
+    //       ["2021-01",  13907.27,  -23596.42, 37503.69,     20524.85,    -20291.58],
+    //       ["2021-02",   3082.36, -169010.18,172092.54,    166491.16,   -166195.15],
+    //     ],
+    //     "mobility-other": [
+    //       [   "date",   "total",      "min",    "max",         "in",        "out"],
+    //       ["2020-12",   5806.03,   -4972.35, 10778.38,      6729.59,     -3611.25],
+    //       ["2021-01",  13907.27,  -23596.42, 37503.69,     20524.85,    -20291.58],
+    //       ["2021-02",   3082.36, -169010.18,172092.54,    166491.16,   -166195.15],
+    //     ],
+    //   },
+    // };
+    val jsonRes = Json.obj("recurring" -> 1, "giovanni" -> 2)
     Ok(jsonRes)
   }}
-
-  def updateTransaction(id: String): Action[JsValue] = Action.async(pbp.json){ request => async {
-    val jsonRequest = request.body
-    val category =    (jsonRequest \ "category").as[String]
-    val subCategory = (jsonRequest \ "subCategory").as[String]
-    val comment =     (jsonRequest \ "comment").as[String]
-
-    val res = await { db.run(updateTransactionQuery(id.toLong, category, subCategory, comment)) }
-
-    Ok(Json.obj("result" -> JsString(res.toString)))
-  }}
 }
+

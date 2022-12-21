@@ -15,7 +15,10 @@ GET         /accounts/:accountId            @controllers.AccountController.readA
 GET         /classify                       @controllers.ClassifierController.classifyTransactions
 
 GET         /transactions                   @controllers.TransactionController.readTransactions
+GET         /transactions/tagged            @controllers.TransactionController.readTaggedTransactions
 PUT         /transaction/:id                @controllers.TransactionController.updateTransaction(id: String)
+
+GET         /recurring                      @controllers.RecurringController.readRecurring
 
 # Getting account data
 GET         /categories                     @controllers.CategoryController.readCategories

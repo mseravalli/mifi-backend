@@ -62,6 +62,7 @@ class ClassifierController @Inject() (implicit ec: ExecutionContext,
 
     // takes only the first match
     val classifiedTransactions: Seq[(Long, (String, String, Seq[String]))] = uncategorizedTransactions.map { t => {
+      // TODO: this maybe should be a map to solve issues with multiple equal matches.
       val classifications: Seq[(String, String, Seq[String])] = taggedClasses.map { c => {
         val description = c._1._1
         val category = c._1._2
@@ -95,7 +96,7 @@ class ClassifierController @Inject() (implicit ec: ExecutionContext,
 
       logger.debug(s"tags ${tags}")
 
-      var query = List(
+      var query: List[slick.sql.SqlStreamingAction[Vector[Int],Int,slick.dbio.Effect]] = List(
         sql"""
           UPDATE transactions SET category = ${category}, sub_category = ${subCategory}
           WHERE id = ${transactionId};
@@ -115,8 +116,10 @@ class ClassifierController @Inject() (implicit ec: ExecutionContext,
       query
     }.flatten
 
+    logger.debug(updateTransactionQueries.map(_.statements).toString);
+
     val res = await {
-      Future.sequence(updateTransactionQueries.map { q => db.run(q) })
+      Future.sequence(updateTransactionQueries.map {q => db.run(q.transactionally)})
     }
     res.flatten
   }
