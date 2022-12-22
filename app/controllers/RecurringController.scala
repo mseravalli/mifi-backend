@@ -15,14 +15,15 @@ import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext
 import slick.jdbc.JdbcProfile
 import slick.jdbc.PostgresProfile.api._
+import play.api.Logging
 
 @Singleton
 class RecurringController @Inject()(implicit ec: ExecutionContext,
                                       protected val dbConfigProvider: DatabaseConfigProvider,
                                       cc: ControllerComponents,
                                       pbp:PlayBodyParsers)
-    extends AbstractController(cc) with HasDatabaseConfigProvider[JdbcProfile] {
-  private def readTransactionsQuery(startDate: Date,
+    extends AbstractController(cc) with HasDatabaseConfigProvider[JdbcProfile] with Logging {
+  private def readRecurringQuery(startDate: Date,
                             endDate: Date,
                             categories: Array[String],
                             subCategories: Array[String],
@@ -31,65 +32,22 @@ class RecurringController @Inject()(implicit ec: ExecutionContext,
       accounts.map(_.foldLeft(a.id =!= a.id)((res, x) => res || (a.id === x)))
         .getOrElse(a.id === a.id)
     )
+    val recurringTransactions = Tables.TaggedTransactions.filter(_.tag === "recurring")
     Tables.Transactions
       .filter(t => t.transactionDate >= startDate && t.transactionDate <= endDate
         && categories.foldLeft(t.category =!= t.category)((res,c)=> res || (t.category like c) )
         && subCategories.foldLeft(t.subCategory =!= t.subCategory)((res,s)=> res || (t.subCategory like s) )
       )
-      .join(accountsTable).on(_.accountId === _.id)
+      .join(recurringTransactions).on(_.id === _.transactionId) // => (Transactions, TaggedTransactions)
+      .join(Tables.TaggedTransactions).on(_._1.id === _.transactionId) // => ((Transactions, TaggedTransactions), TaggedTransactions)
+      .join(accountsTable).on(_._1._1.accountId === _.id) // => (((Transactions, TaggedTransactions), TaggedTransactions), Accounts)
       .result
   }
 
-  private def readTaggedTransactionsQuery(startDate: Date,
-                            endDate: Date,
-                            categories: Array[String],
-                            subCategories: Array[String],
-                            accounts: Option[Seq[Long]] = None) = {
-    val accountsTable = Tables.Accounts.filter( a =>
-      accounts.map(_.foldLeft(a.id =!= a.id)((res, x) => res || (a.id === x)))
-        .getOrElse(a.id === a.id)
-    )
-    Tables.Transactions
-      .filter(t => t.transactionDate >= startDate && t.transactionDate <= endDate
-        && categories.foldLeft(t.category =!= t.category)((res,c)=> res || (t.category like c) )
-        && subCategories.foldLeft(t.subCategory =!= t.subCategory)((res,s)=> res || (t.subCategory like s) )
-      )
-      .join(accountsTable).on(_.accountId === _.id)
-      .result
-  }
-
-
-  private def updateTransactionQuery(id: Long, category: String, subCategory: String, comment: String) = {
-    Tables.Transactions.filter(t => t.id === id)
-      .map(x => (x.category, x.subCategory, x.comment ))
-      .update(Some(category), Some(subCategory), Some(comment))
-  }
-
-  def readTransactions(): Action[AnyContent] = Action.async { request => async {
-    val startDate = Date.valueOf(request.getQueryString("startDate").getOrElse("1900-01-01"))
-    val endDate = Date.valueOf(request.getQueryString("endDate").getOrElse("2100-12-31"))
-    val categories: Array[String] = request.getQueryString("categories")
-      .map(x => x.split(","))
-      .getOrElse(new Array[String](0))
-    val subCategories: Array[String] = request.getQueryString("subCategories")
-      .map(x => x.split(","))
-      .getOrElse(Array[String]("%"))
-      .map{x => x match {case "" => "%"; case x => x}}
-    val accounts = request.getQueryString("accounts").filter(! _.isEmpty)
-      .map(x => x.split(",").map(_.toLong).toSeq)
-
-    val res: Seq[(TransactionsRow, AccountsRow)] = await {
-      db.run(readTransactionsQuery(startDate, endDate, categories, subCategories, accounts))
-    }
-
-    val jsonRes = Json.obj("transactions" -> res.map(
-      x => Json.toJson(x._1)(JsonFormats.transactionFmt).as[JsObject]
-        .++(Json.obj("accountName" -> Json.toJson(x._2.name)))
-    ))
-
-    Ok(jsonRes)
-  }}
-
+  /**
+   * Request example:
+   *  /recurring?sumRange=yyyy-mm&startDate=2014-01-01&endDate=2016-03-31&categories=house,other,finance,mobility&subCate
+   */
   def readRecurring(): Action[AnyContent] = Action.async { request => async {
     val startDate = Date.valueOf(request.getQueryString("startDate").getOrElse("1900-01-01"))
     val endDate = Date.valueOf(request.getQueryString("endDate").getOrElse("2100-12-31"))
@@ -103,6 +61,28 @@ class RecurringController @Inject()(implicit ec: ExecutionContext,
     val accounts = request.getQueryString("accounts").filter(! _.isEmpty)
       .map(x => x.split(",").map(_.toLong).toSeq)
 
+    val raw = await {
+      db.run(readRecurringQuery(startDate, endDate, categories, subCategories, accounts))
+    }
+
+    // logger.error("raw")
+    // logger.error(raw.toString)
+
+    val recurringData = raw.map(x => (x._1._2.tag, x._1._1._1)) // => (tag, Transactions)
+      .filter(_._1 != "recurring")
+      .groupBy(_._1) // => "monthly" -> ("monthly", ...), "yearly" -> ("yearly", ...)
+      .map{ x => (
+        x._1,
+        x._2.map(x => x._2) // keep only Transactions
+          .groupBy(x => (x.category, x.subCategory))
+          .map{ x => (
+            x._1,
+            x._2.map(_.amount.getOrElse(BigDecimal(0.0))).sum // FIXME: this should be groupbed by date first
+          )}
+      )}
+
+    logger.error("recurringData")
+    logger.error(recurringData.toString)
 
     // static raw_data = {
     //   "monthly": {

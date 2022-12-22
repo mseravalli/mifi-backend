@@ -7,7 +7,7 @@ class RecurringControllerIT extends PlaySpecification with JsonMatchers {
 
   "Recurring" should {
     "read recurring Transactions" in new WithApplication() {
-      val request = FakeRequest(GET, "/recurring?sumRange=yyyy-mm&startDate=2012-11-11&endDate=2012-11-11&categories=house,other,finance,mobility,living,health,free%20time,work%20and%20training&subCategories=")
+      val request = FakeRequest(GET, "/recurring?sumRange=yyyy-mm&startDate=2012-11-11&endDate=2015-11-11&categories=house,other,finance,mobility,living,health,free%20time,work%20and%20training&subCategories=")
       val response = route(app, request).get
       status(response) must equalTo(OK)
       contentType(response) must beSome.which(_ == "application/json")
