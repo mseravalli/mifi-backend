@@ -1,6 +1,7 @@
 package controllers
 
 import java.sql.Date
+import java.text.SimpleDateFormat
 
 import helpers.Formatter
 
@@ -49,6 +50,7 @@ class RecurringController @Inject()(implicit ec: ExecutionContext,
    *  /recurring?sumRange=yyyy-mm&startDate=2014-01-01&endDate=2016-03-31&categories=house,other,finance,mobility&subCate
    */
   def readRecurring(): Action[AnyContent] = Action.async { request => async {
+    val dateFormat = Formatter.normalizeDateFormat(request.getQueryString("sumRange").getOrElse(""))
     val startDate = Date.valueOf(request.getQueryString("startDate").getOrElse("1900-01-01"))
     val endDate = Date.valueOf(request.getQueryString("endDate").getOrElse("2100-12-31"))
     val categories: Array[String] = request.getQueryString("categories")
@@ -61,6 +63,9 @@ class RecurringController @Inject()(implicit ec: ExecutionContext,
     val accounts = request.getQueryString("accounts").filter(! _.isEmpty)
       .map(x => x.split(",").map(_.toLong).toSeq)
 
+    val format = Formatter.normalizeDateFormat(dateFormat)
+    val sdf = new SimpleDateFormat(format)
+
     val raw = await {
       db.run(readRecurringQuery(startDate, endDate, categories, subCategories, accounts))
     }
@@ -68,21 +73,34 @@ class RecurringController @Inject()(implicit ec: ExecutionContext,
     // logger.error("raw")
     // logger.error(raw.toString)
 
+    val inOutCategories = Array("in", "out")
+
     val recurringData = raw.map(x => (x._1._2.tag, x._1._1._1)) // => (tag, Transactions)
       .filter(_._1 != "recurring")
       .groupBy(_._1) // => "monthly" -> ("monthly", ...), "yearly" -> ("yearly", ...)
       .map{ x => (
         x._1,
         x._2.map(x => x._2) // keep only Transactions
-          .groupBy(x => (x.category, x.subCategory))
+          .groupBy(x => s"${x.category.getOrElse("")}/${x.subCategory.getOrElse("")}")
           .map{ x => (
             x._1,
-            x._2.map(_.amount.getOrElse(BigDecimal(0.0))).sum // FIXME: this should be groupbed by date first
+            x._2
+              .map(x => (sdf.format(x.transactionDate.getOrElse("")), x.amount.getOrElse(BigDecimal(0.0)) )) // => (date, amount)
+              .groupBy(_._1) // group by date
+              .map{x => (
+                x._1,
+                Map()
+                + ("total" -> x._2.map(_._2).sum)
+                + ("max" -> x._2.map(_._2).filter(_ >= 0).sum)
+                + ("min" -> x._2.map(_._2).filter(_ < 0).sum)
+                + ("in" -> x._2.map(_._2).filter(_ >= 0).sum)
+                + ("out" -> x._2.map(_._2).filter(_ < 0).sum)
+              )}
           )}
       )}
 
-    logger.error("recurringData")
-    logger.error(recurringData.toString)
+    logger.debug("recurringData")
+    logger.debug(recurringData.toString)
 
     // static raw_data = {
     //   "monthly": {
@@ -114,7 +132,14 @@ class RecurringController @Inject()(implicit ec: ExecutionContext,
     //     ],
     //   },
     // };
-    val jsonRes = Json.obj("recurring" -> 1, "giovanni" -> 2)
+
+    val jsonRes = Json.toJson(recurringData.map(x => (
+        x._1,
+        x._2.map(y => (
+          y._1,
+          Formatter.formatSeries(y._2, startDate, endDate, inOutCategories, dateFormat).\\("data").head
+        ))
+    )))
     Ok(jsonRes)
   }}
 }
