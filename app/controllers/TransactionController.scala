@@ -55,6 +55,7 @@ class TransactionController @Inject()(implicit ec: ExecutionContext,
         && subCategories.foldLeft(t.subCategory =!= t.subCategory)((res,s)=> res || (t.subCategory like s) )
       )
       .join(accountsTable).on(_.accountId === _.id)
+      .joinLeft(Tables.TaggedTransactions).on(_._1.id === _.transactionId) // => ((Transactions, Accounts), TaggedTransactions)
       .result
   }
 
@@ -103,15 +104,18 @@ class TransactionController @Inject()(implicit ec: ExecutionContext,
     val accounts = request.getQueryString("accounts").filter(! _.isEmpty)
       .map(x => x.split(",").map(_.toLong).toSeq)
 
-    val res: Seq[(TransactionsRow, AccountsRow)] = await {
-      db.run(readTransactionsQuery(startDate, endDate, categories, subCategories, accounts))
+    val res: Seq[((TransactionsRow, AccountsRow), Option[TaggedTransactionsRow])] = await {
+      db.run(readTaggedTransactionsQuery(startDate, endDate, categories, subCategories, accounts))
     }
 
-    val jsonRes = Json.obj("transactions" -> res.map(
-      x => Json.toJson(x._1)(JsonFormats.transactionFmt).as[JsObject]
-        .++(Json.obj("accountName" -> Json.toJson(x._2.name)))
-    ))
-
+    val jsonRes = Json.obj("transactions" ->
+      res.groupBy(_._1).map(x => 
+        Json.toJson(x._1._1)(JsonFormats.transactionFmt).as[JsObject]
+        .++(Json.obj("accountName" -> Json.toJson(x._1._2.name)))
+        .++(Json.obj("tags" -> Json.toJson(x._2.map(_._2.map(_.tag)).flatten)))
+      )
+    )
+    
     Ok(jsonRes)
   }}
 

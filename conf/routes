@@ -14,7 +14,8 @@ GET         /accounts/:accountId            @controllers.AccountController.readA
 
 GET         /classify                       @controllers.ClassifierController.classifyTransactions
 
-GET         /transactions                   @controllers.TransactionController.readTransactions
+# GET         /transactions                   @controllers.TransactionController.readTransactions
+GET         /transactions                   @controllers.TransactionController.readTaggedTransactions
 GET         /transactions/tagged            @controllers.TransactionController.readTaggedTransactions
 PUT         /transaction/:id                @controllers.TransactionController.updateTransaction(id: String)
 
