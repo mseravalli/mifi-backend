@@ -14,6 +14,7 @@ import play.api.mvc.PlayBodyParsers
 import scala.async.Async.{async, await}
 import scala.concurrent.ExecutionContext
 import slick.jdbc.JdbcProfile
+import play.api.Logging
 import slick.jdbc.PostgresProfile.api._
 
 @Singleton
@@ -23,6 +24,7 @@ class TransactionController @Inject() (implicit
     cc: ControllerComponents,
     pbp: PlayBodyParsers
 ) extends AbstractController(cc)
+    with Logging
     with HasDatabaseConfigProvider[JdbcProfile] {
   private def readTransactionsQuery(
       startDate: Date,
@@ -86,12 +88,22 @@ class TransactionController @Inject() (implicit
       id: Long,
       category: String,
       subCategory: String,
-      comment: String
+      comment: String,
+      tags: List[String]
   ) = {
-    Tables.Transactions
+    val updateTransaction = Tables.Transactions
       .filter(t => t.id === id)
       .map(x => (x.category, x.subCategory, x.comment))
       .update(Some(category), Some(subCategory), Some(comment))
+
+    val removeExistingTags = Tables.TaggedTransactions
+      .filter(t => t.transactionId === id)
+      .delete
+
+    val insertNewTags = Tables.TaggedTransactions
+      .map(t => (t.transactionId, t.tag)) ++= tags.map(tag => (id, tag))
+
+    DBIO.sequence(Vector(updateTransaction, removeExistingTags, insertNewTags))
   }
 
   def readTransactions(): Action[AnyContent] = Action.async { request =>
@@ -203,10 +215,17 @@ class TransactionController @Inject() (implicit
         val category = (jsonRequest \ "category").as[String]
         val subCategory = (jsonRequest \ "subCategory").as[String]
         val comment = (jsonRequest \ "comment").as[String]
+        val tags = (jsonRequest \ "tags").as[List[String]]
 
         val res = await {
           db.run(
-            updateTransactionQuery(id.toLong, category, subCategory, comment)
+            updateTransactionQuery(
+              id.toLong,
+              category,
+              subCategory,
+              comment,
+              tags
+            ).transactionally
           )
         }
 
