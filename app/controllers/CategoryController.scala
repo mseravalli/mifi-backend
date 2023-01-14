@@ -105,7 +105,7 @@ class CategoryController @Inject() (implicit ec: ExecutionContext,
 
   /**
    * Request example:
-   *  /categories?sumRange=yyyy-mm&startDate=2014-01-01&endDate=2016-03-31&categories=house,other,finance,mobility,living,health
+   *  /categories/aggregate?sumRange=yyyy-mm&startDate=2014-01-01&endDate=2016-03-31&categories=house,other,finance,mobility,living,health,free time&accounts=
    */
   def aggregateCategory(): Action[AnyContent] = Action.async { request => async {
     val dateFormat = Formatter.normalizeDateFormat(request.getQueryString("sumRange").getOrElse(""))

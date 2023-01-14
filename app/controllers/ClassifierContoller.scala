@@ -52,7 +52,7 @@ class ClassifierController @Inject() (implicit ec: ExecutionContext,
     .groupBy(x => (x._1, x._2, x._3))
     .mapValues(_.map(_._4))
 
-    logger.debug(s"resulttest ${taggedClasses.toString}")
+    logger.debug(s"taggedClasses ${taggedClasses.toString}")
 
     val uncategorizedTransactions = await {
       db.run(Tables.Transactions
@@ -81,12 +81,14 @@ class ClassifierController @Inject() (implicit ec: ExecutionContext,
       if (classifications.size > 1) {
         logger.warn(s"Found multiple matches for transacion ${t.id}: ${classifications.toString}")
       }
-        
+
       classifications match {
         case x :: xs => Some((t.id -> x))
         case Nil => None
       }
     }}.flatten
+
+    logger.debug(s"classifiedTransactions: ${classifiedTransactions.toString}")
 
     val updateTransactionQueries = classifiedTransactions.map { ct =>
       val transactionId = ct._1
