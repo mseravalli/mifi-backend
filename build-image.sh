@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env -S bash -xe
 sbt clean
 sbt dist
 export VERSION=`grep 'version :=' build.sbt | awk '{print $3}' | sed 's/\"//g'`
