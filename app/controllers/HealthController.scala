@@ -17,11 +17,14 @@ import slick.jdbc.JdbcProfile
 import slick.jdbc.PostgresProfile.api._
 
 @Singleton
-class HealthController @Inject()(implicit ec: ExecutionContext,
-                                      cc: ControllerComponents,
-                                      pbp:PlayBodyParsers)
-    extends AbstractController(cc) {
-  def getHealth(): Action[AnyContent] = Action.async { request => async {
-    Ok("OK")
-  }}
+class HealthController @Inject() (implicit
+    ec: ExecutionContext,
+    cc: ControllerComponents,
+    pbp: PlayBodyParsers
+) extends AbstractController(cc) {
+  def getHealth(): Action[AnyContent] = Action.async { request =>
+    async {
+      Ok("OK")
+    }
+  }
 }

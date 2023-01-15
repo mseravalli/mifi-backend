@@ -8,7 +8,7 @@ object JsonFormats {
   implicit val sqlDateFmt = new Format[Date] {
     val sdf = new java.text.SimpleDateFormat("yyyy-MM-dd")
     val sdfPattern = "\\b(0[1-9]|[1-3][0-9])-(0[1-9]|1[0-2])-[1-9][0-9]{3}\\b"
-    def reads(json: JsValue):JsResult[Date] = json match {
+    def reads(json: JsValue): JsResult[Date] = json match {
       case JsString(d) => {
         val theDate = new Date(sdf.parse(d).getTime)
         if (d.matches(sdfPattern) && theDate.compareTo(new Date(0)) > 0)

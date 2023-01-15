@@ -6,4 +6,6 @@ Booking date;Value date;Transaction Type;Beneficiary / Originator;Payment Detail
 01/23/2019;01/23/2019;;;something interesting;;;;;;;;;;;-10.10;;EUR
 01/25/2019;01/25/2019;"transaction type 1";Originator;detail 1;iban;bic1;;;;;;;;;;1,000.00;EUR
 01/28/2019;01/28/2019;"transaction type 2";Beneficiary;detail 2;iban;bic2;;;;;;;;;-1,000.00;;EUR
+01/25/2019;01/25/2019;"internet";kabel deutschland;give me the money;iban;bic1;;;;;;;;;;10.00;EUR
+01/28/2019;01/28/2019;"internet";kabel deutschland;uuuuuuuuuuuuuuups;iban;bic2;;;;;;;;;-10.00;;EUR
 Account balance;01/28/2017;;;1,010.10;EUR
