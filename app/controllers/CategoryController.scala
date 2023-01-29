@@ -195,27 +195,48 @@ class CategoryController @Inject() (implicit
         )
         // from now on operating with (date, category, amount)
         .groupBy(x => x._1) // group by date
+        // distinguishing between in and out.
+        // .map { x =>
+        //   (
+        //     x._1,
+        //     x._2
+        //       .groupBy(_._2)
+        //       .map(y =>
+        //         (y._1 + " in" -> y._2.map(_._3).filter(_ >= 0).sum)
+        //       ) // group by category in
+        //       ++ x._2
+        //         .groupBy(_._2)
+        //         .map(y =>
+        //           (y._1 + " out" -> y._2.map(_._3).filter(_ < 0).sum)
+        //         ) // group by category out
+        //       + ("total" -> x._2.map(_._3).sum)
+        //       + ("max" -> x._2
+        //         .groupBy(_._2)
+        //         .map(y => y._2.map(_._3).filter(_ >= 0).sum)
+        //         .sum)
+        //       + ("min" -> x._2
+        //         .groupBy(_._2)
+        //         .map(y => y._2.map(_._3).filter(_ < 0).sum)
+        //         .sum)
+        //   )
+        // }
+        // aggregating in and out
         .map { x =>
           (
             x._1,
             x._2
               .groupBy(_._2)
-              .map(y =>
-                (y._1 + " in" -> y._2.map(_._3).filter(_ >= 0).sum)
-              ) // group by category in
-              ++ x._2
-                .groupBy(_._2)
-                .map(y =>
-                  (y._1 + " out" -> y._2.map(_._3).filter(_ < 0).sum)
-                ) // group by category out
+              .map(y => (y._1 -> y._2.map(_._3).sum))
               + ("total" -> x._2.map(_._3).sum)
               + ("max" -> x._2
                 .groupBy(_._2)
-                .map(y => y._2.map(_._3).filter(_ >= 0).sum)
+                .map(y => y._2.map(_._3).sum)
+                .filter(_ > 0)
                 .sum)
               + ("min" -> x._2
                 .groupBy(_._2)
-                .map(y => y._2.map(_._3).filter(_ < 0).sum)
+                .map(y => y._2.map(_._3).sum)
+                .filter(_ < 0)
                 .sum)
           )
         }
@@ -224,9 +245,9 @@ class CategoryController @Inject() (implicit
 
       val inOutCategories = categories
         .filter(x => !("total".equals(x) || "min".equals(x) || "max".equals(x)))
-        .map(x => List(x + " in", x + " out"))
+        // .map(x => List(x + " in", x + " out")) // distinguish between in and out
+        .map(x => List(x)) // aggregating in and out
         .flatten
-
       val series = Formatter.formatSeries(
         totalFlow,
         startDate,

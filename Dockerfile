@@ -1,6 +1,4 @@
-FROM java:jre-alpine
-
-RUN apk add --no-cache bash
+FROM openjdk:11
 
 COPY ./target/universal/mi-fi /opt/mi-fi
 
